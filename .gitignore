@@ -31,6 +31,9 @@ Thumbs.db
 # Turbo
 .turbo
 
+# Cache
+.cache
+
 # Debug logs
 npm-debug.log*
 yarn-debug.log*

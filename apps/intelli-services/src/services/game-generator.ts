@@ -53,53 +53,29 @@ interface ScriptNode {
 const createId = () => Math.random().toString(36).substring(2, 12);
 
 // System prompt for the Director Agent
-const DIRECTOR_SYSTEM_PROMPT = `You are the Director of a Visual Novel production team.
-Your goal is to take a user's high-level idea and turn it into a concrete game design.
+const DIRECTOR_SYSTEM_PROMPT = `You are a Visual Novel game designer. Create a game design from the user's idea.
 
-You are responsible for:
-1. Defining the game title, genre, and art style.
-2. Creating the main characters (3-4 characters with distinct personalities).
-3. Designing the key locations/backgrounds (3-5 locations).
-4. Outlining the main plot with dialogue scenes.
-
-Output strictly valid JSON matching this schema:
+Output valid JSON with this structure:
 {
   "title": "string",
-  "description": "string (2-3 sentences)",
-  "genre": "romance" | "mystery" | "fantasy" | "horror" | "slice-of-life" | "sci-fi",
-  "artStyle": "anime" | "realistic" | "pixel" | "watercolor" | "comic",
+  "description": "2-3 sentence summary",
+  "genre": "romance|mystery|fantasy|horror|slice-of-life|sci-fi",
+  "artStyle": "anime|realistic|pixel|watercolor|comic",
   "characters": [
-    {
-      "name": "string",
-      "displayName": "string",
-      "description": "string (appearance and background)",
-      "personality": "string",
-      "role": "protagonist" | "love_interest" | "antagonist" | "supporting"
-    }
+    {"name": "string", "displayName": "string", "description": "brief appearance", "personality": "brief", "role": "protagonist|love_interest|antagonist|supporting"}
   ],
   "backgrounds": [
-    {
-      "name": "string",
-      "description": "string (detailed visual description)"
-    }
+    {"name": "string", "description": "brief visual description"}
   ],
   "scenes": [
-    {
-      "background": "background name",
-      "dialogues": [
-        {
-          "speaker": "character name or Narrator",
-          "text": "dialogue text"
-        }
-      ]
-    }
+    {"background": "bg name", "dialogues": [{"speaker": "name or Narrator", "text": "dialogue"}]}
   ]
 }
 
-Important:
-- Do NOT include markdown formatting or code blocks
-- Output ONLY the raw JSON object
-- Ensure all JSON is valid and properly escaped`;
+Rules:
+- 3-4 characters, 3-4 backgrounds, 3-5 scenes with 3-5 dialogues each
+- Keep descriptions SHORT (under 50 words each)
+- Output ONLY the JSON, no markdown`;
 
 interface GeneratedContent {
     title: string;
@@ -147,19 +123,25 @@ export class GameGenerator {
             model: this.modelName,
             messages: [
                 { role: 'system', content: DIRECTOR_SYSTEM_PROMPT },
-                { role: 'user', content: `Create a visual novel based on this idea:\n\n${idea}` },
+                { role: 'user', content: `Design and compose a visual novel script based on:\n\n${idea}` },
             ],
             temperature: 0.8,
-            max_tokens: 3000,
+            max_tokens: 10000,  // 增加 token 限制以避免截断
         });
 
-        const content = response.choices[0]?.message?.content;
+        const choice = response.choices[0];
+        const content = choice?.message?.content;
         
         if (!content) {
             throw new Error('No response from AI model');
         }
 
-        console.log(`[GameGenerator] Received response from AI (${content.length} chars)`);
+        // 检查是否被截断
+        if (choice.finish_reason === 'length') {
+            console.warn('[GameGenerator] Response was truncated due to max_tokens limit');
+        }
+
+        console.log(`[GameGenerator] Received response (${content.length} chars, finish_reason: ${choice.finish_reason})`);
 
         // Parse the JSON response
         const generated = this.parseResponse(content);
@@ -169,26 +151,60 @@ export class GameGenerator {
     }
 
     private parseResponse(content: string): GeneratedContent {
+        // Clean the response (remove potential markdown code blocks)
+        let cleanedContent = content
+            .replace(/```json\n?/g, '')
+            .replace(/```\n?/g, '')
+            .trim();
+        
+        // Find the JSON object boundaries
+        const startIndex = cleanedContent.indexOf('{');
+        const endIndex = cleanedContent.lastIndexOf('}');
+        
+        if (startIndex === -1 || endIndex === -1 || endIndex <= startIndex) {
+            console.error('[GameGenerator] No valid JSON boundaries found');
+            console.error('[GameGenerator] Content preview:', content.slice(0, 300));
+            throw new Error('AI response does not contain valid JSON structure');
+        }
+        
+        cleanedContent = cleanedContent.slice(startIndex, endIndex + 1);
+        
+        // 修复常见的 JSON 格式问题
+        cleanedContent = this.fixJsonFormat(cleanedContent);
+        
         try {
-            // Clean the response (remove potential markdown code blocks)
-            let cleanedContent = content
-                .replace(/```json\n?/g, '')
-                .replace(/```\n?/g, '')
-                .trim();
-            
-            // Find the JSON object boundaries
-            const startIndex = cleanedContent.indexOf('{');
-            const endIndex = cleanedContent.lastIndexOf('}');
-            
-            if (startIndex !== -1 && endIndex !== -1) {
-                cleanedContent = cleanedContent.slice(startIndex, endIndex + 1);
-            }
-            
             return JSON.parse(cleanedContent);
         } catch (parseError) {
-            console.error('[GameGenerator] Failed to parse AI response:', content.slice(0, 500));
-            throw new Error('Failed to parse AI response as JSON');
+            console.error('[GameGenerator] JSON parse failed');
+            console.error('[GameGenerator] Content preview:', cleanedContent.slice(0, 500));
+            console.error('[GameGenerator] Parse error:', parseError);
+            
+            if (!cleanedContent.endsWith('}')) {
+                throw new Error('AI response was truncated - JSON is incomplete');
+            }
+            
+            throw new Error(`Failed to parse AI response: ${parseError}`);
         }
+    }
+
+    // 修复 AI 返回的 JSON 常见格式问题
+    private fixJsonFormat(json: string): string {
+        // 1. 将单引号替换为双引号（但要注意不要替换字符串内容中的单引号）
+        // 这是一个简化的处理，可能不完美但能处理大部分情况
+        let fixed = json;
+        
+        // 2. 移除尾部逗号 (trailing commas)
+        fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+        
+        // 3. 修复没有引号的属性名
+        fixed = fixed.replace(/(\{|\,)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+        
+        // 4. 处理换行符在字符串中的问题
+        fixed = fixed.replace(/:\s*"([^"]*)\n([^"]*)"/g, (match, p1, p2) => {
+            return `:"${p1}\\n${p2}"`;
+        });
+        
+        return fixed;
     }
 
     private transformToGameProject(generated: GeneratedContent): GameProject {
