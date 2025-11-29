@@ -13,14 +13,14 @@ const ideationStep = new Step({
         gameDesign: z.any(), // TODO: Define strict schema
     }),
     execute: async ({ context, agent }) => {
-        const prompt = \`
-      User Idea: \${context.input.idea}
+        const prompt = `
+      User Idea: ${context.input.idea}
       
       Please generate a game design including title, characters, and backgrounds.
-    \`;
-    const result = await agent.generate(prompt);
-    return { gameDesign: result.text };
-  },
+    `;
+        const result = await agent.generate(prompt);
+        return { gameDesign: result.text };
+    },
 });
 
 export const createGameWorkflow = new Workflow({
