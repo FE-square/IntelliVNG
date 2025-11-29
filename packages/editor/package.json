@@ -1,0 +1,26 @@
+{
+    "name": "@vng/editor",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint \"src/**/*.ts*\""
+    },
+    "dependencies": {
+        "@vng/core": "workspace:*",
+        "@vng/ui": "workspace:*",
+        "reactflow": "^11.10.0",
+        "zustand": "^4.4.0",
+        "lucide-react": "^0.290.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.2.0",
+        "@types/react-dom": "^18.2.0",
+        "react": "^18.2.0",
+        "typescript": "^5.0.0"
+    },
+    "peerDependencies": {
+        "react": ">=18",
+        "react-dom": ">=18"
+    }
+}
