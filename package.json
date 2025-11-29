@@ -1,25 +1,21 @@
 {
-  "name": "intellivng",
-  "private": true,
-  "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
-  },
-  "devDependencies": {
-    "turbo": "^1.10.0",
-    "prettier": "^3.0.0",
-    "typescript": "^5.0.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "@ai-sdk/provider-utils": "^2.2.8",
-      "@ai-sdk/ui-utils": "^1.2.11"
+    "name": "intellivng",
+    "private": true,
+    "scripts": {
+        "build": "turbo run build",
+        "dev": "turbo run dev",
+        "dev:web": "turbo run dev --filter=web",
+        "dev:serv": "turbo run dev --filter=intelli-services",
+        "lint": "turbo run lint",
+        "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    },
+    "devDependencies": {
+        "turbo": "^1.10.0",
+        "prettier": "^3.0.0",
+        "typescript": "^5.0.0"
+    },
+    "packageManager": "pnpm@8.0.0",
+    "engines": {
+        "node": ">=18"
     }
-  },
-  "packageManager": "pnpm@8.0.0",
-  "engines": {
-    "node": ">=18"
-  }
 }

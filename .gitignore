@@ -4,6 +4,9 @@ node_modules
 
 # Next.js
 .next
+**/.next/**
+apps/web/.next/cache/
+apps/web/.next/server/
 out
 
 # Build outputs
