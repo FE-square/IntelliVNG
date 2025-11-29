@@ -1,12 +1,12 @@
 "use client";
 /** 故事脚本可视化编辑器 */
 import { useEffect, useState } from 'react';
+import { Loader2, AlertCircle, Home } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { ScriptCanvas, useEditorStore } from '@vng/editor';
 import { GamePlayer } from '@vng/player';
 import { Button, Card } from '@vng/ui';
 import { GameProject } from '@vng/core';
-import { Loader2, AlertCircle, Home } from 'lucide-react';
 
 // Mock Project for testing (fallback)
 const MOCK_PROJECT: GameProject = {

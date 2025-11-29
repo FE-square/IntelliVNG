@@ -1,6 +1,0 @@
-# OpenAI Configuration
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxx
-OPENAI_BASE_URL=http://xxxxxx.com
-OPENAI_MODEL_NAME=qwen-2.5
-
-PORT=4000
