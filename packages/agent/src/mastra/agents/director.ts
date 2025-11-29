@@ -24,6 +24,6 @@ export const directorAgent = new Agent({
   `,
   model: {
     provider: 'OPEN_AI',
-    name: 'gpt-4-turbo',
+    name: process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo',
   },
 });

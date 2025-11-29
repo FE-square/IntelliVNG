@@ -9,7 +9,7 @@
     "dependencies": {
         "@vng/core": "workspace:*",
         "@mastra/core": "^0.1.0",
-        "zod": "^3.22.0",
+        "zod": "^3.23.8",
         "openai": "^4.0.0"
     },
     "devDependencies": {

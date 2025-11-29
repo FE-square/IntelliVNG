@@ -1,3 +1,5 @@
+'use client';
+
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, Input } from '@vng/ui';
 
 export default function Home() {
@@ -39,5 +41,3 @@ export default function Home() {
         </main>
     )
 }
-
-```
