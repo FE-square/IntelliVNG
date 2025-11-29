@@ -1,12 +1,14 @@
 "use client";
-
+/** 故事脚本可视化编辑器 */
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ScriptCanvas, useEditorStore } from '@vng/editor';
 import { GamePlayer } from '@vng/player';
 import { Button, Card } from '@vng/ui';
 import { GameProject } from '@vng/core';
+import { Loader2, AlertCircle, Home } from 'lucide-react';
 
-// Mock Project for testing
+// Mock Project for testing (fallback)
 const MOCK_PROJECT: GameProject = {
     id: 'demo-1',
     title: 'Demo Project',
@@ -72,54 +74,110 @@ const MOCK_PROJECT: GameProject = {
             type: 'dialogue',
             characterId: 'char-2',
             text: 'This is a demo of the engine.',
-            nextNodeId: 'node-4',
+            nextNodeId: null,
             position: { x: 100, y: 500 },
         },
-        {
-            id: 'node-4',
-            type: 'choice',
-            prompt: 'What do you think?',
-            choices: [
-                { id: 'c1', text: 'It is cool!', nextNodeId: 'node-5' },
-                { id: 'c2', text: 'Needs more work.', nextNodeId: 'node-6' }
-            ],
-            position: { x: 100, y: 700 },
-        },
-        {
-            id: 'node-5',
-            type: 'dialogue',
-            characterId: 'char-1',
-            text: 'Glad you liked it!',
-            nextNodeId: null,
-            position: { x: -100, y: 900 },
-        },
-        {
-            id: 'node-6',
-            type: 'dialogue',
-            characterId: 'char-2',
-            text: 'We will keep improving it.',
-            nextNodeId: null,
-            position: { x: 300, y: 900 },
-        }
     ]
 };
 
 export default function EditorPage() {
+    const searchParams = useSearchParams();
+    const projectId = searchParams.get('project');
+    
     const { setProject, project } = useEditorStore();
     const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Load mock project on mount
-        setProject(MOCK_PROJECT);
-    }, [setProject]);
+        const loadProject = async () => {
+            setLoading(true);
+            setError(null);
 
-    if (!project) return <div>Loading...</div>;
+            // 如果没有 projectId，使用 Mock 数据
+            if (!projectId) {
+                console.log('[Editor] No projectId, using mock project');
+                setProject(MOCK_PROJECT);
+                setLoading(false);
+                return;
+            }
+
+            try {
+                console.log('[Editor] Loading project:', projectId);
+                
+                const response = await fetch(`/api/projects/${projectId}`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+
+                const projectData = await response.json();
+                console.log('[Editor] Loaded project:', projectData.title);
+                
+                setProject(projectData);
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Failed to load project';
+                console.error('[Editor] Error loading project:', message);
+                setError(message);
+                
+                // 出错时使用 Mock 数据作为 fallback
+                setProject(MOCK_PROJECT);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadProject();
+    }, [projectId, setProject]);
+
+    if (loading) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-slate-100">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <p className="text-slate-600">Loading project...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!project) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-slate-100">
+                <div className="flex flex-col items-center gap-4">
+                    <AlertCircle className="h-8 w-8 text-red-500" />
+                    <p className="text-slate-600">Failed to load project</p>
+                    <a href="/" className="text-blue-600 hover:underline">Go back home</a>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-screen w-full flex-col bg-slate-100">
             {/* Header */}
             <header className="flex h-14 items-center justify-between border-b bg-white px-6">
-                <div className="font-bold text-lg">IntelliVNG Editor</div>
+                <div className="flex items-center gap-4">
+                    <a href="/" className="text-slate-400 hover:text-slate-600">
+                        <Home className="h-5 w-5" />
+                    </a>
+                    <div>
+                        <div className="font-bold text-lg">{project.title}</div>
+                        {projectId && (
+                            <div className="text-xs text-slate-400">ID: {projectId}</div>
+                        )}
+                    </div>
+                </div>
+                
+                {/* Error notification */}
+                {error && (
+                    <div className="flex items-center gap-2 text-amber-600 text-sm">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>Using demo data (project not found)</span>
+                    </div>
+                )}
+                
                 <div className="flex gap-4">
                     <Button
                         variant={activeTab === 'editor' ? 'default' : 'ghost'}
@@ -136,6 +194,19 @@ export default function EditorPage() {
                     <Button variant="outline">Export</Button>
                 </div>
             </header>
+
+            {/* Project Info Bar */}
+            <div className="flex h-10 items-center justify-between border-b bg-slate-50 px-6 text-sm text-slate-600">
+                <div className="flex gap-6">
+                    <span>{project.characters?.length || 0} Characters</span>
+                    <span>{project.backgrounds?.length || 0} Backgrounds</span>
+                    <span>{project.script?.length || 0} Script Nodes</span>
+                </div>
+                <div className="flex gap-4">
+                    <span>Genre: {project.meta?.genre}</span>
+                    <span>Style: {project.meta?.artStyle}</span>
+                </div>
+            </div>
 
             {/* Main Content */}
             <main className="flex-1 overflow-hidden">

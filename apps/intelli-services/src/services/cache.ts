@@ -1,12 +1,16 @@
 import { createHash } from 'crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
 const CACHE_DIR = join(process.cwd(), '.cache');
+const PROJECTS_DIR = join(process.cwd(), '.cache', 'projects');
 
 // 确保缓存目录存在
 if (!existsSync(CACHE_DIR)) {
     mkdirSync(CACHE_DIR, { recursive: true });
+}
+if (!existsSync(PROJECTS_DIR)) {
+    mkdirSync(PROJECTS_DIR, { recursive: true });
 }
 
 /**
@@ -24,7 +28,14 @@ function getCacheFilePath(key: string): string {
 }
 
 /**
- * 从缓存中读取
+ * 获取项目文件路径
+ */
+function getProjectFilePath(projectId: string): string {
+    return join(PROJECTS_DIR, `${projectId}.json`);
+}
+
+/**
+ * 从缓存中读取（基于 idea hash）
  */
 export function getFromCache<T>(key: string): T | null {
     const filePath = getCacheFilePath(key);
@@ -46,7 +57,7 @@ export function getFromCache<T>(key: string): T | null {
 }
 
 /**
- * 写入缓存
+ * 写入缓存（基于 idea hash）
  */
 export function saveToCache<T>(key: string, data: T): void {
     const filePath = getCacheFilePath(key);
@@ -66,16 +77,80 @@ export function saveToCache<T>(key: string, data: T): void {
 }
 
 /**
+ * 保存项目数据（基于 projectId）
+ */
+export function saveProject<T extends { id: string }>(project: T): void {
+    const filePath = getProjectFilePath(project.id);
+    
+    try {
+        const projectData = {
+            savedAt: new Date().toISOString(),
+            project,
+        };
+        
+        writeFileSync(filePath, JSON.stringify(projectData, null, 2), 'utf-8');
+        console.log(`[Projects] Saved project: ${project.id}`);
+    } catch (error) {
+        console.error('[Projects] Failed to save project:', error);
+    }
+}
+
+/**
+ * 获取项目数据（基于 projectId）
+ */
+export function getProject<T>(projectId: string): T | null {
+    const filePath = getProjectFilePath(projectId);
+    
+    if (!existsSync(filePath)) {
+        console.log(`[Projects] Project not found: ${projectId}`);
+        return null;
+    }
+    
+    try {
+        const data = readFileSync(filePath, 'utf-8');
+        const saved = JSON.parse(data);
+        
+        console.log(`[Projects] Loaded project: ${projectId}`);
+        return saved.project as T;
+    } catch (error) {
+        console.error('[Projects] Failed to load project:', error);
+        return null;
+    }
+}
+
+/**
+ * 获取所有项目列表
+ */
+export function listProjects(): Array<{ id: string; title: string; savedAt: string }> {
+    try {
+        const files = readdirSync(PROJECTS_DIR).filter(f => f.endsWith('.json'));
+        const projects = [];
+        
+        for (const file of files) {
+            const data = readFileSync(join(PROJECTS_DIR, file), 'utf-8');
+            const saved = JSON.parse(data);
+            projects.push({
+                id: saved.project.id,
+                title: saved.project.title,
+                savedAt: saved.savedAt,
+            });
+        }
+        
+        return projects.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+    } catch (error) {
+        console.error('[Projects] Failed to list projects:', error);
+        return [];
+    }
+}
+
+/**
  * 清除所有缓存
  */
 export function clearCache(): void {
-    const fs = require('fs');
-    const files = fs.readdirSync(CACHE_DIR);
+    const files = readdirSync(CACHE_DIR).filter(f => f.endsWith('.json'));
     
     for (const file of files) {
-        if (file.endsWith('.json')) {
-            fs.unlinkSync(join(CACHE_DIR, file));
-        }
+        unlinkSync(join(CACHE_DIR, file));
     }
     
     console.log('[Cache] Cleared all cache');
