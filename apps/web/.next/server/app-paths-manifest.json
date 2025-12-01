@@ -1,9 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/setup/summary/page": "app/setup/summary/page.js",
-  "/setup/characters/page": "app/setup/characters/page.js",
-  "/setup/page": "app/setup/page.js",
-  "/setup/world/page": "app/setup/world/page.js",
-  "/setup/theme/page": "app/setup/theme/page.js",
-  "/editor/page": "app/editor/page.js"
-}
