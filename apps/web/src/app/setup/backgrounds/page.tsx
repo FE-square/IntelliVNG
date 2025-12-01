@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast } from '@vng/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast, useConfirmDialog } from '@vng/ui';
 import { Plus, Trash2, Save, ArrowLeft, Image } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
@@ -11,6 +11,7 @@ import type { Background } from '@vng/core';
 export default function BackgroundsPage() {
     const router = useRouter();
     const toast = useToast();
+    const { confirm, DialogComponent } = useConfirmDialog();
     const { backgrounds, addBackground, updateBackground, deleteBackground } = useSetupStore();
     
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -74,9 +75,17 @@ export default function BackgroundsPage() {
         setFormData(background);
     };
 
-    const handleDelete = (id: string) => {
-        if (confirm('确定要删除这个背景吗？')) {
+    const handleDelete = async (id: string) => {
+        const confirmed = await confirm({
+            title: '删除背景',
+            message: '确定要删除这个背景吗？此操作不可恢复。',
+            confirmText: '删除',
+            cancelText: '取消',
+            variant: 'danger',
+        });
+        if (confirmed) {
             deleteBackground(id);
+            toast.success('背景已删除');
         }
     };
 
@@ -379,6 +388,7 @@ export default function BackgroundsPage() {
                     </Button>
                 </div>
             </div>
+            {DialogComponent}
         </main>
     );
 }
