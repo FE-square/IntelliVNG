@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { Loader2, AlertCircle, Home } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { ScriptCanvas, useEditorStore } from '@vng/editor';
+import { ReactFlowProvider } from 'reactflow';
 import { GamePlayer } from '@vng/player';
 import { Button, Card } from '@vng/ui';
 import { GameProject } from '@vng/core';
+import { FlowEditor } from '@/components/FlowEditor';
 
 // Mock Project for testing (fallback)
 const MOCK_PROJECT: GameProject = {
@@ -82,12 +83,15 @@ const MOCK_PROJECT: GameProject = {
 
 export default function EditorPage() {
     const searchParams = useSearchParams();
-    const projectId = searchParams.get('project');
+    // 支持两种参数名：projectId 和 project
+    const projectId = searchParams.get('projectId') || searchParams.get('project');
     
-    const { setProject, project } = useEditorStore();
+    const [project, setProject] = useState<GameProject | null>(null);
     const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);  // ✅ 当前选中节点
+    const [previewMode, setPreviewMode] = useState<'from-start' | 'from-current'>('from-start');  // ✅ 预览模式
 
     useEffect(() => {
         const loadProject = async () => {
@@ -114,6 +118,9 @@ export default function EditorPage() {
 
                 const projectData = await response.json();
                 console.log('[Editor] Loaded project:', projectData.title);
+                console.log('[Editor] Characters:', projectData.characters?.length);
+                console.log('[Editor] Script nodes:', projectData.script?.length);
+                console.log('[Editor] First few script nodes:', projectData.script?.slice(0, 3));
                 
                 setProject(projectData);
             } catch (err) {
@@ -187,7 +194,10 @@ export default function EditorPage() {
                     </Button>
                     <Button
                         variant={activeTab === 'preview' ? 'default' : 'ghost'}
-                        onClick={() => setActiveTab('preview')}
+                        onClick={() => {
+                            setActiveTab('preview');
+                            setPreviewMode('from-start');  // ✅ 默认从头预览
+                        }}
                     >
                         Preview Game
                     </Button>
@@ -211,14 +221,51 @@ export default function EditorPage() {
             {/* Main Content */}
             <main className="flex-1 overflow-hidden">
                 {activeTab === 'editor' ? (
-                    <div className="h-full w-full">
-                        <ScriptCanvas />
-                    </div>
+                    <ReactFlowProvider>
+                        <FlowEditor 
+                            project={project} 
+                            onUpdate={setProject}
+                            onSelectNode={setSelectedNodeId}  // ✅ 传递选中节点回调
+                        />
+                    </ReactFlowProvider>
                 ) : (
-                    <div className="flex h-full items-center justify-center p-8 bg-slate-900">
-                        <Card className="aspect-video w-full max-w-6xl overflow-hidden border-0 shadow-2xl">
-                            <GamePlayer project={project} />
-                        </Card>
+                    <div className="flex flex-col h-full">
+                        {/* ✅ 预览模式选择 */}
+                        <div className="flex items-center gap-4 p-4 bg-slate-800 border-b border-slate-700">
+                            <span className="text-sm text-slate-300">预览模式:</span>
+                            <Button
+                                size="sm"
+                                variant={previewMode === 'from-start' ? 'default' : 'ghost'}
+                                onClick={() => setPreviewMode('from-start')}
+                                className={previewMode === 'from-start' ? 'bg-blue-600 hover:bg-blue-700' : 'text-slate-300 hover:bg-slate-700'}
+                            >
+                                🏁 从头预览
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant={previewMode === 'from-current' ? 'default' : 'ghost'}
+                                onClick={() => setPreviewMode('from-current')}
+                                disabled={!selectedNodeId}
+                                className={previewMode === 'from-current' ? 'bg-green-600 hover:bg-green-700' : 'text-slate-300 hover:bg-slate-700'}
+                            >
+                                ▶️ 从当前节点预览
+                            </Button>
+                            {selectedNodeId && (
+                                <span className="text-xs text-slate-400">
+                                    当前节点: {selectedNodeId}
+                                </span>
+                            )}
+                        </div>
+                        
+                        {/* ✅ 游戏预览区 */}
+                        <div className="flex-1 flex items-center justify-center p-8 bg-slate-900">
+                            <Card className="aspect-video w-full max-w-6xl overflow-hidden border-0 shadow-2xl">
+                                <GamePlayer 
+                                    project={project}
+                                    startNodeId={previewMode === 'from-current' ? selectedNodeId || undefined : undefined}
+                                />
+                            </Card>
+                        </div>
                     </div>
                 )}
             </main>
