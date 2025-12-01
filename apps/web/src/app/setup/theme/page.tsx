@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast } from '@vng/ui';
-import { ArrowLeft, Palette, Plus, X } from 'lucide-react';
+import { ArrowLeft, Palette, Plus, X, Sparkles, Loader2 } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
 import type { ThemeSetting } from '@vng/core';
+import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 
 // 预设主题选项
 const THEME_OPTIONS = [
@@ -39,7 +40,8 @@ const STYLE_OPTIONS = [
 export default function ThemeSetupPage() {
     const router = useRouter();
     const toast = useToast();
-    const { themeSetting, setThemeSetting } = useSetupStore();
+    const { themeSetting, setThemeSetting, worldSetting, characters } = useSetupStore();
+    const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<ThemeSetting>('theme');
     
     const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
     const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
@@ -92,6 +94,43 @@ export default function ThemeSetupPage() {
         setSelectedStyles(selectedStyles.filter(s => s !== style));
     };
 
+    // AI 自动建议主题和风格
+    const handleAutocomplete = async () => {
+        const currentData = {
+            themes: selectedThemes,
+            styles: selectedStyles,
+            tone,
+            description,
+        };
+        
+        const result = await autocomplete(currentData, {
+            worldSetting: worldSetting?.name,
+            existingItems: characters.map(c => c.displayName),
+        });
+        
+        if (result) {
+            // 合并 AI 建议的主题和风格
+            if (result.themes?.length) {
+                setSelectedThemes(prev => {
+                    const newThemes = result.themes.filter(t => !prev.includes(t));
+                    return [...prev, ...newThemes];
+                });
+            }
+            if (result.styles?.length) {
+                setSelectedStyles(prev => {
+                    const newStyles = result.styles.filter(s => !prev.includes(s));
+                    return [...prev, ...newStyles];
+                });
+            }
+            if (result.tone && !tone) {
+                setTone(result.tone);
+            }
+            if (result.description && !description) {
+                setDescription(result.description);
+            }
+        }
+    };
+
     const handleSave = () => {
         if (selectedThemes.length === 0 || selectedStyles.length === 0) {
             toast.warning('请至少选择一个主题和一个风格');
@@ -119,14 +158,30 @@ export default function ThemeSetupPage() {
                         <h1 className="text-4xl font-bold text-white mb-2">🎨 故事主题风格</h1>
                         <p className="text-white/80">明确故事的核心主题与风格基调，让 AI 生成符合预期的剧情</p>
                     </div>
-                    <Button
-                        variant="outline"
-                        className="bg-white/20 text-white border-white/40 hover:bg-white/30"
-                        onClick={() => router.push('/setup')}
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        返回
-                    </Button>
+                    <div className="flex gap-3">
+                        {/* AI 自动建议按钮 */}
+                        <Button
+                            variant="outline"
+                            onClick={handleAutocomplete}
+                            disabled={isAutocompleting}
+                            className="bg-amber-500/20 text-white border-amber-400/40 hover:bg-amber-500/30"
+                        >
+                            {isAutocompleting ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <Sparkles className="w-4 h-4 mr-2" />
+                            )}
+                            {isAutocompleting ? 'AI推荐中...' : 'AI帮我选'}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+                            onClick={() => router.push('/setup')}
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            返回
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="space-y-6">

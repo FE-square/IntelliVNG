@@ -7,6 +7,7 @@ import { Plus, Trash2, Save, ArrowLeft, Users, Wand2, Sparkles, Loader2 } from '
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
 import type { Character } from '@vng/core';
+import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 
 // 生成状态类型
 interface GenerationStatus {
@@ -20,6 +21,7 @@ export default function CharactersPage() {
     const toast = useToast();
     const { confirm, DialogComponent } = useConfirmDialog();
     const { characters, addCharacter, updateCharacter, removeCharacter, worldSetting, themeSetting } = useSetupStore();
+    const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<Character>('character');
     
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState<Partial<Character>>({
@@ -54,7 +56,6 @@ export default function CharactersPage() {
     // 生成状态
     const [spriteStatus, setSpriteStatus] = useState<GenerationStatus>({ status: 'idle', message: '', progress: 0 });
     const [avatarStatus, setAvatarStatus] = useState<GenerationStatus>({ status: 'idle', message: '', progress: 0 });
-    const [isAutocompleting, setIsAutocompleting] = useState(false);
 
     const handleNewCharacter = () => {
         setEditingId('new');
@@ -74,45 +75,23 @@ export default function CharactersPage() {
         setAvatarStatus({ status: 'idle', message: '', progress: 0 });
     };
 
-    // AI自动补全表单
+    // AI自动补全表单（使用通用 Hook）
     const handleAutocomplete = async () => {
-        setIsAutocompleting(true);
-        try {
-            const response = await fetch('/api/autocomplete-character', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    partialData: formData,
-                    context: {
-                        storyGenre: themeSetting?.themes?.[0],
-                        worldSetting: worldSetting?.name,
-                        existingCharacters: characters.map(c => c.displayName),
-                    },
-                }),
+        const result = await autocomplete(formData, {
+            genre: themeSetting?.themes?.[0],
+            worldSetting: worldSetting?.name,
+            existingItems: characters.map(c => c.displayName),
+        });
+        
+        if (result) {
+            setFormData({
+                ...formData,
+                ...result,
+                // 保留已有的立绘和头像
+                sprites: formData.sprites,
+                avatarUrl: formData.avatarUrl || result.avatarUrl,
+                defaultSpriteId: formData.defaultSpriteId,
             });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.details || error.error || '自动补全失败');
-            }
-
-            const result = await response.json();
-            if (result.success && result.data) {
-                setFormData({
-                    ...formData,
-                    ...result.data,
-                    // 保留已有的立绘和头像
-                    sprites: formData.sprites,
-                    avatarUrl: formData.avatarUrl || result.data.avatarUrl,
-                    defaultSpriteId: formData.defaultSpriteId,
-                });
-                toast.success('AI已帮你补全角色信息', '请检查并调整后保存 ✨');
-            }
-        } catch (error) {
-            console.error('自动补全失败:', error);
-            toast.error('自动补全失败', error instanceof Error ? error.message : '请重试');
-        } finally {
-            setIsAutocompleting(false);
         }
     };
 

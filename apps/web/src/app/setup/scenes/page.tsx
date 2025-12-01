@@ -3,15 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardContent, useToast } from '@vng/ui';
-import { ArrowLeft, Plus, Trash2, Wand2, Edit2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Wand2, Edit2, Sparkles, Loader2 } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
 import type { Scene } from '@vng/core';
+import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 
 export default function ScenesPage() {
     const router = useRouter();
     const toast = useToast();
-    const { scenes, addScene, updateScene, removeScene } = useSetupStore();
+    const { scenes, addScene, updateScene, removeScene, worldSetting, themeSetting } = useSetupStore();
+    const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<Scene>('scene');
     
     const [editingId, setEditingId] = useState<string | null>(null);
     const [currentScene, setCurrentScene] = useState<Scene>({
@@ -25,6 +27,24 @@ export default function ScenesPage() {
         imageUrl: '',
     });
     const [isGeneratingBackground, setIsGeneratingBackground] = useState(false);
+
+    // AI 自动补全场景表单
+    const handleAutocomplete = async () => {
+        const result = await autocomplete(currentScene, {
+            genre: themeSetting?.themes?.[0],
+            worldSetting: worldSetting?.name,
+            existingItems: scenes.map(s => s.name),
+        });
+        
+        if (result) {
+            setCurrentScene({
+                ...currentScene,
+                ...result,
+                // 保留已有的背景图
+                imageUrl: currentScene.imageUrl || result.imageUrl,
+            });
+        }
+    };
 
     const handleSaveScene = () => {
         if (currentScene.name && currentScene.type && currentScene.atmosphere) {
@@ -140,9 +160,28 @@ export default function ScenesPage() {
                     {/* 添加场景表单 */}
                     <Card>
                         <CardContent className="p-6">
-                            <h3 className="font-semibold text-lg mb-4">
-                                {editingId ? '编辑场景' : '添加新场景'}
-                            </h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-semibold text-lg">
+                                    {editingId ? '编辑场景' : '添加新场景'}
+                                </h3>
+                                {/* AI 自动补全按钮 */}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleAutocomplete}
+                                    disabled={isAutocompleting}
+                                    className="gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 hover:from-amber-100 hover:to-orange-100"
+                                >
+                                    {isAutocompleting ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Sparkles className="w-4 h-4 text-amber-600" />
+                                    )}
+                                    <span className="text-amber-700">
+                                        {isAutocompleting ? 'AI补全中...' : 'AI帮我填'}
+                                    </span>
+                                </Button>
+                            </div>
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1">

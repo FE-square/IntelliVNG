@@ -3,15 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast } from '@vng/ui';
-import { ArrowLeft, Globe, Save } from 'lucide-react';
+import { ArrowLeft, Globe, Save, Sparkles, Loader2 } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
 import type { WorldSetting } from '@vng/core';
+import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 
 export default function WorldSetupPage() {
     const router = useRouter();
     const toast = useToast();
-    const { worldSetting, setWorldSetting } = useSetupStore();
+    const { worldSetting, setWorldSetting, themeSetting } = useSetupStore();
+    const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<WorldSetting>('world');
     
     const [formData, setFormData] = useState<Partial<WorldSetting>>({
         name: '',
@@ -29,6 +31,20 @@ export default function WorldSetupPage() {
             setFormData(worldSetting);
         }
     }, [worldSetting]);
+
+    // AI 自动补全
+    const handleAutocomplete = async () => {
+        const result = await autocomplete(formData, {
+            genre: themeSetting?.themes?.[0],
+        });
+        
+        if (result) {
+            setFormData({
+                ...formData,
+                ...result,
+            });
+        }
+    };
 
     const handleSave = () => {
         if (!formData.name || !formData.era || !formData.location) {
@@ -72,10 +88,28 @@ export default function WorldSetupPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Globe className="w-5 h-5" />
-                            定义世界观
-                        </CardTitle>
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="flex items-center gap-2">
+                                <Globe className="w-5 h-5" />
+                                定义世界观
+                            </CardTitle>
+                            {/* AI 自动补全按钮 */}
+                            <Button
+                                variant="outline"
+                                onClick={handleAutocomplete}
+                                disabled={isAutocompleting}
+                                className="gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 hover:from-amber-100 hover:to-orange-100"
+                            >
+                                {isAutocompleting ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-4 h-4 text-amber-600" />
+                                )}
+                                <span className="text-amber-700">
+                                    {isAutocompleting ? 'AI补全中...' : 'AI帮我填'}
+                                </span>
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {/* 基础信息 */}
