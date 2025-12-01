@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { GameGenerator } from '../services/game-generator';
 import { ImageGenerator, ImageType } from '../services/image-generator';
-import { CharacterAutocomplete } from '../services/character-autocomplete';
+import { FormAutocomplete, FormType } from '../services/form-autocomplete';
 import { getCacheKey, getFromCache, saveToCache, saveProject, getProject, listProjects } from '../services/cache';
 
 export const gameRoutes = new Hono();
@@ -303,55 +303,81 @@ gameRoutes.post(
 );
 
 // =====================================================
-// 角色自动补全 API
+// 通用表单自动补全 API
 // =====================================================
 
-const autocompleteCharacterSchema = z.object({
-    partialData: z.object({
-        name: z.string().optional(),
-        displayName: z.string().optional(),
-        description: z.string().optional(),
-        gender: z.string().optional(),
-        age: z.string().optional(),
-        identity: z.string().optional(),
-        appearance: z.object({
-            hairStyle: z.string().optional(),
-            clothing: z.string().optional(),
-            facialFeatures: z.string().optional(),
-            bodyType: z.string().optional(),
-            height: z.string().optional(),
-            otherFeatures: z.string().optional(),
-        }).optional(),
-        personality: z.object({
-            traits: z.array(z.string()).optional(),
-            temperament: z.string().optional(),
-            values: z.string().optional(),
-        }).optional(),
-        coreTraits: z.object({
-            specialSkills: z.array(z.string()).optional(),
-            obsession: z.string().optional(),
-            backstory: z.string().optional(),
-        }).optional(),
-    }),
+const autocompleteFormSchema = z.object({
+    formType: z.enum(['character', 'world', 'scene', 'theme', 'background']),
+    partialData: z.record(z.any()),
     context: z.object({
-        storyGenre: z.string().optional(),
+        projectTitle: z.string().optional(),
+        genre: z.string().optional(),
         worldSetting: z.string().optional(),
-        existingCharacters: z.array(z.string()).optional(),
+        existingItems: z.array(z.string()).optional(),
     }).optional(),
 });
 
-// POST /api/game/autocomplete-character - AI自动补全角色信息
+// POST /api/game/autocomplete-form - 通用表单AI自动补全
 gameRoutes.post(
-    '/autocomplete-character',
-    zValidator('json', autocompleteCharacterSchema),
+    '/autocomplete-form',
+    zValidator('json', autocompleteFormSchema),
     async (c) => {
         try {
-            const { partialData, context } = c.req.valid('json');
+            const { formType, partialData, context } = c.req.valid('json');
             
-            console.log(`[GameRoute] 自动补全角色信息`);
+            console.log(`[GameRoute] 自动补全表单: ${formType}`);
             
-            const autocomplete = new CharacterAutocomplete();
-            const result = await autocomplete.autocomplete(partialData, context);
+            const autocomplete = new FormAutocomplete();
+            const result = await autocomplete.autocomplete({
+                formType: formType as FormType,
+                partialData,
+                context,
+            });
+            
+            if (!result.success) {
+                return c.json({
+                    success: false,
+                    error: result.error || '自动补全失败',
+                }, 500);
+            }
+            
+            return c.json({
+                success: true,
+                data: result.data,
+            });
+        } catch (error) {
+            console.error('[GameRoute] 表单自动补全错误:', error);
+            
+            const message = error instanceof Error ? error.message : '未知错误';
+            
+            return c.json({
+                success: false,
+                error: '自动补全失败',
+                details: message,
+            }, 500);
+        }
+    }
+);
+
+// POST /api/game/autocomplete-character - 兼容旧API（转发到通用接口）
+gameRoutes.post(
+    '/autocomplete-character',
+    async (c) => {
+        try {
+            const body = await c.req.json();
+            
+            console.log(`[GameRoute] 兼容旧API: autocomplete-character`);
+            
+            const autocomplete = new FormAutocomplete();
+            const result = await autocomplete.autocomplete({
+                formType: 'character',
+                partialData: body.partialData || {},
+                context: {
+                    genre: body.context?.storyGenre,
+                    worldSetting: body.context?.worldSetting,
+                    existingItems: body.context?.existingCharacters,
+                },
+            });
             
             if (!result.success) {
                 return c.json({
