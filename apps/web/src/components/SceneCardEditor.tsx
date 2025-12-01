@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Card, CardContent, Button } from '@vng/ui';
-import { Plus, Trash2, GripVertical, Edit2, Save, X, User } from 'lucide-react';
-import type { GameProject } from '@vng/core';
+import { Trash2, Edit2, Save, X, User, MessageSquare } from 'lucide-react';
+import type { GameProject, StoryNode } from '@vng/core';
 
 interface SceneCardEditorProps {
     project: GameProject;
@@ -11,7 +11,7 @@ interface SceneCardEditorProps {
 }
 
 export function SceneCardEditor({ project, onUpdate }: SceneCardEditorProps) {
-    const [scenes, setScenes] = useState(project.script || []);
+    const [scenes, setScenes] = useState<StoryNode[]>(project.script || []);
     const [editingId, setEditingId] = useState<string | null>(null);
 
     // 删除场景
@@ -23,11 +23,11 @@ export function SceneCardEditor({ project, onUpdate }: SceneCardEditorProps) {
         }
     };
 
-    // 保存编辑
-    const handleSave = (id: string, newText: string) => {
+    // 保存编辑 - 更新节点的 title 或 narration
+    const handleSave = (id: string, updates: Partial<StoryNode>) => {
         const newScenes = scenes.map(s => {
-            if (s.id === id && s.type === 'dialogue') {
-                return { ...s, text: newText };
+            if (s.id === id) {
+                return { ...s, ...updates };
             }
             return s;
         });
@@ -55,7 +55,9 @@ export function SceneCardEditor({ project, onUpdate }: SceneCardEditorProps) {
                 {/* 场景卡片列表 */}
                 <div className="space-y-4">
                     {scenes.map((scene, index) => {
-                        const character = scene.type === 'dialogue' ? getCharacter(scene.characterId || '') : undefined;
+                        // 获取第一个对话的角色
+                        const firstDialogue = scene.dialogues?.[0];
+                        const character = firstDialogue ? getCharacter(firstDialogue.characterId) : undefined;
                         const isEditing = editingId === scene.id;
                         
                         return (
@@ -66,7 +68,7 @@ export function SceneCardEditor({ project, onUpdate }: SceneCardEditorProps) {
                                 character={character}
                                 isEditing={isEditing}
                                 onEdit={() => setEditingId(scene.id)}
-                                onSave={(newText) => handleSave(scene.id, newText)}
+                                onSave={(updates) => handleSave(scene.id, updates)}
                                 onCancel={() => setEditingId(null)}
                                 onDelete={() => handleDelete(scene.id)}
                             />
@@ -86,12 +88,12 @@ export function SceneCardEditor({ project, onUpdate }: SceneCardEditorProps) {
 
 // 单个场景卡片组件
 interface SceneCardProps {
-    scene: any;
+    scene: StoryNode;
     index: number;
-    character?: any;
+    character?: ReturnType<typeof Array.prototype.find>;
     isEditing: boolean;
     onEdit: () => void;
-    onSave: (newText: string) => void;
+    onSave: (updates: Partial<StoryNode>) => void;
     onCancel: () => void;
     onDelete: () => void;
 }
@@ -106,7 +108,8 @@ function SceneCard({
     onCancel, 
     onDelete
 }: SceneCardProps) {
-    const [editText, setEditText] = useState(scene.text || '');
+    const [editTitle, setEditTitle] = useState(scene.title || '');
+    const [editNarration, setEditNarration] = useState(scene.narration || '');
 
     if (isEditing) {
         return (
@@ -114,24 +117,38 @@ function SceneCard({
                 <CardContent className="p-6">
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium mb-2">对话内容</label>
+                            <label className="block text-sm font-medium mb-2">场景标题</label>
+                            <input
+                                type="text"
+                                className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-2">旁白/描述</label>
                             <textarea
                                 className="w-full border rounded px-3 py-2 min-h-[100px] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                value={editText}
-                                onChange={(e) => setEditText(e.target.value)}
+                                value={editNarration}
+                                onChange={(e) => setEditNarration(e.target.value)}
+                                placeholder="场景旁白或背景描述..."
                             />
                         </div>
                         <div className="flex gap-2">
                             <Button
                                 className="flex-1 bg-blue-600 hover:bg-blue-700"
-                                onClick={() => onSave(editText)}
+                                onClick={() => onSave({ title: editTitle, narration: editNarration })}
                             >
-                                <Save className="w-4 h-4 mr-2" />
-                                保存
+                                <span className="flex items-center">
+                                    <Save className="w-4 h-4 mr-2" />
+                                    保存
+                                </span>
                             </Button>
                             <Button variant="outline" onClick={onCancel}>
-                                <X className="w-4 h-4 mr-2" />
-                                取消
+                                <span className="flex items-center">
+                                    <X className="w-4 h-4 mr-2" />
+                                    取消
+                                </span>
                             </Button>
                         </div>
                     </div>
@@ -140,8 +157,20 @@ function SceneCard({
         );
     }
 
+    const typeLabels: Record<string, string> = {
+        'scene': '场景',
+        'branch': '分支',
+        'ending': '结局',
+    };
+
+    const typeBorderColors: Record<string, string> = {
+        'scene': 'border-l-indigo-500',
+        'branch': 'border-l-amber-500',
+        'ending': 'border-l-red-500',
+    };
+
     return (
-        <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-indigo-500">
+        <Card className={`hover:shadow-lg transition-shadow border-l-4 ${typeBorderColors[scene.type] || 'border-l-gray-500'}`}>
             <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                     {/* 序号 */}
@@ -151,34 +180,65 @@ function SceneCard({
 
                     {/* 内容区 */}
                     <div className="flex-1 min-w-0">
-                        {/* 角色信息 */}
-                        {character && (
-                            <div className="flex items-center gap-3 mb-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold shadow-md">
-                                    {character.displayName?.[0] || <User className="w-6 h-6" />}
-                                </div>
-                                <div>
-                                    <div className="font-semibold text-gray-900">{character.displayName}</div>
-                                    <div className="text-xs text-gray-500 flex gap-2">
-                                        {character.identity && <span>身份: {character.identity}</span>}
-                                        {character.gender && <span>· {character.gender === 'male' ? '男' : character.gender === 'female' ? '女' : '其他'}</span>}
-                                    </div>
-                                </div>
+                        {/* 标题 */}
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            {scene.title || '(无标题)'}
+                        </h3>
+
+                        {/* 旁白 */}
+                        {scene.narration && (
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3 italic text-gray-600">
+                                {scene.narration}
                             </div>
                         )}
 
-                        {/* 对话内容 */}
-                        <div className="bg-white border-2 border-gray-200 rounded-lg p-4 mb-3 shadow-sm">
-                            <p className="text-gray-800 text-base leading-relaxed whitespace-pre-wrap">
-                                {scene.text || '(无内容)'}
-                            </p>
-                        </div>
+                        {/* 对话列表 */}
+                        {scene.dialogues && scene.dialogues.length > 0 && (
+                            <div className="space-y-2 mb-3">
+                                {scene.dialogues.slice(0, 3).map((dialogue, idx) => {
+                                    const dialogueChar = character?.id === dialogue.characterId 
+                                        ? character 
+                                        : undefined;
+                                    return (
+                                        <div key={dialogue.id || idx} className="flex items-start gap-2 bg-white border rounded-lg p-2">
+                                            <MessageSquare className="w-4 h-4 text-indigo-500 mt-1 flex-shrink-0" />
+                                            <div className="flex-1">
+                                                {dialogueChar && (
+                                                    <span className="font-medium text-indigo-600 text-sm">
+                                                        {(dialogueChar as any).displayName}:
+                                                    </span>
+                                                )}
+                                                <p className="text-gray-700 text-sm">{dialogue.text}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {scene.dialogues.length > 3 && (
+                                    <p className="text-xs text-gray-500 text-center">
+                                        还有 {scene.dialogues.length - 3} 条对话...
+                                    </p>
+                                )}
+                            </div>
+                        )}
 
                         {/* 元信息 */}
                         <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span className="px-2 py-1 bg-gray-100 rounded">类型: {scene.type}</span>
+                            <span className="px-2 py-1 bg-gray-100 rounded">
+                                类型: {typeLabels[scene.type] || scene.type}
+                            </span>
+                            {scene.isStart && (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded">开始节点</span>
+                            )}
+                            {scene.isEnding && (
+                                <span className="px-2 py-1 bg-red-100 text-red-700 rounded">结局</span>
+                            )}
                             {scene.nextNodeId && (
-                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded">→ 有下一场景</span>
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">→ 有下一场景</span>
+                            )}
+                            {scene.choices && scene.choices.length > 0 && (
+                                <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded">
+                                    {scene.choices.length} 个选项
+                                </span>
                             )}
                         </div>
                     </div>

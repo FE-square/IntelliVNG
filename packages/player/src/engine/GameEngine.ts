@@ -1,4 +1,4 @@
-import { GameProject, ScriptNode, StoryChoice, StoryNode } from '@vng/core';
+import { GameProject, Choice, StoryNode } from '@vng/core';
 
 export class GameEngine {
     private project: GameProject;
@@ -56,11 +56,9 @@ export class GameEngine {
         return undefined;
     }
 
-    public makeChoice(choice: StoryChoice | any) {
-        // ✅ 兼容 targetNodeId 和 nextNodeId两种格式
-        this.currentNodeId = choice.targetNodeId || choice.nextNodeId;
+    public makeChoice(choice: Choice) {
+        this.currentNodeId = choice.targetNodeId;
         this.currentDialogueIndex = 0;
-        // Handle variable setting here
     }
 
     public getCharacter(id: string) {

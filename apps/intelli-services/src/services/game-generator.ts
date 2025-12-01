@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 
-// Types (inline to avoid ESM module resolution issues with workspace packages)
+// Types - 统一使用 StoryNode 格式（与 @vng/core 保持一致）
 interface GameProject {
     id: string;
     title: string;
@@ -16,7 +16,7 @@ interface GameProject {
     };
     characters: Character[];
     backgrounds: Background[];
-    script: ScriptNode[];
+    script: StoryNode[];  // 统一使用 StoryNode
     settings: {
         textSpeed: number;
         autoPlayDelay: number;
@@ -29,7 +29,7 @@ interface Character {
     name: string;
     displayName: string;
     description: string;
-    avatarUrl?: string;     // ✅ 添加头像字段
+    avatarUrl?: string;
     sprites: any[];
     defaultSpriteId: string;
 }
@@ -41,13 +41,50 @@ interface Background {
     imageUrl: string;
 }
 
-interface ScriptNode {
+// StoryNode - 场景导向的故事节点结构
+interface StoryNode {
     id: string;
-    type: string;
+    type: 'scene' | 'branch' | 'ending';
+    isStart?: boolean;
+    isEnding?: boolean;
     position: { x: number; y: number };
-    characterId?: string;
-    text?: string;
-    nextNodeId?: string | null;
+    title: string;
+    sceneName?: string;
+    backgroundId?: string;
+    visualAssets?: {
+        backgroundImageUrl?: string;
+        characters?: Array<{
+            characterId: string;
+            spriteUrl?: string;
+            position?: { x: number; y: number };
+            scale?: number;
+        }>;
+    };
+    audioAssets?: {
+        bgmUrl?: string;
+        bgmVolume?: number;
+        bgmLoop?: boolean;
+    };
+    narration?: string;
+    dialogues: Dialogue[];
+    choices?: Choice[];
+    nextNodeId?: string;
+    notes?: string;
+    tags?: string[];
+}
+
+interface Dialogue {
+    id: string;
+    characterId: string;
+    text: string;
+    emotion?: string;
+}
+
+interface Choice {
+    id: string;
+    text: string;
+    targetNodeId: string;
+    condition?: string;
 }
 
 // Simple ID generator
@@ -490,16 +527,15 @@ ${backgroundsInfo}
             imageUrl: bg.imageUrl || '',  // 场景背景图
         }));
 
-        // 直接使用 AI 生成的 storyNodes，转换为 ScriptNode 格式
-        const script: ScriptNode[] = generated.storyNodes.map(node => {
+        // 直接输出 StoryNode[] 格式（不再转换为旧的 ScriptNode）
+        const script: StoryNode[] = generated.storyNodes.map(node => {
             // 匹配角色ID
-            const dialogues = node.dialogues?.map((d, index) => {
+            const dialogues: Dialogue[] = node.dialogues?.map(d => {
                 const charName = d.characterName.toLowerCase();
                 const char = characterMap.get(charName);
                 
                 if (!char) {
-                    console.warn(`[GameGenerator] 警告: 未找到角色 "${d.characterName}" (小写: "${charName}")`);
-                    console.warn(`[GameGenerator] 可用角色:`, Array.from(characterMap.keys()));
+                    console.warn(`[GameGenerator] 警告: 未找到角色 "${d.characterName}"`);
                 }
                 
                 return {
@@ -509,54 +545,39 @@ ${backgroundsInfo}
                 };
             }) || [];
             
-            // 调试日志: 检查第一个节点的对话
-            if (node.id === generated.storyNodes[0]?.id) {
-                console.log('[GameGenerator] 第一个节点的对话:', dialogues);
-            }
-            
-            // ✅ 匹配 sceneId
-            const sceneId = node.sceneName ? sceneNameToId.get(node.sceneName.toLowerCase()) : undefined;
-            if (node.sceneName && !sceneId) {
-                console.warn(`[GameGenerator] 警告: 未找到场景 "${node.sceneName}" 的ID`);
-            }
+            // 匹配场景背景ID
+            const backgroundId = node.sceneName ? sceneNameToId.get(node.sceneName.toLowerCase()) : undefined;
 
-            // 转换为 ScriptNode
-            const scriptNode: any = {
+            // 构建 StoryNode
+            const storyNode: StoryNode = {
                 id: node.id,
-                type: node.type === 'branch' ? 'choice' : 'dialogue',
+                type: node.type,
+                isStart: node.isStart,
+                isEnding: node.isEnding,
                 position: node.position || { x: 0, y: 0 },
                 title: node.title,
                 sceneName: node.sceneName,
-                sceneId: sceneId,  // ✅ 添加 sceneId
-                isStart: node.isStart,
-                isEnding: node.isEnding,
+                backgroundId,
                 narration: node.narration,
                 dialogues,
             };
 
-            // 分支节点
+            // 分支节点：添加 choices
             if (node.type === 'branch' && node.choices) {
-                scriptNode.type = 'choice';
-                scriptNode.prompt = node.narration || node.title;
-                scriptNode.choices = node.choices.map(c => ({
+                storyNode.choices = node.choices.map(c => ({
                     id: createId(),
                     text: c.text,
-                    nextNodeId: c.targetNodeId,
+                    targetNodeId: c.targetNodeId,
                     condition: c.condition,
                 }));
             }
-            // 普通场景节点
-            else {
-                scriptNode.type = 'dialogue';
-                scriptNode.nextNodeId = node.nextNodeId || null;
-                // 使用第一段对话作为主对话
-                if (dialogues.length > 0) {
-                    scriptNode.characterId = dialogues[0].characterId;
-                    scriptNode.text = dialogues.map(d => d.text).join('\n');
-                }
+            
+            // 非分支节点：添加 nextNodeId
+            if (node.type !== 'branch' && node.nextNodeId) {
+                storyNode.nextNodeId = node.nextNodeId;
             }
 
-            return scriptNode;
+            return storyNode;
         });
 
         const gameProject: GameProject = {

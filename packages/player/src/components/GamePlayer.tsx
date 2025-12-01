@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { GameProject, StoryNode, StoryDialogue } from '@vng/core';
+import { GameProject, StoryNode, Dialogue } from '@vng/core';
 import { GameEngine } from '../engine/GameEngine';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -20,38 +20,10 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
     // ✅ 音频播放器引用
     const bgmRef = useRef<HTMLAudioElement | null>(null);
 
-    // ✅ 每次节点变化时打印节点信息
-    useEffect(() => {
-        if (currentNode) {
-            console.log('[GamePlayer] 当前节点信息:', {
-                id: currentNode.id,
-                title: currentNode.title,
-                type: currentNode.type,
-                hasDialogues: !!currentNode.dialogues,
-                dialoguesCount: currentNode.dialogues?.length || 0,
-                hasChoices: !!currentNode.choices,
-                choicesCount: currentNode.choices?.length || 0,
-                // ✅ 添加音频资源调试
-                hasAudioAssets: !!currentNode.audioAssets,
-                audioAssets: currentNode.audioAssets,
-                bgmUrl: currentNode.audioAssets?.bgmUrl,
-                rawNode: currentNode,
-            });
-        }
-    }, [currentNode]);
     
-    // ✅ 节点切换时自动播放背景音乐
+    // 节点切换时自动播放背景音乐
     useEffect(() => {
-        console.log('[GamePlayer] BGM useEffect 触发:', {
-            hasCurrentNode: !!currentNode,
-            hasAudioAssets: !!currentNode?.audioAssets,
-            hasBgmUrl: !!currentNode?.audioAssets?.bgmUrl,
-            bgmUrl: currentNode?.audioAssets?.bgmUrl,
-        });
-        
         if (!currentNode?.audioAssets?.bgmUrl) {
-            console.log('[GamePlayer] 节点没有配置BGM,跳过播放');
-            // 如果没有BGM,暂停当前BGM
             if (bgmRef.current && !bgmRef.current.paused) {
                 bgmRef.current.pause();
             }
@@ -62,14 +34,6 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
         const bgmVolume = currentNode.audioAssets.bgmVolume ?? 0.5;
         const bgmLoop = currentNode.audioAssets.bgmLoop ?? true;
         
-        console.log('[GamePlayer] 检查BGM配置:', { 
-            bgmUrl, 
-            bgmVolume, 
-            bgmLoop,
-            currentBgmSrc: bgmRef.current?.src,
-        });
-        
-        // ✅ 使用规范化的URL进行比较
         const normalizeUrl = (url: string) => {
             try {
                 return new URL(url, window.location.href).href;
@@ -81,40 +45,25 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
         const normalizedNewUrl = normalizeUrl(bgmUrl);
         const normalizedCurrentUrl = bgmRef.current?.src ? normalizeUrl(bgmRef.current.src) : '';
         
-        // 如果BGM变化了，或者是新节点
         if (!bgmRef.current || normalizedCurrentUrl !== normalizedNewUrl) {
-            // 停止旧BGM
             if (bgmRef.current) {
                 bgmRef.current.pause();
                 bgmRef.current.currentTime = 0;
             }
             
-            console.log('[GamePlayer] 创建新BGM:', normalizedNewUrl);
-            
-            // 创建新BGM
             const audio = new Audio(bgmUrl);
             audio.loop = bgmLoop;
             audio.volume = bgmVolume;
             bgmRef.current = audio;
             
-            // 播放新BGM
             audio.play().catch(err => {
-                console.error('[GamePlayer] BGM播放失败:', {
-                    error: err,
-                    url: bgmUrl,
-                    errorMessage: err.message,
-                });
+                console.error('[GamePlayer] BGM播放失败:', err.message);
             });
-            
-            console.log('[GamePlayer] 开始播放BGM:', { bgmUrl, bgmVolume, bgmLoop });
         } else {
-            // BGM没变，但更新音量和循环设置
-            console.log('[GamePlayer] BGM未变化，更新设置');
             bgmRef.current.volume = bgmVolume;
             bgmRef.current.loop = bgmLoop;
         }
         
-        // 组件卸载时停止BGM
         return () => {
             if (bgmRef.current) {
                 bgmRef.current.pause();
@@ -148,42 +97,8 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
     const currentCharacters = currentNode?.visualAssets?.characters || [];
 
     // 获取当前对话
-    const currentDialogue: StoryDialogue | undefined = currentNode?.dialogues?.[engine.getCurrentDialogueIndex()];
+    const currentDialogue: Dialogue | undefined = currentNode?.dialogues?.[engine.getCurrentDialogueIndex()];
     const currentCharacter = currentDialogue ? project.characters.find(c => c.id === currentDialogue.characterId) : undefined;
-    
-    // ✅ 调试: 打印对话信息
-    console.log('[GamePlayer] 当前对话状态:', {
-        hasDialogue: !!currentDialogue,
-        dialogueText: currentDialogue?.text,
-        characterId: currentDialogue?.characterId,
-        character: currentCharacter?.displayName,
-        dialogueIndex: engine.getCurrentDialogueIndex(),
-        totalDialogues: currentNode?.dialogues?.length,
-    });
-    
-    // ✅ 调试日志: 检查分支节点状态
-    const nodeType = (currentNode as any)?.type;
-    const isBranchNode = nodeType === 'branch' || nodeType === 'choice';
-    
-    if (isBranchNode && currentNode) {
-        console.log('[GamePlayer] 分支节点状态:', {
-            nodeId: currentNode.id,
-            nodeTitle: currentNode.title,
-            nodeType: nodeType,
-            hasChoices: !!currentNode.choices,
-            choicesLength: currentNode.choices?.length || 0,
-            choices: currentNode.choices,  // ✅ 打印完整的choices
-            currentDialogue: currentDialogue ? {
-                id: currentDialogue.id,
-                text: currentDialogue.text?.substring(0, 50),
-                characterId: currentDialogue.characterId,
-            } : null,
-            dialogueIndex: engine.getCurrentDialogueIndex(),
-            totalDialogues: currentNode.dialogues?.length || 0,
-            shouldShowChoices: !currentDialogue,
-            allDialogues: currentNode.dialogues,  // ✅ 打印所有对话
-        });
-    }
     
     // 判断是否是旁白(没有角色或角色是narrator)
     const isNarration = !currentDialogue || !currentDialogue.characterId || currentDialogue.characterId === 'narrator';

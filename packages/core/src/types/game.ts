@@ -17,7 +17,7 @@ export interface GameProject {
     // Content
     characters: Character[];
     backgrounds: Background[];
-    script: ScriptNode[];
+    script: StoryNode[];  // 使用 StoryNode（场景导向）而非 ScriptNode（线性脚本）
 
     // Settings
     settings: GameSettings;
@@ -47,7 +47,6 @@ export interface GameSettings {
 export type TransitionType = 'fade' | 'slide' | 'dissolve' | 'none';
 
 // Forward references to other types to avoid circular dependency issues if imported directly
-// In a real scenario, we might import them, but for now we define interfaces here or rely on the fact that they are used in the GameProject interface
 import { Character } from './character';
 import { Background } from './background';
-import { ScriptNode } from './script';
+import { StoryNode } from './story';

@@ -11,19 +11,16 @@ interface StoryNodeData {
 }
 
 export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
-    const { storyNode, characters } = data;
+    const { storyNode } = data;
     
     // 获取节点颜色
     const getNodeColor = () => {
-        // 开头节点 - 绿色框
         if (storyNode.isStart) {
             return 'bg-green-50 border-green-500 shadow-green-200';
         }
-        // 结尾节点 - 红色框
         if (storyNode.isEnding) {
             return 'bg-red-50 border-red-500 shadow-red-200';
         }
-        // 普通节点样式
         switch (storyNode.type) {
             case 'scene':
                 return 'bg-blue-100 border-blue-400';
@@ -50,7 +47,6 @@ export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
 
     return (
         <div className={`px-4 py-3 rounded-lg border-2 shadow-md min-w-[200px] max-w-[300px] ${getNodeColor()}`}>
-            {/* 输入句柄 */}
             <Handle type="target" position={Position.Top} className="w-3 h-3" />
             
             {/* 节点头部 */}
@@ -58,12 +54,10 @@ export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
                 {getNodeIcon()}
                 <div className="flex-1">
                     <div className="font-semibold text-sm truncate">{storyNode.title}</div>
-                    {/* 场景名称优先展示 */}
                     {storyNode.sceneName && (
                         <div className="text-xs text-gray-500 truncate">🏞️ {storyNode.sceneName}</div>
                     )}
                 </div>
-                {/* 节点类型标签 */}
                 {storyNode.isStart && (
                     <span className="text-xs px-2 py-0.5 bg-green-600 text-white rounded-full">开始</span>
                 )}
@@ -77,7 +71,6 @@ export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
                 {/* 视觉素材缩略图 */}
                 {storyNode.visualAssets && (
                     <div className="mb-2">
-                        {/* 背景图缩略图 */}
                         {storyNode.visualAssets.backgroundImageUrl && (
                             <div className="mb-1">
                                 <img
@@ -87,7 +80,6 @@ export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
                                 />
                             </div>
                         )}
-                        {/* 角色立绘缩略图 */}
                         {storyNode.visualAssets.characters && storyNode.visualAssets.characters.length > 0 && (
                             <div className="flex gap-1">
                                 {storyNode.visualAssets.characters.slice(0, 3).map((char, idx) => (
@@ -128,10 +120,10 @@ export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
                 )}
             </div>
             
-            {/* 输出句柄 */}
             <Handle type="source" position={Position.Bottom} className="w-3 h-3" />
         </div>
     );
 });
 
 StoryNodeComponent.displayName = 'StoryNodeComponent';
+
