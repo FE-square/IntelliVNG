@@ -7,14 +7,14 @@ import {
     applyNodeChanges,
     applyEdgeChanges,
 } from 'reactflow';
-import { GameProject, ScriptNode, Character, Background } from '@vng/core';
+import { GameProject, StoryNode, Character, Background } from '@vng/core';
 
 interface EditorState {
     // Project Data
     project: GameProject | null;
 
     // React Flow State
-    nodes: Node<ScriptNode>[];
+    nodes: Node<StoryNode>[];
     edges: Edge[];
 
     // Selection
@@ -26,8 +26,8 @@ interface EditorState {
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
 
-    addNode: (node: ScriptNode) => void;
-    updateNode: (nodeId: string, data: Partial<ScriptNode>) => void;
+    addNode: (node: StoryNode) => void;
+    updateNode: (nodeId: string, data: Partial<StoryNode>) => void;
     deleteNode: (nodeId: string) => void;
 
     addEdge: (source: string, target: string, sourceHandle?: string) => void;
@@ -53,16 +53,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     selectedNodeId: null,
 
     setProject: (project) => {
-        // Convert ScriptNode[] to React Flow Node[]
+        // Convert StoryNode[] to React Flow Node[]
         const nodes = project.script.map(node => ({
             id: node.id,
-            type: node.type,
+            type: 'storyNode',  // 统一使用 storyNode 类型
             position: node.position,
             data: node,
         }));
 
-        // Generate edges from nextNodeId
-        const edges = generateEdgesFromScript(project.script);
+        // Generate edges from nextNodeId and choices
+        const edges = generateEdgesFromStoryNodes(project.script);
 
         set({ project, nodes, edges });
     },
@@ -75,12 +75,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         set({ edges: applyEdgeChanges(changes, get().edges) });
     },
 
-    addNode: (scriptNode) => {
-        const node: Node<ScriptNode> = {
-            id: scriptNode.id,
-            type: scriptNode.type,
-            position: scriptNode.position,
-            data: scriptNode,
+    addNode: (storyNode) => {
+        const node: Node<StoryNode> = {
+            id: storyNode.id,
+            type: 'storyNode',
+            position: storyNode.position,
+            data: storyNode,
         };
         set({ nodes: [...get().nodes, node] });
     },
@@ -167,11 +167,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     },
 
     exportProject: () => {
-        const { project, nodes, edges } = get();
+        const { project, nodes } = get();
         if (!project) throw new Error('No project loaded');
 
-        // Convert React Flow nodes back to ScriptNode[]
-        const script = nodes.map(node => ({
+        // Convert React Flow nodes back to StoryNode[]
+        const script: StoryNode[] = nodes.map(node => ({
             ...node.data,
             position: node.position,
         }));
@@ -180,12 +180,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     },
 }));
 
-// Helper: Generate edges from script nodes
-function generateEdgesFromScript(script: ScriptNode[]): Edge[] {
+// Helper: Generate edges from StoryNode[]
+function generateEdgesFromStoryNodes(nodes: StoryNode[]): Edge[] {
     const edges: Edge[] = [];
 
-    script.forEach(node => {
-        if ('nextNodeId' in node && node.nextNodeId) {
+    nodes.forEach(node => {
+        // scene 类型: 单线连接
+        if (node.nextNodeId) {
             edges.push({
                 id: `${node.id}-${node.nextNodeId}`,
                 source: node.id,
@@ -193,32 +194,18 @@ function generateEdgesFromScript(script: ScriptNode[]): Edge[] {
             });
         }
 
-        if (node.type === 'choice') {
+        // branch 类型: 多个选项连接
+        if (node.choices && node.choices.length > 0) {
             node.choices.forEach((choice, index) => {
-                edges.push({
-                    id: `${node.id}-${choice.nextNodeId}-${index}`,
-                    source: node.id,
-                    target: choice.nextNodeId,
-                    sourceHandle: `choice-${index}`,
-                    label: choice.text,
-                });
-            });
-        }
-
-        if (node.type === 'condition') {
-            edges.push({
-                id: `${node.id}-true`,
-                source: node.id,
-                target: node.trueNodeId,
-                sourceHandle: 'true',
-                label: 'True',
-            });
-            edges.push({
-                id: `${node.id}-false`,
-                source: node.id,
-                target: node.falseNodeId,
-                sourceHandle: 'false',
-                label: 'False',
+                if (choice.targetNodeId) {
+                    edges.push({
+                        id: `${node.id}-choice-${index}`,
+                        source: node.id,
+                        target: choice.targetNodeId,
+                        sourceHandle: `choice-${index}`,
+                        label: choice.text,
+                    });
+                }
             });
         }
     });

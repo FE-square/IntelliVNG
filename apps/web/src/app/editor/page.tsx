@@ -1,14 +1,15 @@
 "use client";
 /** 故事脚本可视化编辑器 */
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { Loader2, AlertCircle, Home, Save, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { ReactFlowProvider } from 'reactflow';
 import { GamePlayer } from '@vng/player';
 import { Button, Card } from '@vng/ui';
-import { GameProject } from '@vng/core';
-import { FlowEditor } from '@/components/FlowEditor';
-import { saveProject } from '@/lib/projectStorage';
+import { GameProject, StoryNode } from '@vng/core';
+import { FlowEditor } from '@vng/editor';
+import { saveProject, saveDraft, clearDraft } from '@/lib/projectStorage';
+import { exportProjectAsJson } from '@/lib/projectExport';
 
 // Mock Project for testing (fallback)
 const MOCK_PROJECT: GameProject = {
@@ -57,32 +58,48 @@ const MOCK_PROJECT: GameProject = {
     script: [
         {
             id: 'node-1',
-            type: 'scene-change',
+            type: 'scene',
+            isStart: true,
+            title: '初次相遇',
             backgroundId: 'bg-1',
-            transition: 'fade',
+            sceneName: 'City Street',
             nextNodeId: 'node-2',
             position: { x: 100, y: 100 },
+            dialogues: [
+                {
+                    id: 'd1-1',
+                    characterId: 'char-1',
+                    text: 'Hello! Welcome to IntelliVNG.',
+                }
+            ],
         },
         {
             id: 'node-2',
-            type: 'dialogue',
-            characterId: 'char-1',
-            text: 'Hello! Welcome to IntelliVNG.',
+            type: 'scene',
+            title: '对话继续',
+            backgroundId: 'bg-1',
             nextNodeId: 'node-3',
             position: { x: 100, y: 300 },
+            dialogues: [
+                {
+                    id: 'd2-1',
+                    characterId: 'char-2',
+                    text: 'This is a demo of the engine.',
+                }
+            ],
         },
         {
             id: 'node-3',
-            type: 'dialogue',
-            characterId: 'char-2',
-            text: 'This is a demo of the engine.',
-            nextNodeId: null,
+            type: 'ending',
+            isEnding: true,
+            title: '结局',
             position: { x: 100, y: 500 },
+            dialogues: [],
         },
     ]
 };
 
-export default function EditorPage() {
+function EditorPageContent() {
     const searchParams = useSearchParams();
     // 支持两种参数名：projectId 和 project
     const projectId = searchParams.get('projectId') || searchParams.get('project');
@@ -111,15 +128,12 @@ export default function EditorPage() {
 
             // 如果没有 projectId，使用 Mock 数据
             if (!projectId) {
-                console.log('[Editor] No projectId, using mock project');
                 setProject(MOCK_PROJECT);
                 setLoading(false);
                 return;
             }
 
             try {
-                console.log('[Editor] Loading project:', projectId);
-                
                 const response = await fetch(`/api/projects/${projectId}`);
                 
                 if (!response.ok) {
@@ -128,11 +142,6 @@ export default function EditorPage() {
                 }
 
                 const projectData = await response.json();
-                console.log('[Editor] Loaded project:', projectData.title);
-                console.log('[Editor] Characters:', projectData.characters?.length);
-                console.log('[Editor] Script nodes:', projectData.script?.length);
-                console.log('[Editor] First few script nodes:', projectData.script?.slice(0, 3));
-                
                 setProject(projectData);
             } catch (err) {
                 const message = err instanceof Error ? err.message : 'Failed to load project';
@@ -164,25 +173,20 @@ export default function EditorPage() {
         }
     }, [showPreviewMenu]);
     
-    // ✅ 自动保存 - 每30秒
+    // 自动保存草稿 - 每30秒保存到本地
     useEffect(() => {
         if (!project || !projectId) return;
         
-        // 清除之前的定时器
         if (autoSaveTimerRef.current) {
             clearInterval(autoSaveTimerRef.current);
         }
         
-        // 设置新的自动保存定时器
         autoSaveTimerRef.current = setInterval(() => {
-            console.log('[Editor] 自动保存...');
-            const success = saveProject(project, undefined, true);  // autoSaved = true
-            if (success) {
-                setLastSaveTime(new Date());
-            }
-        }, 30000);  // 30秒
+            // 保存草稿到本地（不阻塞）
+            saveDraft(projectId, project);
+            setLastSaveTime(new Date());
+        }, 30000);
         
-        // 清理函数
         return () => {
             if (autoSaveTimerRef.current) {
                 clearInterval(autoSaveTimerRef.current);
@@ -190,24 +194,29 @@ export default function EditorPage() {
         };
     }, [project, projectId]);
     
-    // ✅ 手动保存函数
-    const handleManualSave = (note?: string) => {
+    // 手动保存到后端
+    const handleManualSave = async (note?: string) => {
         if (!project || !projectId) return;
         
         setIsSaving(true);
-        const success = saveProject(project, note, false);  // autoSaved = false
-        
-        if (success) {
-            setLastSaveTime(new Date());
-            setShowSaveNoteDialog(false);
-            setSaveNote('');
-            // 显示成功提示
-            alert('🎉 保存成功!' + (note ? `\n备注: ${note}` : ''));
-        } else {
+        try {
+            const success = await saveProject(project);
+            
+            if (success) {
+                setLastSaveTime(new Date());
+                setShowSaveNoteDialog(false);
+                setSaveNote('');
+                clearDraft(projectId);  // 清除草稿
+                alert('🎉 保存成功!');
+            } else {
+                alert('❌ 保存失败,请重试');
+            }
+        } catch (error) {
+            console.error('[Editor] 保存失败:', error);
             alert('❌ 保存失败,请重试');
+        } finally {
+            setIsSaving(false);
         }
-        
-        setIsSaving(false);
     };
     
     // ✅ 格式化最后保存时间
@@ -382,6 +391,11 @@ export default function EditorPage() {
                     <Button 
                         variant="ghost"
                         className="text-white hover:bg-white/10 border border-white/30 font-medium"
+                        onClick={() => {
+                            if (project) {
+                                exportProjectAsJson(project);
+                            }
+                        }}
                     >
                         📦 导出
                     </Button>
@@ -704,5 +718,21 @@ export default function EditorPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+// 默认导出：用 Suspense 包裹以支持 useSearchParams
+export default function EditorPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+                <div className="text-white text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+                    <p>加载编辑器中...</p>
+                </div>
+            </div>
+        }>
+            <EditorPageContent />
+        </Suspense>
     );
 }
