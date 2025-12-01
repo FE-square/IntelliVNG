@@ -530,5 +530,5 @@ TS语言，monorepo架构，把创作向导主界面、剧本编辑器、游戏�
 前端基于React、React-flow
 Agent引擎可以使用Mastra (https://github.com/mastra-ai/mastra)
 
-有一个别人给我的初步设计在 ARCHITECTURE.md 中，你可以先不看它！
+有一个初步设计在 ARCHITECTURE_DESIGN.md 中，你可以先不看它！
 因为它似乎缺失设定确认编辑阶段，然后 Agent 的设计也不太完善
