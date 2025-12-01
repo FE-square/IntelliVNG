@@ -291,3 +291,173 @@
 - 如果你愿意，下一步我可以基于这份设计，帮你写一版：
   - `types/agents.ts` 的 TS 接口；
   - 以及 `StoryOrchestrator` 的伪代码/流程骨架，方便你在 `intelli-services` 中直接落地。
+
+---
+
+# 基于 Mastra 的 Agent 和 Workflow 两种模式进行实现
+
+[2 tools called]
+
+根据 Mastra 的设计理念，答案是 **分而治之**！让我给你一个清晰的对应关系：
+
+---
+
+## 📊 模式选择策略
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           你的设计                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   Story Planner ─────┐                                                      │
+│   (ToT + JSON)       │                                                      │
+│                      │                                                      │
+│   Node Writer   ─────┼──► 这些是 "做什么" ──► 用 Agent 模式                 │
+│   (Few-Shot CoT)     │                                                      │
+│                      │                                                      │
+│   Story Reviewer ────┘                                                      │
+│   (ReAct + Tools)                                                           │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   Orchestrator ──────────► 这是 "怎么串" ──► 用 Workflow 模式              │
+│   (状态机 + 重试)                                                           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🎯 对应关系
+
+| 你的设计 | Mastra 模式 | 原因 |
+|---------|------------|------|
+| **Story Planner** | `Agent` | 有独立指令、结构化输出、自主决策 |
+| **Node Writer** | `Agent` | 有独立指令、可被并行调用 |
+| **Story Reviewer** | `Agent` + `Tools` | 需要调用工具（ReAct 模式） |
+| **Orchestrator** | `Workflow` | 编排顺序、条件分支、重试逻辑 |
+
+---
+
+## 📐 架构示意
+
+```typescript
+// ============ 1. Agent 层：定义"能力" ============
+
+// agents/storyPlanner.ts
+export const storyPlannerAgent = new Agent({
+  name: 'Story Planner',
+  instructions: '...',  // ToT prompt
+  structuredOutput: { schema: NarrativePlanSchema },
+});
+
+// agents/nodeWriter.ts  
+export const nodeWriterAgent = new Agent({
+  name: 'Node Writer',
+  instructions: '...',  // Few-Shot CoT prompt
+  structuredOutput: { schema: NodeDraftSchema },
+});
+
+// agents/storyReviewer.ts
+export const storyReviewerAgent = new Agent({
+  name: 'Story Reviewer',
+  instructions: '...',  // ReAct prompt
+  tools: { validateStructure, analyzePaths },  // 工具注入
+  structuredOutput: { schema: CriticReportSchema },
+});
+
+// ============ 2. Workflow 层：定义"流程" ============
+
+// workflows/storyGeneration.ts
+export const storyGenerationWorkflow = new Workflow({ name: 'story-generation' })
+  
+  // Step 1: 调用 Planner Agent
+  .step(new Step({
+    id: 'plan',
+    execute: async ({ context }) => {
+      return await storyPlannerAgent.generate(context.triggerData);
+    },
+  }))
+  
+  // Step 2: 并行调用多个 Writer Agent
+  .then(new Step({
+    id: 'write',
+    execute: async ({ context }) => {
+      const plan = context.stepResults.plan;
+      // 并行写作所有节点
+      return await Promise.all(
+        plan.nodes.map(node => nodeWriterAgent.generate({ node, ...context }))
+      );
+    },
+  }))
+  
+  // Step 3: 调用 Reviewer Agent
+  .then(new Step({
+    id: 'review',
+    execute: async ({ context }) => {
+      return await storyReviewerAgent.generate(context.stepResults);
+    },
+  }))
+  
+  // Step 4: 条件分支 (Orchestrator 状态机逻辑)
+  .branch([
+    {
+      condition: ({ context }) => context.stepResults.review.shouldRegenerate,
+      workflow: rewriteWorkflow,  // 重写分支
+    },
+    {
+      condition: ({ context }) => !context.stepResults.review.shouldRegenerate,
+      workflow: finalizeWorkflow, // 完成分支
+    },
+  ])
+  .commit();
+```
+
+---
+
+## 🔑 关键点
+
+### 为什么 Agent 不能单独完成？
+
+Agent 是**无状态**的单次调用，它不知道：
+- 自己被调用的顺序
+- 前一个 Agent 的输出
+- 是否需要重试
+
+这些都需要 **Workflow** 来管理。
+
+### 为什么 Workflow 不能单独完成？
+
+Workflow 只是**流程控制**，它不负责：
+- 定义 prompt 和指令
+- 管理工具调用（ReAct）
+- 结构化输出校验
+
+这些是 **Agent** 的职责。
+
+---
+
+## ✅ 最终答案
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                                                            │
+│   Agent 模式  →  定义每个智能体的"能力边界"                  │
+│                  (指令、工具、输出格式)                      │
+│                                                            │
+│   Workflow 模式 →  编排智能体的"协作流程"                   │
+│                   (顺序、并行、分支、重试)                   │
+│                                                            │
+│   两者结合 = 你设计的 Multi-Agent 系统                      │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
+```
+
+---
+
+要我现在开始实现吗？建议从 **Agent 定义** 开始（因为 Workflow 依赖 Agent）：
+
+1. 先定义 `storyPlannerAgent` + Zod Schema
+2. 再定义 `nodeWriterAgent`
+3. 再定义 `storyReviewerAgent` + Tools
+4. 最后用 `Workflow` 把它们串起来
