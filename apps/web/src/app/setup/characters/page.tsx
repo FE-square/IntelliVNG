@@ -69,10 +69,14 @@ export default function CharactersPage() {
 
         setIsGeneratingSprite(true);
         try {
-            // 构建prompt - ✅ 强化纯色背景要求
-            const prompt = `${formData.displayName}, ${formData.description}, ${formData.appearance?.hairStyle || ''}, ${formData.appearance?.clothing || ''}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量, 清晰`;
+            // 构建prompt 
+            // TODO 提示词等逻辑应该包在后端代码内，前端只传一些必要的输入；
+            // 如果允许直接将提示词传入接口，可能会有接口被当作通用API 恶意滥用的安全风险。
+            const prompt = `${formData.displayName}, ${formData.description}, ${formData.appearance?.hairStyle || ''}, ${formData.appearance?.clothing || ''}；生成一个单人的全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量, 清晰`;
             
             // 调用通义万相API生成图片
+            // TODO 这里接口允许的参数应该设计成具体的ActionType，比如根据关键词生成角色立绘、根据关键词生成场景背景、根据立绘生成角色头像等
+            // 那么参数就类似于 actionType, actionPayload: { description, refImageUrl }等，而不是像现在这样直接传入prompt。
             const response = await fetch('/api/generate-image', {
                 method: 'POST',
                 headers: {
