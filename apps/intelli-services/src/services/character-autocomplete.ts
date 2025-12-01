@@ -40,12 +40,13 @@ interface AutocompleteResult {
 
 export class CharacterAutocomplete {
     private openai: OpenAI;
-
+    private modelName: string;
     constructor() {
         this.openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
             baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
         });
+        this.modelName = process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo';
     }
 
     /**
@@ -181,13 +182,13 @@ ${emptyFields.join('\n')}
 
         try {
             const response = await this.openai.chat.completions.create({
-                model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+                model: this.modelName,
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt },
                 ],
                 temperature: 0.8,
-                max_tokens: 2000,
+                max_tokens: 4000,
             });
 
             const content = response.choices[0]?.message?.content;
