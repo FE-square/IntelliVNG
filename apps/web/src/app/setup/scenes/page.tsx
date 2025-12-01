@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardContent } from '@vng/ui';
+import { Button, Card, CardContent, useToast } from '@vng/ui';
 import { ArrowLeft, Plus, Trash2, Wand2, Edit2 } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
@@ -10,6 +10,7 @@ import type { Scene } from '@vng/core';
 
 export default function ScenesPage() {
     const router = useRouter();
+    const toast = useToast();
     const { scenes, addScene, updateScene, removeScene } = useSetupStore();
     
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -30,12 +31,12 @@ export default function ScenesPage() {
             if (editingId) {
                 // 编辑模式
                 updateScene(editingId, currentScene);
-                alert('✅ 场景更新成功!\n\n背景图已自动同步到素材库 🎨');
+                toast.success('场景更新成功', '背景图已自动同步到素材库 🎨');
                 setEditingId(null);
             } else {
                 // 添加模式
                 addScene(currentScene);
-                alert('✅ 场景添加成功!\n\n背景图已自动添加到素材库 🎨');
+                toast.success('场景添加成功', '背景图已自动添加到素材库 🎨');
             }
             
             // 重置表单
@@ -74,7 +75,7 @@ export default function ScenesPage() {
     // AI生成场景背景图
     const handleGenerateBackground = async () => {
         if (!currentScene.name || !currentScene.type) {
-            alert('请先填写场景名称和类型');
+            toast.warning('请先填写场景名称和类型');
             return;
         }
 
@@ -108,10 +109,10 @@ export default function ScenesPage() {
                 imageUrl,
             });
             
-            alert('✅ 背景图生成成功!\n\n💾 请点击「添加场景」按钮以保存到素材库');
+            toast.success('背景图生成成功', '请点击「添加场景」按钮以保存到素材库 💾');
         } catch (error) {
             console.error('生成失败:', error);
-            alert(`生成失败: ${error instanceof Error ? error.message : '请重试'}`);
+            toast.error('生成失败', error instanceof Error ? error.message : '请重试');
         } finally {
             setIsGeneratingBackground(false);
         }

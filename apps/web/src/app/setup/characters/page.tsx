@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input } from '@vng/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast, useConfirmDialog } from '@vng/ui';
 import { Plus, Trash2, Save, ArrowLeft, Users, Wand2, Sparkles, Loader2 } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
@@ -17,6 +17,8 @@ interface GenerationStatus {
 
 export default function CharactersPage() {
     const router = useRouter();
+    const toast = useToast();
+    const { confirm, DialogComponent } = useConfirmDialog();
     const { characters, addCharacter, updateCharacter, removeCharacter, worldSetting, themeSetting } = useSetupStore();
     
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -104,11 +106,11 @@ export default function CharactersPage() {
                     avatarUrl: formData.avatarUrl || result.data.avatarUrl,
                     defaultSpriteId: formData.defaultSpriteId,
                 });
-                alert('✨ AI已帮你补全角色信息！请检查并调整后保存。');
+                toast.success('AI已帮你补全角色信息', '请检查并调整后保存 ✨');
             }
         } catch (error) {
             console.error('自动补全失败:', error);
-            alert(`自动补全失败: ${error instanceof Error ? error.message : '请重试'}`);
+            toast.error('自动补全失败', error instanceof Error ? error.message : '请重试');
         } finally {
             setIsAutocompleting(false);
         }
@@ -117,7 +119,7 @@ export default function CharactersPage() {
     // AI生成角色立绘（流式状态）
     const handleGenerateSprite = async () => {
         if (!formData.displayName || !formData.description) {
-            alert('请先填写角色名称和描述');
+            toast.warning('请先填写角色名称和描述');
             return;
         }
 
@@ -202,14 +204,14 @@ export default function CharactersPage() {
                 message: error instanceof Error ? error.message : '生成失败', 
                 progress: 0 
             });
-            alert(`生成失败: ${error instanceof Error ? error.message : '请重试'}`);
+            toast.error('生成失败', error instanceof Error ? error.message : '请重试');
         }
     };
 
     // AI生成角色头像（基于立绘参考图）
     const handleGenerateAvatar = async () => {
         if (!formData.displayName || !formData.description) {
-            alert('请先填写角色名称和描述');
+            toast.warning('请先填写角色名称和描述');
             return;
         }
 
@@ -295,14 +297,14 @@ export default function CharactersPage() {
                 message: error instanceof Error ? error.message : '生成失败', 
                 progress: 0 
             });
-            alert(`生成失败: ${error instanceof Error ? error.message : '请重试'}`);
+            toast.error('生成失败', error instanceof Error ? error.message : '请重试');
         }
     };
 
     // 一键生成：先立绘后头像
     const handleGenerateBoth = async () => {
         if (!formData.displayName || !formData.description) {
-            alert('请先填写角色名称和描述');
+            toast.warning('请先填写角色名称和描述');
             return;
         }
 
@@ -318,7 +320,7 @@ export default function CharactersPage() {
 
     const handleSave = () => {
         if (!formData.name || !formData.displayName) {
-            alert('请至少填写角色姓名和显示名称');
+            toast.warning('请至少填写角色姓名和显示名称');
             return;
         }
 
@@ -340,10 +342,10 @@ export default function CharactersPage() {
 
         if (editingId === 'new') {
             addCharacter(character);
-            alert('✅ 角色创建成功!\n\n立绘和头像已自动添加到素材库 🎨');
+            toast.success('角色创建成功', '立绘和头像已自动添加到素材库 🎨');
         } else {
             updateCharacter(editingId!, character);
-            alert('✅ 角色更新成功!\n\n立绘和头像已自动同步到素材库 🎨');
+            toast.success('角色更新成功', '立绘和头像已自动同步到素材库 🎨');
         }
 
         setEditingId(null);
@@ -356,9 +358,17 @@ export default function CharactersPage() {
         setAvatarStatus({ status: 'idle', message: '', progress: 0 });
     };
 
-    const handleDelete = (id: string) => {
-        if (confirm('确定要删除这个角色吗？')) {
+    const handleDelete = async (id: string) => {
+        const confirmed = await confirm({
+            title: '删除角色',
+            message: '确定要删除这个角色吗？此操作不可恢复。',
+            confirmText: '删除',
+            cancelText: '取消',
+            variant: 'danger',
+        });
+        if (confirmed) {
             removeCharacter(id);
+            toast.success('角色已删除');
         }
     };
 
@@ -920,6 +930,7 @@ export default function CharactersPage() {
                     </Button>
                 </div>
             </div>
+            {DialogComponent}
         </main>
     );
 }

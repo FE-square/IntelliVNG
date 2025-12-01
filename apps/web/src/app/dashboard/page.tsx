@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button } from '@vng/ui';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, useToast, useConfirmDialog } from '@vng/ui';
 import { Plus, Trash2, Edit, Calendar, Users, Image as ImageIcon, FileCode, ArrowLeft } from 'lucide-react';
 import { getAllProjects, deleteProject, ProjectMetadata } from '@/lib/projectStorage';
 
@@ -11,6 +11,8 @@ import { getAllProjects, deleteProject, ProjectMetadata } from '@/lib/projectSto
  */
 export default function DashboardPage() {
     const router = useRouter();
+    const toast = useToast();
+    const { confirm, DialogComponent } = useConfirmDialog();
     const [projects, setProjects] = useState<ProjectMetadata[]>([]);
     const [loading, setLoading] = useState(true);
     
@@ -31,12 +33,21 @@ export default function DashboardPage() {
     };
     
     const handleDelete = async (projectId: string, projectTitle: string) => {
-        if (confirm(`确定删除项目「${projectTitle}」吗?此操作不可恢复!`)) {
+        const confirmed = await confirm({
+            title: '删除项目',
+            message: `确定删除项目「${projectTitle}」吗？此操作不可恢复！`,
+            confirmText: '删除',
+            cancelText: '取消',
+            variant: 'danger',
+        });
+        
+        if (confirmed) {
             const success = await deleteProject(projectId);
             if (success) {
+                toast.success('项目已删除');
                 loadProjects(); // 重新加载列表
             } else {
-                alert('删除失败,请重试');
+                toast.error('删除失败', '请重试');
             }
         }
     };

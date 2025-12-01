@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardHeader, CardTitle, CardContent } from '@vng/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent, useToast } from '@vng/ui';
 import { ArrowLeft, Wand2, Users, Globe, Image, AlertCircle, Palette } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { useState } from 'react';
@@ -9,25 +9,26 @@ import { saveProject } from '@/lib/projectStorage';
 
 export default function SummaryPage() {
     const router = useRouter();
+    const toast = useToast();
     const { characters, worldSetting, scenes, themeSetting } = useSetupStore();
     const [isGenerating, setIsGenerating] = useState(false);
 
     const handleGenerate = async () => {
         // 验证必要信息
         if (characters.length === 0) {
-            alert('请至少定义一个角色');
+            toast.warning('请至少定义一个角色');
             return;
         }
         if (!worldSetting) {
-            alert('请定义世界观');
+            toast.warning('请定义世界观');
             return;
         }
         if (scenes.length === 0) {
-            alert('请至少定义一个场景');
+            toast.warning('请至少定义一个场景');
             return;
         }
         if (!themeSetting || themeSetting.themes.length === 0 || themeSetting.styles.length === 0) {
-            alert('请定义故事主题风格');
+            toast.warning('请定义故事主题风格');
             return;
         }
 
@@ -73,11 +74,11 @@ export default function SummaryPage() {
                 router.push(`/editor?projectId=${result.data.id}`);
             } else {
                 console.error('[Summary] Generation failed:', result.error);
-                alert('生成失败：' + (result.error || '未知错误'));
+                toast.error('生成失败', result.error || '未知错误');
             }
         } catch (error) {
             console.error('[Summary] Exception:', error);
-            alert('生成失败，请检查网络连接和后端服务。错误：' + (error instanceof Error ? error.message : String(error)));
+            toast.error('生成失败', '请检查网络连接和后端服务。' + (error instanceof Error ? error.message : String(error)));
         } finally {
             setIsGenerating(false);
         }

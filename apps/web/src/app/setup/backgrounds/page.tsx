@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input } from '@vng/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast } from '@vng/ui';
 import { Plus, Trash2, Save, ArrowLeft, Image } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
@@ -10,6 +10,7 @@ import type { Background } from '@vng/core';
 
 export default function BackgroundsPage() {
     const router = useRouter();
+    const toast = useToast();
     const { backgrounds, addBackground, updateBackground, deleteBackground } = useSetupStore();
     
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export default function BackgroundsPage() {
 
     const handleSave = () => {
         if (!formData.name) {
-            alert('请至少填写背景名称');
+            toast.warning('请至少填写背景名称');
             return;
         }
 

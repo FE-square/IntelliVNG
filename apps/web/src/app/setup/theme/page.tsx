@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input } from '@vng/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast } from '@vng/ui';
 import { ArrowLeft, Palette, Plus, X } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
@@ -38,6 +38,7 @@ const STYLE_OPTIONS = [
 
 export default function ThemeSetupPage() {
     const router = useRouter();
+    const toast = useToast();
     const { themeSetting, setThemeSetting } = useSetupStore();
     
     const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
@@ -93,7 +94,7 @@ export default function ThemeSetupPage() {
 
     const handleSave = () => {
         if (selectedThemes.length === 0 || selectedStyles.length === 0) {
-            alert('请至少选择一个主题和一个风格');
+            toast.warning('请至少选择一个主题和一个风格');
             return;
         }
 
@@ -106,7 +107,7 @@ export default function ThemeSetupPage() {
         };
 
         setThemeSetting(newThemeSetting);
-        alert('主题风格保存成功！');
+        toast.success('主题风格保存成功');
     };
 
     return (

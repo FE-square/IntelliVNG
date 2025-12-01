@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input } from '@vng/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast } from '@vng/ui';
 import { ArrowLeft, Globe, Save } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
@@ -10,6 +10,7 @@ import type { WorldSetting } from '@vng/core';
 
 export default function WorldSetupPage() {
     const router = useRouter();
+    const toast = useToast();
     const { worldSetting, setWorldSetting } = useSetupStore();
     
     const [formData, setFormData] = useState<Partial<WorldSetting>>({
@@ -31,7 +32,7 @@ export default function WorldSetupPage() {
 
     const handleSave = () => {
         if (!formData.name || !formData.era || !formData.location) {
-            alert('请至少填写世界观名称、时代和地域');
+            toast.warning('请至少填写世界观名称、时代和地域');
             return;
         }
 
@@ -47,7 +48,7 @@ export default function WorldSetupPage() {
         };
 
         setWorldSetting(newWorldSetting);
-        alert('世界观设定保存成功！');
+        toast.success('世界观设定保存成功');
     };
 
     return (

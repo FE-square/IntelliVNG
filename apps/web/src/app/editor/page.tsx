@@ -5,8 +5,8 @@ import { Loader2, AlertCircle, Home, Save, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { ReactFlowProvider } from 'reactflow';
 import { GamePlayer } from '@vng/player';
-import { Button, Card } from '@vng/ui';
-import { GameProject, StoryNode } from '@vng/core';
+import { Button, Card, useToast } from '@vng/ui';
+import { GameProject } from '@vng/core';
 import { FlowEditor } from '@vng/editor';
 import { saveProject, saveDraft, clearDraft } from '@/lib/projectStorage';
 import { exportProjectAsJson } from '@/lib/projectExport';
@@ -101,6 +101,7 @@ const MOCK_PROJECT: GameProject = {
 
 function EditorPageContent() {
     const searchParams = useSearchParams();
+    const toast = useToast();
     // 支持两种参数名：projectId 和 project
     const projectId = searchParams.get('projectId') || searchParams.get('project');
     
@@ -207,13 +208,13 @@ function EditorPageContent() {
                 setShowSaveNoteDialog(false);
                 setSaveNote('');
                 clearDraft(projectId);  // 清除草稿
-                alert('🎉 保存成功!');
+                toast.success('保存成功', '项目已保存 🎉');
             } else {
-                alert('❌ 保存失败,请重试');
+                toast.error('保存失败', '请重试');
             }
         } catch (error) {
             console.error('[Editor] 保存失败:', error);
-            alert('❌ 保存失败,请重试');
+            toast.error('保存失败', '请重试');
         } finally {
             setIsSaving(false);
         }
@@ -362,7 +363,7 @@ function EditorPageContent() {
                                 <button
                                     onClick={() => {
                                         if (!selectedNodeId) {
-                                            alert('请先在编辑器中选中一个节点');
+                                            toast.warning('请先在编辑器中选中一个节点');
                                             setShowPreviewMenu(false);
                                             return;
                                         }
@@ -641,7 +642,7 @@ function EditorPageContent() {
                                         <button
                                             onClick={() => {
                                                 if (!selectedNodeId) {
-                                                    alert('请先在编辑器中选中一个节点');
+                                                    toast.warning('请先在编辑器中选中一个节点');
                                                     return;
                                                 }
                                                 setPreviewMode('from-current');
