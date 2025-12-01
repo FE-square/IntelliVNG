@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { GameGenerator } from '../services/game-generator';
+import { ImageGenerator, ImageType } from '../services/image-generator';
 import { getCacheKey, getFromCache, saveToCache, saveProject, getProject, listProjects } from '../services/cache';
 
 export const gameRoutes = new Hono();
@@ -163,3 +164,47 @@ gameRoutes.put('/projects/:id', async (c) => {
         data: updated,
     });
 });
+
+// =====================================================
+// 图片生成 API
+// =====================================================
+
+const generateImageSchema = z.object({
+    prompt: z.string().min(1, 'prompt is required'),
+    type: z.enum(['sprite', 'avatar', 'background']),
+    size: z.string().optional(),
+});
+
+// POST /api/game/generate-image - AI生成图片
+gameRoutes.post(
+    '/generate-image',
+    zValidator('json', generateImageSchema),
+    async (c) => {
+        try {
+            const { prompt, type, size } = c.req.valid('json');
+            
+            console.log(`[GameRoute] 生成图片: type=${type}, prompt=${prompt.substring(0, 50)}...`);
+            
+            const imageGenerator = new ImageGenerator();
+            const result = await imageGenerator.generate(prompt, type as ImageType, size);
+            
+            return c.json({
+                success: true,
+                imageUrl: result.imageUrl,
+                prompt: result.prompt,
+                type: result.type,
+                taskId: result.taskId,
+            });
+        } catch (error) {
+            console.error('[GameRoute] 图片生成错误:', error);
+            
+            const message = error instanceof Error ? error.message : '未知错误';
+            
+            return c.json({
+                success: false,
+                error: '图片生成失败',
+                details: message,
+            }, 500);
+        }
+    }
+);

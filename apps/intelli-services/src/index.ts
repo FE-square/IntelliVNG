@@ -12,8 +12,8 @@ const app = new Hono();
 // Middleware
 app.use('*', logger());
 app.use('*', cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-    allowMethods: ['GET', 'POST', 'OPTIONS'],
+    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type'],
 }));
 
@@ -37,8 +37,12 @@ console.log('🚀 IntelliVNG Services starting...');
 console.log(`📍 Server: http://localhost:${port}`);
 console.log('');
 console.log('📡 API endpoints:');
-console.log(`   POST /api/game/generate  - Generate a visual novel from idea`);
-console.log(`   GET  /health             - Health check`);
+console.log(`   POST /api/game/generate        - Generate a visual novel from idea`);
+console.log(`   POST /api/game/generate-image  - Generate image (sprite/avatar/background)`);
+console.log(`   GET  /api/game/projects        - List all projects`);
+console.log(`   GET  /api/game/projects/:id    - Get project by ID`);
+console.log(`   PUT  /api/game/projects/:id    - Update project`);
+console.log(`   GET  /health                   - Health check`);
 console.log('');
 
 serve({

@@ -1,22 +1,13 @@
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../lib/utils"
 
-// Note: I'm simulating shadcn/ui style but without installing all deps yet, keeping it simple
-// I'll add class-variance-authority and @radix-ui/react-slot to package.json later if needed, 
-// for now let's just use simple props or add them to package.json
-
-// Wait, I didn't add cva and radix-slot to package.json. Let me stick to simple implementation first or update package.json.
-// I'll stick to simple implementation for now to avoid dependency hell in this step.
-
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends React.PropsWithChildren<React.ButtonHTMLAttributes<HTMLButtonElement>> {
     variant?: 'default' | 'outline' | 'ghost' | 'secondary' | 'destructive';
     size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, variant = 'default', size = 'default', ...props }, ref) => {
+    ({ className, variant = 'default', size = 'default', children, ...props }, ref) => {
         const variants = {
             default: "bg-slate-900 text-slate-50 hover:bg-slate-900/90",
             destructive: "bg-red-500 text-slate-50 hover:bg-red-500/90",
@@ -42,7 +33,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 )}
                 ref={ref}
                 {...props}
-            />
+            >
+                {children}
+            </button>
         )
     }
 )
