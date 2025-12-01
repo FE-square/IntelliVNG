@@ -18,16 +18,21 @@ export default function DashboardPage() {
         loadProjects();
     }, []);
     
-    const loadProjects = () => {
+    const loadProjects = async () => {
         setLoading(true);
-        const allProjects = getAllProjects();
-        setProjects(allProjects);
-        setLoading(false);
+        try {
+            const allProjects = await getAllProjects();
+            setProjects(allProjects);
+        } catch (error) {
+            console.error('加载项目失败:', error);
+        } finally {
+            setLoading(false);
+        }
     };
     
-    const handleDelete = (projectId: string, projectTitle: string) => {
+    const handleDelete = async (projectId: string, projectTitle: string) => {
         if (confirm(`确定删除项目「${projectTitle}」吗?此操作不可恢复!`)) {
-            const success = deleteProject(projectId);
+            const success = await deleteProject(projectId);
             if (success) {
                 loadProjects(); // 重新加载列表
             } else {

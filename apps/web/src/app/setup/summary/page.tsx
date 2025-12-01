@@ -61,10 +61,10 @@ export default function SummaryPage() {
             if (result.success) {
                 console.log('[Summary] Generation successful, projectId:', result.data.id);
                 
-                // ✅ 保存项目到本地存储
-                const saved = saveProject(result.data);
+                // ✅ 保存项目到后端
+                const saved = await saveProject(result.data);
                 if (saved) {
-                    console.log('[Summary] 项目已保存到本地存储');
+                    console.log('[Summary] 项目已保存');
                 } else {
                     console.warn('[Summary] 项目保存失败,但仍可继续编辑');
                 }

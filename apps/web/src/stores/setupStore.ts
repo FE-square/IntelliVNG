@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Character, WorldSetting, Scene, ThemeSetting } from '@vng/core';
+import type { Character, WorldSetting, Scene, ThemeSetting, Background } from '@vng/core';
 
 interface SetupState {
     characters: Character[];
     worldSetting: WorldSetting | null;
     scenes: Scene[];
+    backgrounds: Background[];
     themeSetting: ThemeSetting | null;
     
     addCharacter: (character: Character) => void;
@@ -20,6 +21,10 @@ interface SetupState {
     updateScene: (id: string, scene: Partial<Scene>) => void;
     removeScene: (id: string) => void;
     
+    addBackground: (background: Background) => void;
+    updateBackground: (id: string, background: Partial<Background>) => void;
+    deleteBackground: (id: string) => void;
+    
     reset: () => void;
 }
 
@@ -29,6 +34,7 @@ export const useSetupStore = create<SetupState>()(
             characters: [],
             worldSetting: null,
             scenes: [],
+            backgrounds: [],
             themeSetting: null,
             
             addCharacter: (character) =>
@@ -67,8 +73,23 @@ export const useSetupStore = create<SetupState>()(
                     scenes: state.scenes.filter((s) => s.id !== id),
                 })),
             
+            addBackground: (background) =>
+                set((state) => ({ backgrounds: [...state.backgrounds, background] })),
+            
+            updateBackground: (id, updates) =>
+                set((state) => ({
+                    backgrounds: state.backgrounds.map((b) =>
+                        b.id === id ? { ...b, ...updates } : b
+                    ),
+                })),
+            
+            deleteBackground: (id) =>
+                set((state) => ({
+                    backgrounds: state.backgrounds.filter((b) => b.id !== id),
+                })),
+            
             reset: () =>
-                set({ characters: [], worldSetting: null, scenes: [], themeSetting: null }),
+                set({ characters: [], worldSetting: null, scenes: [], backgrounds: [], themeSetting: null }),
         }),
         {
             name: 'vng-setup-storage',

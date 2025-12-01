@@ -53,8 +53,10 @@ export default function AssetsPage() {
                         className="mb-4 bg-white/10 text-white border-white/20"
                         onClick={() => router.back()}
                     >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        返回
+                        <span className="flex items-center">
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            返回
+                        </span>
                     </Button>
                     <h1 className="text-4xl font-bold text-white mb-2">🎨 素材仓库</h1>
                     <p className="text-white/60">集中管理所有角色立绘、头像和场景背景图</p>
@@ -69,8 +71,10 @@ export default function AssetsPage() {
                             : 'bg-white/10 text-white/70 hover:bg-white/20'
                         }
                     >
-                        <Users className="w-4 h-4 mr-2" />
-                        角色立绘 ({allSprites.length})
+                        <span className="flex items-center">
+                            <Users className="w-4 h-4 mr-2" />
+                            角色立绘 ({allSprites.length})
+                        </span>
                     </Button>
                     <Button
                         onClick={() => setActiveTab('avatars')}
@@ -79,8 +83,10 @@ export default function AssetsPage() {
                             : 'bg-white/10 text-white/70 hover:bg-white/20'
                         }
                     >
-                        <ImageIcon className="w-4 h-4 mr-2" />
-                        角色头像 ({allAvatars.length})
+                        <span className="flex items-center">
+                            <ImageIcon className="w-4 h-4 mr-2" />
+                            角色头像 ({allAvatars.length})
+                        </span>
                     </Button>
                     <Button
                         onClick={() => setActiveTab('backgrounds')}
@@ -89,8 +95,10 @@ export default function AssetsPage() {
                             : 'bg-white/10 text-white/70 hover:bg-white/20'
                         }
                     >
-                        <MapPin className="w-4 h-4 mr-2" />
-                        场景背景 ({allBackgrounds.length})
+                        <span className="flex items-center">
+                            <MapPin className="w-4 h-4 mr-2" />
+                            场景背景 ({allBackgrounds.length})
+                        </span>
                     </Button>
                 </div>
 

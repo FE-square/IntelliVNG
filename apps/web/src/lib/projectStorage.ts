@@ -1,12 +1,184 @@
 /**
- * 项目本地存储管理
- * 使用 localStorage 持久化项目数据
+ * 项目存储管理
+ * 
+ * 设计原则：
+ * - 项目数据统一存储在后端 (intelli-services)
+ * - 前端只缓存：表单状态、用户偏好等临时数据
+ * - 此模块封装后端 API 调用
  */
 
 import { GameProject } from '@vng/core';
 
-const PROJECTS_KEY = 'intelligvng_projects';
-const CURRENT_PROJECT_KEY = 'intelligvng_current_project';
+const BACKEND_URL = process.env.NEXT_PUBLIC_INTELLI_SERVICES_URL || 'http://localhost:4000';
+
+// =====================================================
+// 后端 API 封装
+// =====================================================
+
+/**
+ * 获取所有项目列表
+ */
+export async function getAllProjects(): Promise<ProjectMetadata[]> {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/game/projects`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // 转换为 ProjectMetadata 格式
+        return (data.data || []).map((p: GameProject) => ({
+            id: p.id,
+            title: p.title,
+            description: p.description || '',
+            coverImage: p.backgrounds?.[0]?.imageUrl,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+            genre: p.meta?.genre,
+            artStyle: p.meta?.artStyle,
+            characterCount: p.characters?.length || 0,
+            sceneCount: p.backgrounds?.length || 0,
+            nodeCount: p.script?.length || 0,
+        }));
+    } catch (error) {
+        console.error('[ProjectStorage] 获取项目列表失败:', error);
+        return [];
+    }
+}
+
+/**
+ * 获取完整项目数据
+ */
+export async function getProject(projectId: string): Promise<GameProject | null> {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/game/projects/${projectId}`);
+        if (!response.ok) {
+            if (response.status === 404) return null;
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        return data.data || null;
+    } catch (error) {
+        console.error('[ProjectStorage] 获取项目失败:', error);
+        return null;
+    }
+}
+
+/**
+ * 保存项目到后端
+ */
+export async function saveProject(project: GameProject): Promise<boolean> {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/game/projects/${project.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(project),
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        console.log('[ProjectStorage] 项目保存成功:', project.id);
+        return true;
+    } catch (error) {
+        console.error('[ProjectStorage] 保存项目失败:', error);
+        return false;
+    }
+}
+
+// =====================================================
+// 本地缓存（仅用于临时状态）
+// =====================================================
+
+const CURRENT_PROJECT_KEY = 'vng_current_project_id';
+const DRAFT_PREFIX = 'vng_draft_';
+
+/**
+ * 获取当前项目ID
+ */
+export function getCurrentProjectId(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(CURRENT_PROJECT_KEY);
+}
+
+/**
+ * 设置当前项目ID
+ */
+export function setCurrentProjectId(projectId: string): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(CURRENT_PROJECT_KEY, projectId);
+}
+
+/**
+ * 清除当前项目ID
+ */
+export function clearCurrentProjectId(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(CURRENT_PROJECT_KEY);
+}
+
+/**
+ * 保存草稿（编辑器临时状态）
+ */
+export function saveDraft(projectId: string, data: Partial<GameProject>): void {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(`${DRAFT_PREFIX}${projectId}`, JSON.stringify({
+            ...data,
+            savedAt: new Date().toISOString(),
+        }));
+    } catch (error) {
+        console.error('[ProjectStorage] 保存草稿失败:', error);
+    }
+}
+
+/**
+ * 获取草稿
+ */
+export function getDraft(projectId: string): (Partial<GameProject> & { savedAt: string }) | null {
+    if (typeof window === 'undefined') return null;
+    try {
+        const data = localStorage.getItem(`${DRAFT_PREFIX}${projectId}`);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('[ProjectStorage] 获取草稿失败:', error);
+        return null;
+    }
+}
+
+/**
+ * 清除草稿
+ */
+export function clearDraft(projectId: string): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(`${DRAFT_PREFIX}${projectId}`);
+}
+
+/**
+ * 删除项目（调用后端 API）
+ * 注意：后端暂未实现删除接口，此函数预留
+ */
+export async function deleteProject(projectId: string): Promise<boolean> {
+    try {
+        // TODO: 后端实现删除接口后启用
+        // const response = await fetch(`${BACKEND_URL}/api/game/projects/${projectId}`, {
+        //     method: 'DELETE',
+        // });
+        // return response.ok;
+        console.warn('[ProjectStorage] 删除功能暂未实现');
+        return false;
+    } catch (error) {
+        console.error('[ProjectStorage] 删除项目失败:', error);
+        return false;
+    }
+}
+
+// =====================================================
+// 类型定义
+// =====================================================
 
 export interface ProjectMetadata {
     id: string;
@@ -20,144 +192,6 @@ export interface ProjectMetadata {
     characterCount: number;
     sceneCount: number;
     nodeCount: number;
-    saveNote?: string;  // ✅ 版本备注
-    autoSaved?: boolean;  // ✅ 是否为自动保存
-}
-
-/**
- * 获取所有项目列表(仅元数据)
- */
-export function getAllProjects(): ProjectMetadata[] {
-    try {
-        const data = localStorage.getItem(PROJECTS_KEY);
-        if (!data) return [];
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('[ProjectStorage] 获取项目列表失败:', error);
-        return [];
-    }
-}
-
-/**
- * 获取完整项目数据
- */
-export function getProject(projectId: string): GameProject | null {
-    try {
-        const key = `intelligvng_project_${projectId}`;
-        const data = localStorage.getItem(key);
-        if (!data) return null;
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('[ProjectStorage] 获取项目失败:', error);
-        return null;
-    }
-}
-
-/**
- * 保存项目
- * @param project 项目数据
- * @param saveNote 版本备注(可选)
- * @param autoSaved 是否为自动保存(默认false)
- */
-export function saveProject(project: GameProject, saveNote?: string, autoSaved: boolean = false): boolean {
-    try {
-        // 保存完整项目数据
-        const projectKey = `intelligvng_project_${project.id}`;
-        localStorage.setItem(projectKey, JSON.stringify(project));
-
-        // 更新项目列表元数据
-        const projects = getAllProjects();
-        const existingIndex = projects.findIndex(p => p.id === project.id);
-        
-        const metadata: ProjectMetadata = {
-            id: project.id,
-            title: project.title,
-            description: project.description || '',
-            coverImage: project.backgrounds?.[0]?.imageUrl,
-            createdAt: existingIndex >= 0 ? projects[existingIndex].createdAt : new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            genre: project.meta?.genre,
-            artStyle: project.meta?.artStyle,
-            characterCount: project.characters?.length || 0,
-            sceneCount: project.backgrounds?.length || 0,
-            nodeCount: project.script?.length || 0,
-            saveNote: saveNote,  // ✅ 保存备注
-            autoSaved: autoSaved,  // ✅ 标记为自动/手动保存
-        };
-
-        if (existingIndex >= 0) {
-            projects[existingIndex] = metadata;
-        } else {
-            projects.unshift(metadata); // 新项目放在最前面
-        }
-
-        localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
-        
-        // 设置为当前项目
-        setCurrentProject(project.id);
-        
-        const saveType = autoSaved ? '自动保存' : '手动保存';
-        console.log(`[ProjectStorage] ${saveType}成功:`, project.id, saveNote || '');
-        return true;
-    } catch (error) {
-        console.error('[ProjectStorage] 保存项目失败:', error);
-        return false;
-    }
-}
-
-/**
- * 删除项目
- */
-export function deleteProject(projectId: string): boolean {
-    try {
-        // 删除完整项目数据
-        const projectKey = `intelligvng_project_${projectId}`;
-        localStorage.removeItem(projectKey);
-
-        // 从列表中移除
-        const projects = getAllProjects();
-        const filtered = projects.filter(p => p.id !== projectId);
-        localStorage.setItem(PROJECTS_KEY, JSON.stringify(filtered));
-
-        // 如果删除的是当前项目,清除当前项目
-        if (getCurrentProjectId() === projectId) {
-            localStorage.removeItem(CURRENT_PROJECT_KEY);
-        }
-
-        console.log('[ProjectStorage] 项目删除成功:', projectId);
-        return true;
-    } catch (error) {
-        console.error('[ProjectStorage] 删除项目失败:', error);
-        return false;
-    }
-}
-
-/**
- * 获取当前项目ID
- */
-export function getCurrentProjectId(): string | null {
-    return localStorage.getItem(CURRENT_PROJECT_KEY);
-}
-
-/**
- * 设置当前项目
- */
-export function setCurrentProject(projectId: string): void {
-    localStorage.setItem(CURRENT_PROJECT_KEY, projectId);
-}
-
-/**
- * 获取当前项目
- */
-export function getCurrentProject(): GameProject | null {
-    const projectId = getCurrentProjectId();
-    if (!projectId) return null;
-    return getProject(projectId);
-}
-
-/**
- * 清除当前项目
- */
-export function clearCurrentProject(): void {
-    localStorage.removeItem(CURRENT_PROJECT_KEY);
+    autoSaved?: boolean;
+    saveNote?: string;
 }
