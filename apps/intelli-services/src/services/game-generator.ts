@@ -29,6 +29,7 @@ interface Character {
     name: string;
     displayName: string;
     description: string;
+    avatarUrl?: string;     // ✅ 添加头像字段
     sprites: any[];
     defaultSpriteId: string;
 }
@@ -53,7 +54,7 @@ interface ScriptNode {
 const createId = () => Math.random().toString(36).substring(2, 12);
 
 // System prompt for the Director Agent
-const DIRECTOR_SYSTEM_PROMPT = `You are a Visual Novel game designer. Create a game design from the user's idea.
+const DIRECTOR_SYSTEM_PROMPT = `You are a Visual Novel game designer. Create a branching story with multiple endings in a FLOWCHART structure.
 
 Output valid JSON with this structure:
 {
@@ -61,44 +62,101 @@ Output valid JSON with this structure:
   "description": "2-3 sentence summary",
   "genre": "romance|mystery|fantasy|horror|slice-of-life|sci-fi",
   "artStyle": "anime|realistic|pixel|watercolor|comic",
-  "characters": [
-    {"name": "string", "displayName": "string", "description": "brief appearance", "personality": "brief", "role": "protagonist|love_interest|antagonist|supporting"}
-  ],
-  "backgrounds": [
-    {"name": "string", "description": "brief visual description"}
-  ],
-  "scenes": [
-    {"background": "bg name", "dialogues": [{"speaker": "name or Narrator", "text": "dialogue"}]}
+  "storyNodes": [
+    {
+      "id": "node-1",
+      "type": "scene|branch|ending",
+      "isStart": true/false,
+      "isEnding": true/false,
+      "title": "Scene title",
+      "sceneName": "Explicit scene name from user-defined scenes",
+      "narration": "Optional background narration",
+      "dialogues": [
+        {"characterName": "name", "text": "dialogue text"}
+      ],
+      "choices": [
+        {"text": "Choice text", "targetNodeId": "node-2", "condition": "Optional condition label"}
+      ],
+      "nextNodeId": "node-2 (for scene type only)",
+      "position": {"x": 100, "y": 100}
+    }
   ]
 }
 
-Rules:
-- 3-4 characters, 3-4 backgrounds, 3-5 scenes with 3-5 dialogues each
-- Keep descriptions SHORT (under 50 words each)
-- Output ONLY the JSON, no markdown`;
+CRITICAL Rules:
+- Create 10-15 story nodes total (NOT dialogue nodes, but STORY SCENE nodes)
+- START with EXACTLY 1 "scene" type node (id: "start", isStart: true)
+- Include 3-5 "branch" type nodes (decision points with choices array)
+- END with 2-3 "ending" type nodes (isEnding: true)
+- Each "scene" node:
+  * Contains 3-6 dialogues
+  * Has nextNodeId pointing to next node (could be scene, branch, or ending)
+  * Represents a complete story beat
+  * MUST set sceneName matching one of user-defined scenes
+- Each "branch" node:
+  * Contains 1-3 dialogues leading to the choice
+  * Has choices array (2-3 choices)
+  * Each choice has targetNodeId AND condition label
+  * MUST be connected FROM an upstream node via that node's nextNodeId
+  * MUST set sceneName matching one of user-defined scenes
+- Each "ending" node:
+  * Contains 2-4 dialogues
+  * No nextNodeId or choices
+  * MUST have isEnding: true
+  * MUST set sceneName matching one of user-defined scenes
+  * Represents different story conclusions
+
+🔴 CRITICAL CONNECTION RULES (MUST FOLLOW):
+1. START NODE → Must connect to next node via nextNodeId
+2. EVERY SCENE NODE → Must have nextNodeId pointing to another node
+3. EVERY BRANCH NODE:
+   - Must be connected FROM an upstream node's nextNodeId (not floating)
+   - EVERY choice MUST have valid targetNodeId
+   - ALL choices must lead to existing nodes
+4. EVERY PATH → Must lead to an ENDING node (no dead ends)
+5. EVERY ENDING NODE → Must be reachable from at least one path
+6. NO ORPHAN NODES → Every node (except start) must be reachable from start
+
+📋 STORY COMPLETENESS RULES:
+- Each branch path must form a COMPLETE story arc from START to ENDING
+- If you create a branch with 3 choices, ensure ALL 3 choices eventually lead to endings
+- Example valid structure:
+  * start → scene1 → branch1 → [choice A → scene2a → ending1, choice B → scene2b → ending2]
+  * Every path: start → ... → ending (complete)
+
+- Set position for visual layout:
+  * Start node: {"x": 400, "y": 50}
+  * Each level deeper: y += 200
+  * Branch out horizontally: x varies by branch
+- Make dialogues meaningful and character-driven
+- Ensure all character names match provided characters
+- MUST use user-defined scene names in sceneName field
+- Output ONLY JSON, no markdown`;
 
 interface GeneratedContent {
     title: string;
     description: string;
     genre: string;
     artStyle: string;
-    characters: Array<{
-        name: string;
-        displayName: string;
-        description: string;
-        personality: string;
-        role: string;
-    }>;
-    backgrounds: Array<{
-        name: string;
-        description: string;
-    }>;
-    scenes: Array<{
-        background: string;
+    storyNodes: Array<{
+        id: string;
+        type: 'scene' | 'branch' | 'ending';
+        isStart?: boolean;
+        isEnding?: boolean;
+        title: string;
+        sceneName?: string;
+        narration?: string;
         dialogues: Array<{
-            speaker: string;
+            characterName: string;
             text: string;
         }>;
+        choices?: Array<{
+            text: string;
+            targetNodeId: string;
+            condition?: string;
+        }>;
+        nextNodeId?: string;
+        position: { x: number; y: number };
     }>;
 }
 
@@ -148,6 +206,145 @@ export class GameGenerator {
 
         // Transform to GameProject format
         return this.transformToGameProject(generated);
+    }
+
+    /**
+     * 新方法：基于用户自定义的角色、世界观、场景和主题风格生成游戏
+     */
+    async generateFromSetup(characters: any[], worldSettingOrBackgrounds: any, scenes?: any[], themeSetting?: any): Promise<GameProject> {
+        // 兼容旧模式：如果没有 scenes，说明是旧模式 (characters + backgrounds)
+        const isLegacyMode = !scenes || !Array.isArray(scenes);
+        const backgrounds = isLegacyMode ? worldSettingOrBackgrounds : [];
+        const worldSetting = isLegacyMode ? null : worldSettingOrBackgrounds;
+        const actualScenes = scenes || [];
+        
+        console.log(`[GameGenerator] Starting generation with ${characters.length} characters`);
+        if (isLegacyMode) {
+            console.log(`[GameGenerator] Legacy mode: ${backgrounds.length} backgrounds`);
+        } else {
+            console.log(`[GameGenerator] New mode: world setting "${worldSetting?.name}" and ${actualScenes.length} scenes`);
+        }
+        console.log(`[GameGenerator] Using model: ${this.modelName}`);
+
+        // 构建角色信息
+        const charactersInfo = characters.map((char, i) => {
+            const traits = char.personality?.traits?.join(', ') || '未知';
+            const skills = char.coreTraits?.specialSkills?.join(', ') || '无';
+            return `${i + 1}. ${char.displayName || char.name} (性别: ${char.gender || '未知'}, 身份: ${char.identity || '未知'})
+   - 性格: ${traits}
+   - 特殊技能: ${skills}
+   - 描述: ${char.description || '无'}
+   - 执念: ${char.coreTraits?.obsession || '无'}`;
+        }).join('\n\n');
+
+        // 构建背景/场景信息
+        let backgroundsInfo = '';
+        if (isLegacyMode) {
+            // 旧模式：背景
+            backgroundsInfo = backgrounds.map((bg: any, i: number) => {
+                return `${i + 1}. ${bg.name}
+   - 世界观: ${bg.worldSetting || '未知'}
+   - 场景描述: ${bg.sceneDetails || bg.description || '无'}`;
+            }).join('\n\n');
+        } else {
+            // 新模式：世界观 + 场景
+            const worldInfo = `世界观：${worldSetting.name}
+- 时代: ${worldSetting.era}
+- 地域: ${worldSetting.location}
+- 规则: ${worldSetting.rules || '无'}
+- 社会结构: ${worldSetting.socialStructure || '无'}`;
+            
+        // 构建场景信息
+        const scenesInfo = actualScenes.map((scene: any, i: number) => {
+            return `${i + 1}. ${scene.name} (类型: ${scene.type}, 氛围: ${scene.atmosphere})
+   - 细节: ${scene.details || '无'}
+   - 功能: ${scene.function || '无'}`;
+        }).join('\n');
+        
+        // 构建主题风格信息
+        let themeInfo = '';
+        if (themeSetting) {
+            const themes = themeSetting.themes?.join('、') || '无';
+            const styles = themeSetting.styles?.join('、') || '无';
+            const tone = themeSetting.tone || '无';
+            themeInfo = `\n\n故事主题风格：
+- 核心主题: ${themes}
+- 剧情风格: ${styles}
+- 整体基调: ${tone}`;
+        }
+        
+        backgroundsInfo = `${worldInfo}\n\n场景设定：\n${scenesInfo}${themeInfo}`;
+        }
+
+        const setupPrompt = `角色设定：
+${charactersInfo}
+
+背景设定：
+${backgroundsInfo}
+
+
+要求：
+1. 创作 10-15 个场景，每个场景 5-10 段对话
+2. 故事要有完整的起承转合（开端、发展、高潮、结局）
+3. 充分展现每个角色的性格特点和技能
+4. 利用背景世界观构建冲突和剧情
+5. 对话要生动、符合角色性格
+6. 必须生成唯一开头 (isStart: true) + 多分支 + 2-3个结尾 (isEnding: true)
+7. 每个节点必须在 sceneName 字段中使用用户定义的场景名称，从上述场景列表中选择
+8. 分支节点的选项必须带有 condition 标签
+9. 严格遵循主题风格要求
+
+🔴 CRITICAL - 节点连接完整性要求:
+- 每个分支的EVERY选项都必须有完整的路径到达结局
+- 不允许有断开的节点或孤立的节点
+- 每条支线都必须是一个完整的故事(有头有尾)
+- 示例: start → scene1 → branch1 → [选项A → scene2a → ending1, 选项B → scene2b → ending2]
+- 确保每个节点都可以从start节点到达
+- 确保每条路径最终都能到达某个ending节点`;
+
+        // Call OpenAI
+        const response = await this.openai.chat.completions.create({
+            model: this.modelName,
+            messages: [
+                { role: 'system', content: DIRECTOR_SYSTEM_PROMPT },
+                { role: 'user', content: setupPrompt },
+            ],
+            temperature: 0.8,
+            max_tokens: 10000,
+        });
+
+        const choice = response.choices[0];
+        const content = choice?.message?.content;
+        
+        if (!content) {
+            throw new Error('No response from AI model');
+        }
+
+        if (choice.finish_reason === 'length') {
+            console.warn('[GameGenerator] Response was truncated due to max_tokens limit');
+        }
+
+        console.log(`[GameGenerator] Received response (${content.length} chars, finish_reason: ${choice.finish_reason})`);
+
+        // Parse the JSON response
+        const generated = this.parseResponse(content);
+
+        // 将新模式的数据转换为旧格式的 backgrounds 数组
+        let finalBackgrounds = backgrounds;
+        if (!isLegacyMode && worldSetting && actualScenes.length > 0) {
+            // 合并世界观和场景为backgrounds
+            finalBackgrounds = actualScenes.map((scene: any) => ({
+                id: scene.id,
+                name: scene.name,
+                description: scene.description || '',
+                imageUrl: scene.imageUrl || '',  // ✅ 添加场景背景图URL
+                worldSetting: `${worldSetting.era} · ${worldSetting.location}`,
+                sceneDetails: `${scene.type} · ${scene.atmosphere}${scene.details ? ' · ' + scene.details : ''}`,
+            }));
+        }
+
+        // Transform with user-provided characters and backgrounds
+        return this.transformToGameProjectWithSetup(generated, characters, finalBackgrounds);
     }
 
     private parseResponse(content: string): GeneratedContent {
@@ -207,65 +404,160 @@ export class GameGenerator {
         return fixed;
     }
 
+    // 旧的 transformToGameProject 已废弃，不再使用
     private transformToGameProject(generated: GeneratedContent): GameProject {
+        throw new Error('该方法已废弃，请使用 generateFromSetup');
+    }
+
+    /**
+     * 使用用户自定义的角色和背景转换为 GameProject
+     */
+    private transformToGameProjectWithSetup(generated: GeneratedContent, userCharacters: any[], userBackgrounds: any[]): GameProject {
         const now = new Date().toISOString();
         const projectId = createId();
 
-        // Create characters
-        const characters: Character[] = generated.characters.map((char) => ({
-            id: createId(),
-            name: char.name,
-            displayName: char.displayName || char.name,
-            description: char.description,
-            sprites: [], // Will be populated when images are generated
-            defaultSpriteId: '',
+        // 1️⃣ 收集 AI 生成的所有角色名称
+        const aiCharacterNames = new Set<string>();
+        generated.storyNodes.forEach(node => {
+            node.dialogues?.forEach(d => {
+                if (d.characterName && d.characterName !== '旁白' && d.characterName !== 'Narrator') {
+                    aiCharacterNames.add(d.characterName);
+                }
+            });
+        });
+        console.log('[GameGenerator] AI生成的角色:', Array.from(aiCharacterNames));
+
+        // 2️⃣ 使用用户定义的角色，补充 ID
+        const characters: Character[] = userCharacters.map((char) => ({
+            ...char,
+            id: char.id || createId(),
+            sprites: char.sprites || [],
+            defaultSpriteId: char.defaultSpriteId || '',
         }));
 
-        // Create character lookup map
-        const characterMap = new Map(characters.map(c => [c.name.toLowerCase(), c]));
+        // 3️⃣ 检测并创建新角色
+        const existingNames = new Set<string>();
+        characters.forEach(c => {
+            existingNames.add(c.name.toLowerCase());
+            if (c.displayName) existingNames.add(c.displayName.toLowerCase());
+        });
 
-        // Create backgrounds
-        const backgrounds: Background[] = generated.backgrounds.map((bg) => ({
-            id: createId(),
-            name: bg.name,
-            description: bg.description,
-            imageUrl: '', // Will be populated when images are generated
-        }));
-
-        // Create background lookup map
-        const backgroundMap = new Map(backgrounds.map(b => [b.name.toLowerCase(), b]));
-
-        // Create script nodes from scenes
-        const script: ScriptNode[] = [];
-        let nodeIndex = 0;
-
-        for (const scene of generated.scenes) {
-            // Find background
-            const bg = backgroundMap.get(scene.background.toLowerCase());
-            
-            for (const dialogue of scene.dialogues) {
-                const isNarrator = dialogue.speaker.toLowerCase() === 'narrator';
-                const character = isNarrator ? null : characterMap.get(dialogue.speaker.toLowerCase());
-                
-                const node: ScriptNode = {
+        aiCharacterNames.forEach(aiName => {
+            if (!existingNames.has(aiName.toLowerCase())) {
+                // 创建新角色(头像和立绘留空,等待后续生成)
+                const newCharacter: Character = {
                     id: createId(),
-                    type: 'dialogue',
-                    position: { x: 100 + (nodeIndex % 5) * 250, y: 100 + Math.floor(nodeIndex / 5) * 150 },
-                    characterId: character?.id || '',
-                    text: dialogue.text,
-                    nextNodeId: null, // Will be linked in post-processing
+                    name: aiName,
+                    displayName: aiName,
+                    description: `AI生成的角色: ${aiName}`,
+                    avatarUrl: '', // ✅ 留空,等待生成
+                    sprites: [],   // ✅ 留空,等待生成
+                    defaultSpriteId: '',
                 };
+                characters.push(newCharacter);
+                console.log(`[GameGenerator] ✅ 自动创建新角色: ${aiName}`);
+            }
+        });
+
+        // 4️⃣ Create character lookup map (by name and displayName)
+        const characterMap = new Map<string, Character>();
+        characters.forEach(c => {
+            // 同时支持 name 和 displayName 匹配
+            characterMap.set(c.name.toLowerCase(), c);
+            if (c.displayName) {
+                characterMap.set(c.displayName.toLowerCase(), c);
+            }
+        });
+        characterMap.set('narrator', { id: 'narrator', name: 'Narrator', displayName: '旁白' } as any);
+        characterMap.set('旁白', { id: 'narrator', name: 'Narrator', displayName: '旁白' } as any);
+        
+        console.log('[GameGenerator] Character map keys:', Array.from(characterMap.keys()));
+        console.log('[GameGenerator] Final characters:', characters.map(c => ({ name: c.name, displayName: c.displayName })));
+
+        // ✅ 5️⃣ 创建场景名称到ID的映射 (从userBackgrounds/场景列表中提取)
+        const sceneNameToId = new Map<string, string>();
+        userBackgrounds.forEach((bg: any) => {
+            if (bg.name) {
+                sceneNameToId.set(bg.name.toLowerCase(), bg.id);
+            }
+        });
+        console.log('[GameGenerator] Scene name to ID map:', Array.from(sceneNameToId.entries()));
+
+        // 使用用户定义的场景列表 (backgrounds为兼容旧代码,实际是场景)
+        const backgrounds: Background[] = userBackgrounds.map((bg) => ({
+            ...bg,
+            id: bg.id || createId(),
+            imageUrl: bg.imageUrl || '',  // 场景背景图
+        }));
+
+        // 直接使用 AI 生成的 storyNodes，转换为 ScriptNode 格式
+        const script: ScriptNode[] = generated.storyNodes.map(node => {
+            // 匹配角色ID
+            const dialogues = node.dialogues?.map((d, index) => {
+                const charName = d.characterName.toLowerCase();
+                const char = characterMap.get(charName);
                 
-                // Link previous node to this one
-                if (script.length > 0) {
-                    const prevNode = script[script.length - 1];
-                    prevNode.nextNodeId = node.id;
+                if (!char) {
+                    console.warn(`[GameGenerator] 警告: 未找到角色 "${d.characterName}" (小写: "${charName}")`);
+                    console.warn(`[GameGenerator] 可用角色:`, Array.from(characterMap.keys()));
                 }
                 
-                script.push(node);
-                nodeIndex++;
+                return {
+                    id: createId(),
+                    characterId: char?.id || '',
+                    text: d.text,
+                };
+            }) || [];
+            
+            // 调试日志: 检查第一个节点的对话
+            if (node.id === generated.storyNodes[0]?.id) {
+                console.log('[GameGenerator] 第一个节点的对话:', dialogues);
             }
-        }
+            
+            // ✅ 匹配 sceneId
+            const sceneId = node.sceneName ? sceneNameToId.get(node.sceneName.toLowerCase()) : undefined;
+            if (node.sceneName && !sceneId) {
+                console.warn(`[GameGenerator] 警告: 未找到场景 "${node.sceneName}" 的ID`);
+            }
+
+            // 转换为 ScriptNode
+            const scriptNode: any = {
+                id: node.id,
+                type: node.type === 'branch' ? 'choice' : 'dialogue',
+                position: node.position || { x: 0, y: 0 },
+                title: node.title,
+                sceneName: node.sceneName,
+                sceneId: sceneId,  // ✅ 添加 sceneId
+                isStart: node.isStart,
+                isEnding: node.isEnding,
+                narration: node.narration,
+                dialogues,
+            };
+
+            // 分支节点
+            if (node.type === 'branch' && node.choices) {
+                scriptNode.type = 'choice';
+                scriptNode.prompt = node.narration || node.title;
+                scriptNode.choices = node.choices.map(c => ({
+                    id: createId(),
+                    text: c.text,
+                    nextNodeId: c.targetNodeId,
+                    condition: c.condition,
+                }));
+            }
+            // 普通场景节点
+            else {
+                scriptNode.type = 'dialogue';
+                scriptNode.nextNodeId = node.nextNodeId || null;
+                // 使用第一段对话作为主对话
+                if (dialogues.length > 0) {
+                    scriptNode.characterId = dialogues[0].characterId;
+                    scriptNode.text = dialogues.map(d => d.text).join('\n');
+                }
+            }
+
+            return scriptNode;
+        });
 
         const gameProject: GameProject = {
             id: projectId,
@@ -276,8 +568,8 @@ export class GameGenerator {
             meta: {
                 author: 'IntelliVNG',
                 version: '1.0.0',
-                genre: generated.genre as GameProject['meta']['genre'],
-                artStyle: generated.artStyle as GameProject['meta']['artStyle'],
+                genre: generated.genre as any,
+                artStyle: generated.artStyle as any,
             },
             characters,
             backgrounds,
@@ -289,9 +581,153 @@ export class GameGenerator {
             },
         };
 
-        console.log(`[GameGenerator] Created project: "${gameProject.title}" with ${characters.length} characters, ${backgrounds.length} backgrounds, ${script.length} dialogue nodes`);
+        console.log(`[GameGenerator] Created project from setup: "${gameProject.title}" with ${characters.length} characters, ${backgrounds.length} backgrounds, ${script.length} story nodes`);
+
+        // ✅ 验证节点连接完整性
+        this.validateNodeConnections(generated.storyNodes);
 
         return gameProject;
+    }
+
+    /**
+     * 验证节点连接完整性
+     */
+    private validateNodeConnections(storyNodes: GeneratedContent['storyNodes']): void {
+        console.log('[GameGenerator] 🔍 开始验证节点连接完整性...');
+        
+        const nodeIds = new Set(storyNodes.map(n => n.id));
+        const reachableFromStart = new Set<string>();
+        const canReachEnding = new Set<string>();
+        
+        // 1. 找到开始节点
+        const startNode = storyNodes.find(n => n.isStart);
+        if (!startNode) {
+            console.error('❌ 错误: 没有找到开始节点 (isStart: true)');
+            return;
+        }
+        
+        // 2. 找到所有结局节点
+        const endingNodes = storyNodes.filter(n => n.isEnding);
+        if (endingNodes.length === 0) {
+            console.error('❌ 错误: 没有找到结局节点 (isEnding: true)');
+            return;
+        }
+        console.log(`✅ 找到 ${endingNodes.length} 个结局节点`);
+        
+        // 3. 从开始节点开始 BFS 遍历，找到所有可达节点
+        const queue = [startNode.id];
+        reachableFromStart.add(startNode.id);
+        
+        while (queue.length > 0) {
+            const currentId = queue.shift()!;
+            const currentNode = storyNodes.find(n => n.id === currentId);
+            if (!currentNode) continue;
+            
+            // 添加 nextNodeId
+            if (currentNode.nextNodeId) {
+                if (!reachableFromStart.has(currentNode.nextNodeId)) {
+                    reachableFromStart.add(currentNode.nextNodeId);
+                    queue.push(currentNode.nextNodeId);
+                }
+            }
+            
+            // 添加 choices
+            if (currentNode.choices) {
+                currentNode.choices.forEach(choice => {
+                    if (choice.targetNodeId && !reachableFromStart.has(choice.targetNodeId)) {
+                        reachableFromStart.add(choice.targetNodeId);
+                        queue.push(choice.targetNodeId);
+                    }
+                });
+            }
+        }
+        
+        // 4. 检查孤立节点
+        const orphanNodes = storyNodes.filter(n => !reachableFromStart.has(n.id));
+        if (orphanNodes.length > 0) {
+            console.error(`❌ 发现 ${orphanNodes.length} 个孤立节点(从 start 无法到达):`);
+            orphanNodes.forEach(n => {
+                console.error(`   - ${n.id}: ${n.title} (type: ${n.type})`);
+            });
+            // ✅ 抛出错误,阻止生成
+            throw new Error(`AI生成的脚本包含 ${orphanNodes.length} 个孤立节点,请重新生成。孤立节点: ${orphanNodes.map(n => n.id).join(', ')}`);
+        } else {
+            console.log('✅ 所有节点都可以从 start 节点到达');
+        }
+        
+        // 5. 检查每个节点是否能到达 ending
+        endingNodes.forEach(ending => canReachEnding.add(ending.id));
+        
+        // 反向 BFS: 从 ending 节点反向搜索
+        const reverseMap = new Map<string, string[]>();
+        storyNodes.forEach(node => {
+            if (node.nextNodeId) {
+                if (!reverseMap.has(node.nextNodeId)) {
+                    reverseMap.set(node.nextNodeId, []);
+                }
+                reverseMap.get(node.nextNodeId)!.push(node.id);
+            }
+            node.choices?.forEach(choice => {
+                if (choice.targetNodeId) {
+                    if (!reverseMap.has(choice.targetNodeId)) {
+                        reverseMap.set(choice.targetNodeId, []);
+                    }
+                    reverseMap.get(choice.targetNodeId)!.push(node.id);
+                }
+            });
+        });
+        
+        const reverseQueue = [...endingNodes.map(n => n.id)];
+        while (reverseQueue.length > 0) {
+            const currentId = reverseQueue.shift()!;
+            const parents = reverseMap.get(currentId) || [];
+            parents.forEach(parentId => {
+                if (!canReachEnding.has(parentId)) {
+                    canReachEnding.add(parentId);
+                    reverseQueue.push(parentId);
+                }
+            });
+        }
+        
+        // 6. 找到死胡同(无法到达 ending)
+        const deadEnds = storyNodes.filter(n => !n.isEnding && !canReachEnding.has(n.id));
+        if (deadEnds.length > 0) {
+            console.error(`❌ 发现 ${deadEnds.length} 个死胡同节点(无法到达 ending):`);
+            deadEnds.forEach(n => {
+                console.error(`   - ${n.id}: ${n.title} (type: ${n.type})`);
+            });
+            // ✅ 抛出错误,阻止生成
+            throw new Error(`AI生成的脚本包含 ${deadEnds.length} 个死胡同节点,请重新生成。死胡同节点: ${deadEnds.map(n => n.id).join(', ')}`);
+        } else {
+            console.log('✅ 所有节点都能到达 ending 节点');
+        }
+        
+        // 7. 检查 nextNodeId 和 choices 的有效性
+        const invalidLinks: string[] = [];
+        storyNodes.forEach(node => {
+            if (node.nextNodeId && !nodeIds.has(node.nextNodeId)) {
+                const error = `${node.id} 的 nextNodeId "${node.nextNodeId}" 不存在`;
+                console.error(`❌ 错误: ${error}`);
+                invalidLinks.push(error);
+            }
+            node.choices?.forEach(choice => {
+                if (choice.targetNodeId && !nodeIds.has(choice.targetNodeId)) {
+                    const error = `${node.id} 的选项 "${choice.text}" 指向不存在的节点 "${choice.targetNodeId}"`;
+                    console.error(`❌ 错误: ${error}`);
+                    invalidLinks.push(error);
+                }
+            });
+        });
+        
+        if (invalidLinks.length > 0) {
+            // ✅ 抛出错误,阻止生成
+            throw new Error(`AI生成的脚本包含 ${invalidLinks.length} 个无效连接,请重新生成。错误: ${invalidLinks.join('; ')}`);
+        } else {
+            console.log('✅ 所有连接都指向有效节点');
+        }
+        
+        // 8. 汇总 - 此时如果有任何问题,已经抛出错误,所以这里只会执行到无问题的情况
+        console.log('✅✅✅ 节点连接验证通过! 所有支线都完整且连通!');
     }
 }
 

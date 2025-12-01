@@ -8,7 +8,18 @@ export const gameRoutes = new Hono();
 
 // Request schema
 const generateSchema = z.object({
-    idea: z.string().min(1, 'Idea is required').max(2000, 'Idea is too long'),
+    // 旧的模式：一句创意
+    idea: z.string().optional(),
+    
+    // 新的模式：角色 + 世界观 + 场景 + 主题风格
+    characters: z.array(z.any()).optional(),
+    worldSetting: z.any().optional(),
+    scenes: z.array(z.any()).optional(),
+    themeSetting: z.any().optional(),
+    
+    // 兼容旧模式：角色 + 背景
+    backgrounds: z.array(z.any()).optional(),
+    
     skipCache: z.boolean().optional().default(false),
 });
 
@@ -18,32 +29,59 @@ gameRoutes.post(
     zValidator('json', generateSchema),
     async (c) => {
         try {
-            const { idea, skipCache } = c.req.valid('json');
-            const cacheKey = getCacheKey(idea);
+            const { idea, characters, worldSetting, scenes, themeSetting, backgrounds, skipCache } = c.req.valid('json');
             
-            console.log(`[GameRoute] Received request for idea: "${idea.slice(0, 50)}..."`);
-            
-            // 检查缓存
-            if (!skipCache) {
-                const cached = getFromCache<any>(cacheKey);
-                if (cached) {
-                    console.log(`[GameRoute] Returning cached result for: "${cached.title}"`);
-                    return c.json({
-                        success: true,
-                        cached: true,
-                        data: cached,
-                    });
-                }
+            // 验证：必须提供 idea 或 characters
+            if (!idea && (!characters || characters.length === 0)) {
+                return c.json({
+                    success: false,
+                    error: 'Either "idea" or "characters" is required',
+                }, 400);
             }
             
-            // 生成新内容
             const generator = new GameGenerator();
-            const result = await generator.generate(idea);
+            let result;
             
-            // 保存到 idea 缓存（下次相同 idea 可以复用）
-            saveToCache(cacheKey, result);
+            // 新模式：基于角色/世界观/场景/主题风格生成
+            if (characters && worldSetting && scenes) {
+                console.log(`[GameRoute] Generating from ${characters.length} characters, world setting, ${scenes.length} scenes, and theme setting`);
+                result = await generator.generateFromSetup(characters, worldSetting, scenes, themeSetting);
+            }
+            // 兼容旧模式：基于角色/背景生成
+            else if (characters && backgrounds) {
+                console.log(`[GameRoute] Generating from ${characters.length} characters and ${backgrounds.length} backgrounds (legacy mode)`);
+                result = await generator.generateFromSetup(characters, backgrounds);
+            }
+            // 旧模式：基于创意生成
+            else if (idea) {
+                const cacheKey = getCacheKey(idea);
+                console.log(`[GameRoute] Received request for idea: "${idea.slice(0, 50)}..."`);
+                
+                // 检查缓存
+                if (!skipCache) {
+                    const cached = getFromCache<any>(cacheKey);
+                    if (cached) {
+                        console.log(`[GameRoute] Returning cached result for: "${cached.title}"`);
+                        return c.json({
+                            success: true,
+                            cached: true,
+                            data: cached,
+                        });
+                    }
+                }
+                
+                result = await generator.generate(idea);
+                
+                // 保存到 idea 缓存
+                saveToCache(cacheKey, result);
+            } else {
+                return c.json({
+                    success: false,
+                    error: 'Invalid request',
+                }, 400);
+            }
             
-            // 同时保存为项目（通过 projectId 可以获取）
+            // 保存为项目
             saveProject(result);
             
             console.log(`[GameRoute] Successfully generated: "${result.title}"`);

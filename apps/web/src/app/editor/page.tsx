@@ -1,12 +1,14 @@
 "use client";
 /** 故事脚本可视化编辑器 */
-import { useEffect, useState } from 'react';
-import { Loader2, AlertCircle, Home } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Loader2, AlertCircle, Home, Save, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { ScriptCanvas, useEditorStore } from '@vng/editor';
+import { ReactFlowProvider } from 'reactflow';
 import { GamePlayer } from '@vng/player';
 import { Button, Card } from '@vng/ui';
 import { GameProject } from '@vng/core';
+import { FlowEditor } from '@/components/FlowEditor';
+import { saveProject } from '@/lib/projectStorage';
 
 // Mock Project for testing (fallback)
 const MOCK_PROJECT: GameProject = {
@@ -82,12 +84,25 @@ const MOCK_PROJECT: GameProject = {
 
 export default function EditorPage() {
     const searchParams = useSearchParams();
-    const projectId = searchParams.get('project');
+    // 支持两种参数名：projectId 和 project
+    const projectId = searchParams.get('projectId') || searchParams.get('project');
     
-    const { setProject, project } = useEditorStore();
+    const [project, setProject] = useState<GameProject | null>(null);
     const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+    const [previewMode, setPreviewMode] = useState<'from-start' | 'from-current'>('from-start');
+    const [showPreviewMenu, setShowPreviewMenu] = useState(false);
+    const [showCharactersDropdown, setShowCharactersDropdown] = useState(false);
+    const [showScenesDropdown, setShowScenesDropdown] = useState(false);
+    const [showNodesDropdown, setShowNodesDropdown] = useState(false);
+    const [previewKey, setPreviewKey] = useState(0);  // ✅ 用于强制重新挂载GamePlayer
+    const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);  // ✅ 最后保存时间
+    const [isSaving, setIsSaving] = useState(false);  // ✅ 正在保存
+    const [showSaveNoteDialog, setShowSaveNoteDialog] = useState(false);  // ✅ 显示保存备注对话框
+    const [saveNote, setSaveNote] = useState('');  // ✅ 保存备注
+    const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);  // ✅ 自动保存定时器
 
     useEffect(() => {
         const loadProject = async () => {
@@ -114,6 +129,9 @@ export default function EditorPage() {
 
                 const projectData = await response.json();
                 console.log('[Editor] Loaded project:', projectData.title);
+                console.log('[Editor] Characters:', projectData.characters?.length);
+                console.log('[Editor] Script nodes:', projectData.script?.length);
+                console.log('[Editor] First few script nodes:', projectData.script?.slice(0, 3));
                 
                 setProject(projectData);
             } catch (err) {
@@ -130,13 +148,91 @@ export default function EditorPage() {
 
         loadProject();
     }, [projectId, setProject]);
+    
+    // ✅ 点击外部关闭预览菜单
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (showPreviewMenu && !target.closest('.preview-menu-container')) {
+                setShowPreviewMenu(false);
+            }
+        };
+        
+        if (showPreviewMenu) {
+            document.addEventListener('click', handleClickOutside);
+            return () => document.removeEventListener('click', handleClickOutside);
+        }
+    }, [showPreviewMenu]);
+    
+    // ✅ 自动保存 - 每30秒
+    useEffect(() => {
+        if (!project || !projectId) return;
+        
+        // 清除之前的定时器
+        if (autoSaveTimerRef.current) {
+            clearInterval(autoSaveTimerRef.current);
+        }
+        
+        // 设置新的自动保存定时器
+        autoSaveTimerRef.current = setInterval(() => {
+            console.log('[Editor] 自动保存...');
+            const success = saveProject(project, undefined, true);  // autoSaved = true
+            if (success) {
+                setLastSaveTime(new Date());
+            }
+        }, 30000);  // 30秒
+        
+        // 清理函数
+        return () => {
+            if (autoSaveTimerRef.current) {
+                clearInterval(autoSaveTimerRef.current);
+            }
+        };
+    }, [project, projectId]);
+    
+    // ✅ 手动保存函数
+    const handleManualSave = (note?: string) => {
+        if (!project || !projectId) return;
+        
+        setIsSaving(true);
+        const success = saveProject(project, note, false);  // autoSaved = false
+        
+        if (success) {
+            setLastSaveTime(new Date());
+            setShowSaveNoteDialog(false);
+            setSaveNote('');
+            // 显示成功提示
+            alert('🎉 保存成功!' + (note ? `\n备注: ${note}` : ''));
+        } else {
+            alert('❌ 保存失败,请重试');
+        }
+        
+        setIsSaving(false);
+    };
+    
+    // ✅ 格式化最后保存时间
+    const formatLastSaveTime = () => {
+        if (!lastSaveTime) return '未保存';
+        const now = new Date();
+        const diff = Math.floor((now.getTime() - lastSaveTime.getTime()) / 1000);  // 秒
+        
+        if (diff < 60) return `${diff}秒前`;
+        if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
+        return lastSaveTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    };
 
     if (loading) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-slate-100">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                    <p className="text-slate-600">Loading project...</p>
+            <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+                <div className="flex flex-col items-center gap-6 p-8 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20">
+                    <div className="relative">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-600 to-pink-600 animate-pulse" />
+                        <Loader2 className="absolute inset-0 m-auto h-10 w-10 animate-spin text-white" />
+                    </div>
+                    <div className="text-center">
+                        <p className="text-lg font-semibold text-slate-800 mb-1">加载项目中...</p>
+                        <p className="text-sm text-slate-500">请稍候</p>
+                    </div>
                 </div>
             </div>
         );
@@ -144,84 +240,469 @@ export default function EditorPage() {
 
     if (!project) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-slate-100">
-                <div className="flex flex-col items-center gap-4">
-                    <AlertCircle className="h-8 w-8 text-red-500" />
-                    <p className="text-slate-600">Failed to load project</p>
-                    <a href="/" className="text-blue-600 hover:underline">Go back home</a>
+            <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+                <div className="flex flex-col items-center gap-6 p-8 bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md">
+                    <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                        <AlertCircle className="h-8 w-8 text-red-500" />
+                    </div>
+                    <div className="text-center">
+                        <p className="text-xl font-bold text-slate-800 mb-2">项目加载失败</p>
+                        <p className="text-sm text-slate-500 mb-4">无法加载指定的项目数据</p>
+                        <a 
+                            href="/" 
+                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg"
+                        >
+                            <Home className="w-4 h-4" />
+                            返回首页
+                        </a>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex h-screen w-full flex-col bg-slate-100">
-            {/* Header */}
-            <header className="flex h-14 items-center justify-between border-b bg-white px-6">
+        <div className="flex h-screen w-full flex-col bg-slate-50">
+            {/* Header - 现代化工具栏 */}
+            <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 shadow-lg">
                 <div className="flex items-center gap-4">
-                    <a href="/" className="text-slate-400 hover:text-slate-600">
+                    <a href="/" className="text-white/80 hover:text-white transition-colors">
                         <Home className="h-5 w-5" />
                     </a>
+                    <div className="h-8 w-px bg-white/30" />
                     <div>
-                        <div className="font-bold text-lg">{project.title}</div>
+                        <div className="font-bold text-xl text-white drop-shadow-md">{project.title}</div>
                         {projectId && (
-                            <div className="text-xs text-slate-400">ID: {projectId}</div>
+                            <div className="text-xs text-white/70">ID: {projectId}</div>
                         )}
                     </div>
                 </div>
                 
                 {/* Error notification */}
                 {error && (
-                    <div className="flex items-center gap-2 text-amber-600 text-sm">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-100 text-sm backdrop-blur-sm border border-amber-400/30">
                         <AlertCircle className="h-4 w-4" />
-                        <span>Using demo data (project not found)</span>
+                        <span>使用演示数据 (项目未找到)</span>
                     </div>
                 )}
                 
-                <div className="flex gap-4">
+                <div className="flex gap-2 items-center">
+                    {/* ✅ 最后保存时间 */}
+                    {projectId && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg border border-white/20 text-white/80 text-xs">
+                            <Clock className="w-3 h-3" />
+                            <span>最后保存: {formatLastSaveTime()}</span>
+                        </div>
+                    )}
+                    
+                    {/* ✅ 手动保存按钮 */}
+                    {projectId && (
+                        <Button
+                            variant="ghost"
+                            onClick={() => setShowSaveNoteDialog(true)}
+                            disabled={isSaving}
+                            className="text-white hover:bg-white/10 border border-white/30 font-medium"
+                        >
+                            <Save className="w-4 h-4 mr-1" />
+                            {isSaving ? '保存中...' : '保存'}
+                        </Button>
+                    )}
+                    
                     <Button
-                        variant={activeTab === 'editor' ? 'default' : 'ghost'}
+                        variant="ghost"
                         onClick={() => setActiveTab('editor')}
+                        className="text-white hover:bg-white/10 border border-white/30 font-medium"
                     >
-                        Script Editor
+                        📝 脚本编辑器
                     </Button>
-                    <Button
-                        variant={activeTab === 'preview' ? 'default' : 'ghost'}
-                        onClick={() => setActiveTab('preview')}
+                    
+                    {/* ✅ 预览游戏下拉菜单 */}
+                    <div className="relative preview-menu-container">
+                        <Button
+                            variant="ghost"
+                            onClick={() => {
+                                // ✅ 如果已经在预览页面,直接打开菜单切换模式
+                                // 如果不在预览页面,也打开菜单选择模式
+                                setShowPreviewMenu(!showPreviewMenu);
+                            }}
+                            className="text-white hover:bg-white/10 border border-white/30 font-medium"
+                        >
+                            ▶️ 预览游戏 ▼
+                        </Button>
+                        
+                        {/* 下拉菜单 */}
+                        {showPreviewMenu && (
+                            <div className="absolute top-full mt-1 right-0 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[200px]">
+                                <button
+                                    onClick={() => {
+                                        setPreviewMode('from-start');
+                                        setActiveTab('preview');
+                                        setShowPreviewMenu(false);
+                                        setPreviewKey(prev => prev + 1);  // ✅ 强制重新挂载
+                                    }}
+                                    className="w-full px-4 py-3 text-left hover:bg-indigo-50 transition-colors border-b border-slate-100 flex items-center gap-3"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white">
+                                        🏁
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold text-slate-800">从头预览</div>
+                                        <div className="text-xs text-slate-500">从开始节点的开头开始</div>
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (!selectedNodeId) {
+                                            alert('请先在编辑器中选中一个节点');
+                                            setShowPreviewMenu(false);
+                                            return;
+                                        }
+                                        setPreviewMode('from-current');
+                                        setActiveTab('preview');
+                                        setShowPreviewMenu(false);
+                                        setPreviewKey(prev => prev + 1);  // ✅ 强制重新挂载
+                                    }}
+                                    disabled={!selectedNodeId}
+                                    className="w-full px-4 py-3 text-left hover:bg-green-50 transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white">
+                                        ▶️
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold text-slate-800">从当前节点预览</div>
+                                        <div className="text-xs text-slate-500">
+                                            {selectedNodeId ? `从节点 ${selectedNodeId} 的开头开始` : '请先选择节点'}
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <Button 
+                        variant="ghost"
+                        className="text-white hover:bg-white/10 border border-white/30 font-medium"
                     >
-                        Preview Game
+                        📦 导出
                     </Button>
-                    <Button variant="outline">Export</Button>
                 </div>
             </header>
 
-            {/* Project Info Bar */}
-            <div className="flex h-10 items-center justify-between border-b bg-slate-50 px-6 text-sm text-slate-600">
+            {/* Project Info Bar - 美化 + 下拉预览 */}
+            <div className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-6 text-sm">
                 <div className="flex gap-6">
-                    <span>{project.characters?.length || 0} Characters</span>
-                    <span>{project.backgrounds?.length || 0} Backgrounds</span>
-                    <span>{project.script?.length || 0} Script Nodes</span>
+                    {/* ✅ 角色下拉 */}
+                    <div className="relative">
+                        <span 
+                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
+                            title="查看角色列表"
+                            onClick={() => {
+                                setShowCharactersDropdown(!showCharactersDropdown);
+                                setShowScenesDropdown(false);
+                                setShowNodesDropdown(false);
+                            }}
+                        >
+                            <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                            <strong className="text-slate-700">{project.characters?.length || 0}</strong>
+                            <span className="text-slate-500">角色</span>
+                            <span className="text-slate-400 text-xs">▼</span>
+                        </span>
+                        {showCharactersDropdown && (
+                            <div className="absolute top-full mt-1 left-0 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[280px] max-h-[400px] overflow-y-auto">
+                                {project.characters && project.characters.length > 0 ? (
+                                    project.characters.map((char, idx) => (
+                                        <div key={idx} className="px-4 py-3 hover:bg-indigo-50 transition-colors border-b border-slate-100 last:border-0">
+                                            <div className="flex items-center gap-3">
+                                                {char.avatarUrl ? (
+                                                    <img src={char.avatarUrl} alt={char.name} className="w-10 h-10 rounded-full object-cover" />
+                                                ) : (
+                                                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold">
+                                                        {char.name.charAt(0)}
+                                                    </div>
+                                                )}
+                                                <div className="flex-1">
+                                                    <div className="font-semibold text-slate-800">{char.name}</div>
+                                                    <div className="text-xs text-slate-500 line-clamp-1">
+                                                        {char.description || 
+                                                         (typeof char.personality === 'string' ? char.personality : 
+                                                          char.personality?.traits?.join('、') || '暂无描述')}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="px-4 py-6 text-center text-slate-400 text-sm">暂无角色</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* ✅ 场景下拉 */}
+                    <div className="relative">
+                        <span 
+                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
+                            title="查看场景列表"
+                            onClick={() => {
+                                setShowScenesDropdown(!showScenesDropdown);
+                                setShowCharactersDropdown(false);
+                                setShowNodesDropdown(false);
+                            }}
+                        >
+                            <div className="w-2 h-2 rounded-full bg-purple-500" />
+                            <strong className="text-slate-700">{project.backgrounds?.length || 0}</strong>
+                            <span className="text-slate-500">场景</span>
+                            <span className="text-slate-400 text-xs">▼</span>
+                        </span>
+                        {showScenesDropdown && (
+                            <div className="absolute top-full mt-1 left-0 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[280px] max-h-[400px] overflow-y-auto">
+                                {project.backgrounds && project.backgrounds.length > 0 ? (
+                                    project.backgrounds.map((bg, idx) => (
+                                        <div key={idx} className="px-4 py-3 hover:bg-purple-50 transition-colors border-b border-slate-100 last:border-0">
+                                            <div className="flex items-center gap-3">
+                                                {bg.imageUrl ? (
+                                                    <img src={bg.imageUrl} alt={bg.name} className="w-16 h-10 rounded object-cover" />
+                                                ) : (
+                                                    <div className="w-16 h-10 rounded bg-purple-100 flex items-center justify-center text-purple-600 text-xs">
+                                                        🏞️
+                                                    </div>
+                                                )}
+                                                <div className="flex-1">
+                                                    <div className="font-semibold text-slate-800">{bg.name}</div>
+                                                    <div className="text-xs text-slate-500 line-clamp-1">{bg.description || '暂无描述'}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="px-4 py-6 text-center text-slate-400 text-sm">暂无场景</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* ✅ 故事情节下拉 */}
+                    <div className="relative">
+                        <span 
+                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
+                            title="查看故事情节列表"
+                            onClick={() => {
+                                setShowNodesDropdown(!showNodesDropdown);
+                                setShowCharactersDropdown(false);
+                                setShowScenesDropdown(false);
+                            }}
+                        >
+                            <div className="w-2 h-2 rounded-full bg-pink-500" />
+                            <strong className="text-slate-700">{project.script?.length || 0}</strong>
+                            <span className="text-slate-500">故事情节</span>
+                            <span className="text-slate-400 text-xs">▼</span>
+                        </span>
+                        {showNodesDropdown && (
+                            <div className="absolute top-full mt-1 left-0 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[320px] max-h-[400px] overflow-y-auto">
+                                {project.script && project.script.length > 0 ? (
+                                    project.script.map((node: any, idx) => (
+                                        <div 
+                                            key={idx} 
+                                            className="px-4 py-3 hover:bg-pink-50 transition-colors border-b border-slate-100 last:border-0 cursor-pointer"
+                                            onClick={() => {
+                                                setSelectedNodeId(node.id);
+                                                setActiveTab('editor');
+                                                setShowNodesDropdown(false);
+                                            }}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white text-xs font-semibold">
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="font-semibold text-slate-800">{node.title || `节点 ${node.id}`}</div>
+                                                    <div className="text-xs text-slate-500">
+                                                        {node.sceneName && <span className="text-purple-600">📍 {node.sceneName}</span>}
+                                                        {node.isStart && <span className="ml-2 text-green-600">🟢 开头</span>}
+                                                        {node.isEnding && <span className="ml-2 text-red-600">🔴 结尾</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="px-4 py-6 text-center text-slate-400 text-sm">暂无故事情节</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="flex gap-4">
-                    <span>Genre: {project.meta?.genre}</span>
-                    <span>Style: {project.meta?.artStyle}</span>
+                <div className="flex gap-4 text-slate-600">
+                    <span className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded" title="故事类型">
+                        <span>🎭</span>
+                        <span className="text-sm">
+                            {(() => {
+                                const genre = project.meta?.genre || '未设定';
+                                // ✅ 将英文genre转为中文
+                                const genreMap: Record<string, string> = {
+                                    'romance': '言情',
+                                    'fantasy': '奇幻',
+                                    'slice-of-life': '日常',
+                                    'mystery': '悬疑',
+                                    'horror': '恐怖',
+                                    'action': '动作',
+                                    'comedy': '喜剧',
+                                    'drama': '剧情',
+                                    'sci-fi': '科幻',
+                                    'adventure': '冒险',
+                                };
+                                // 处理多个类型，用|分隔
+                                return genre.split('|').map(g => genreMap[g.trim()] || g.trim()).join('、');
+                            })()}
+                        </span>
+                    </span>
+                    <span className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded" title="美术风格">
+                        <span>🎨</span>
+                        <span className="text-sm">
+                            {(() => {
+                                const artStyle = project.meta?.artStyle || '未设定';
+                                // ✅ 将英文artStyle转为中文
+                                const styleMap: Record<string, string> = {
+                                    'anime': '动漫',
+                                    'realistic': '写实',
+                                    'pixel': '像素',
+                                    'watercolor': '水彩',
+                                    'cartoon': '卡通',
+                                    'sketch': '素描',
+                                    '2d': '2D',
+                                    '3d': '3D',
+                                };
+                                return styleMap[artStyle.trim()] || artStyle;
+                            })()}
+                        </span>
+                    </span>
                 </div>
             </div>
 
             {/* Main Content */}
             <main className="flex-1 overflow-hidden">
                 {activeTab === 'editor' ? (
-                    <div className="h-full w-full">
-                        <ScriptCanvas />
-                    </div>
+                    <ReactFlowProvider>
+                        <FlowEditor 
+                            project={project} 
+                            onUpdate={(updatedProject) => {
+                                setProject(updatedProject);
+                                // ✅ 不再在这里自动保存,由定时器处理
+                            }}
+                            onSelectNode={setSelectedNodeId}  // ✅ 传递选中节点回调
+                        />
+                    </ReactFlowProvider>
                 ) : (
-                    <div className="flex h-full items-center justify-center p-8 bg-slate-900">
-                        <Card className="aspect-video w-full max-w-6xl overflow-hidden border-0 shadow-2xl">
-                            <GamePlayer project={project} />
-                        </Card>
+                    <div className="flex flex-col h-full">
+                        {/* 游戏预览区 */}
+                        <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+                            <div className="w-full max-w-6xl">
+                                {/* ✅ 顶部提示条 - 显示当前预览模式 */}
+                                <div className="mb-4 px-4 py-2 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-700/50 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-2 h-2 rounded-full ${
+                                            previewMode === 'from-start' ? 'bg-blue-500' : 'bg-green-500'
+                                        } animate-pulse`} />
+                                        <span className="text-sm text-slate-300">
+                                            {previewMode === 'from-start' 
+                                                ? '🏁 从开始节点的开头预览' 
+                                                : `▶️ 从节点 ${selectedNodeId} 的开头预览`}
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {/* ✅ 快捷切换按钮 */}
+                                        <button
+                                            onClick={() => {
+                                                setPreviewMode('from-start');
+                                                setPreviewKey(prev => prev + 1);  // ✅ 强制重新挂载
+                                            }}
+                                            className={`px-3 py-1 rounded text-xs transition-all ${
+                                                previewMode === 'from-start'
+                                                    ? 'bg-blue-500 text-white'
+                                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                            }`}
+                                        >
+                                            🏁 从头
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                if (!selectedNodeId) {
+                                                    alert('请先在编辑器中选中一个节点');
+                                                    return;
+                                                }
+                                                setPreviewMode('from-current');
+                                                setPreviewKey(prev => prev + 1);  // ✅ 强制重新挂载
+                                            }}
+                                            disabled={!selectedNodeId}
+                                            className={`px-3 py-1 rounded text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                                                previewMode === 'from-current'
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                            }`}
+                                        >
+                                            ▶️ 从当前
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <Card className="aspect-video w-full overflow-hidden border-0 shadow-2xl ring-1 ring-white/10">
+                                    <GamePlayer
+                                        key={previewKey}  // ✅ 通过key强制重新挂载
+                                        project={project}
+                                        startNodeId={previewMode === 'from-current' ? selectedNodeId || undefined : undefined}
+                                    />
+                                </Card>
+                            </div>
+                        </div>
                     </div>
                 )}
             </main>
+            
+            {/* ✅ 保存备注对话框 */}
+            {showSaveNoteDialog && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+                        <h3 className="text-xl font-bold text-slate-800 mb-4">💾 保存项目</h3>
+                        <p className="text-sm text-slate-600 mb-4">添加版本备注(可选),方便后续查看和管理</p>
+                        
+                        <input
+                            type="text"
+                            placeholder="例如: 调整分支逻辑、添加新场景...或留空"
+                            value={saveNote}
+                            onChange={(e) => setSaveNote(e.target.value)}
+                            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-6"
+                            maxLength={100}
+                            autoFocus
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleManualSave(saveNote.trim() || undefined);
+                                }
+                            }}
+                        />
+                        
+                        <div className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setShowSaveNoteDialog(false);
+                                    setSaveNote('');
+                                }}
+                                className="flex-1"
+                            >
+                                取消
+                            </Button>
+                            <Button
+                                onClick={() => handleManualSave(saveNote.trim() || undefined)}
+                                disabled={isSaving}
+                                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                            >
+                                <Save className="w-4 h-4 mr-1" />
+                                {isSaving ? '保存中...' : '确定保存'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

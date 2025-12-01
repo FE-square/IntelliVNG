@@ -9,17 +9,18 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "@hello-pangea/dnd": "^18.0.1",
         "@vng/core": "workspace:*",
-        "@vng/ui": "workspace:*",
         "@vng/editor": "workspace:*",
         "@vng/player": "workspace:*",
+        "@vng/ui": "workspace:*",
+        "framer-motion": "^10.16.0",
+        "lucide-react": "^0.290.0",
         "next": "^14.0.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
-        "lucide-react": "^0.290.0",
-        "framer-motion": "^10.16.0",
-        "zustand": "^4.4.0",
-        "reactflow": "^11.10.0"
+        "reactflow": "^11.11.4",
+        "zustand": "^4.4.0"
     },
     "devDependencies": {
         "@types/node": "^20.0.0",
