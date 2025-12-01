@@ -69,8 +69,8 @@ export default function CharactersPage() {
 
         setIsGeneratingSprite(true);
         try {
-            // 构建prompt
-            const prompt = `${formData.displayName}, ${formData.description}, ${formData.appearance?.hairStyle || ''}, ${formData.appearance?.clothing || ''}, 全身立绘, 动漫风格, 高质量`;
+            // 构建prompt - ✅ 强化纯色背景要求
+            const prompt = `${formData.displayName}, ${formData.description}, ${formData.appearance?.hairStyle || ''}, ${formData.appearance?.clothing || ''}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量, 清晰`;
             
             // 调用通义万相API生成图片
             const response = await fetch('/api/generate-image', {
@@ -106,7 +106,7 @@ export default function CharactersPage() {
                 defaultSpriteId: formData.defaultSpriteId || newSprite.id,
             });
             
-            alert('立绘生成成功!');
+            alert('✅ 立绘生成成功!\n\n💾 请点击「保存」按钮以保存到素材库');
         } catch (error) {
             console.error('生成失败:', error);
             alert(`生成失败: ${error instanceof Error ? error.message : '请重试'}`);
@@ -124,8 +124,8 @@ export default function CharactersPage() {
 
         setIsGeneratingAvatar(true);
         try {
-            // 构建prompt - 头像特化
-            const prompt = `${formData.displayName}, ${formData.description}, 头像特写, 圆形头像, 动漫风格, ${formData.appearance?.facialFeatures || ''}, 高质量`;
+            // 构建prompt - 头像特化 - ✅ 强化纯色背景
+            const prompt = `${formData.displayName}, ${formData.description}, 头像特写, 圆形头像, 动漫风格, ${formData.appearance?.facialFeatures || ''}, 纯白色背景, 简洁, 高质量`;
             
             // 调用通义万相API生成头像
             const response = await fetch('/api/generate-image', {
@@ -152,7 +152,7 @@ export default function CharactersPage() {
                 avatarUrl: imageUrl,
             });
             
-            alert('头像生成成功!');
+            alert('✅ 头像生成成功!\n\n💾 请点击「保存」按钮以保存到素材库');
         } catch (error) {
             console.error('生成失败:', error);
             alert(`生成失败: ${error instanceof Error ? error.message : '请重试'}`);
@@ -185,8 +185,10 @@ export default function CharactersPage() {
 
         if (editingId === 'new') {
             addCharacter(character);
+            alert('✅ 角色创建成功!\n\n立绘和头像已自动添加到素材库 🎨');
         } else {
             updateCharacter(editingId!, character);
+            alert('✅ 角色更新成功!\n\n立绘和头像已自动同步到素材库 🎨');
         }
 
         setEditingId(null);

@@ -5,6 +5,7 @@ import { Button, Card, CardHeader, CardTitle, CardContent } from '@vng/ui';
 import { ArrowLeft, Wand2, Users, Globe, Image, AlertCircle, Palette } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { useState } from 'react';
+import { saveProject } from '@/lib/projectStorage';
 
 export default function SummaryPage() {
     const router = useRouter();
@@ -59,6 +60,15 @@ export default function SummaryPage() {
 
             if (result.success) {
                 console.log('[Summary] Generation successful, projectId:', result.data.id);
+                
+                // ✅ 保存项目到本地存储
+                const saved = saveProject(result.data);
+                if (saved) {
+                    console.log('[Summary] 项目已保存到本地存储');
+                } else {
+                    console.warn('[Summary] 项目保存失败,但仍可继续编辑');
+                }
+                
                 // 跳转到编辑器页面
                 router.push(`/editor?projectId=${result.data.id}`);
             } else {

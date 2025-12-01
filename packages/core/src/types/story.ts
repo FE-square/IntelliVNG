@@ -36,6 +36,19 @@ export interface StoryNode {
         }>;
     };
     
+    // ✅ 音频素材配置
+    audioAssets?: {
+        bgmUrl?: string;               // 背景音乐URL
+        bgmVolume?: number;            // 音量(0-1, 默认0.5)
+        bgmLoop?: boolean;             // 是否循环播放(默认true)
+        soundEffects?: Array<{         // 音效列表
+            id: string;
+            url: string;
+            triggerAt?: 'enter' | 'exit';  // 触发时机
+            volume?: number;
+        }>;
+    };
+    
     // 故事内容
     narration?: string;                // 旁白/背景交代
     dialogues: Dialogue[];             // 角色对话列表

@@ -2,23 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+/* IntelliVNG 设计系统 */
 :root {
-    --foreground-rgb: 0, 0, 0;
-    --background-start-rgb: 214, 219, 220;
-    --background-end-rgb: 255, 255, 255;
+    /* 品牌色彩 */
+    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+    --primary-indigo: #6366f1;
+    --primary-purple: #a855f7;
+    --primary-pink: #ec4899;
+    
+    /* 功能色彩 */
+    --success-green: #10b981;
+    --warning-orange: #f59e0b;
+    --danger-red: #ef4444;
+    
+    /* 背景层次 */
+    --bg-base: #ffffff;
+    --bg-elevated: #fafafa;
+    --bg-overlay: rgba(255, 255, 255, 0.95);
+    
+    /* 文本层次 */
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --text-tertiary: #9ca3af;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --foreground-rgb: 255, 255, 255;
-        --background-start-rgb: 0, 0, 0;
-        --background-end-rgb: 0, 0, 0;
+        --bg-base: #0f172a;
+        --bg-elevated: #1e293b;
+        --bg-overlay: rgba(15, 23, 42, 0.95);
+        --text-primary: #f1f5f9;
+        --text-secondary: #cbd5e1;
+        --text-tertiary: #94a3b8;
     }
 }
 
 body {
-    color: rgb(var(--foreground-rgb));
-    background: linear-gradient(to bottom,
-            transparent,
-            rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* 全局动画 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+}
+
+/* 通用工具类 */
+.gradient-bg {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+    .glass-card {
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
 }

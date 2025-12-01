@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import ReactFlow, {
     Node,
     Edge,
@@ -33,6 +33,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode }: FlowEditorProps)
     const { zoomIn, zoomOut, fitView } = useReactFlow();
     
     // AI 已经直接生成流程图节点格式，不需要转换
+    // ✅ 依赖整个 project 而不是 project.script,确保更新后重新计算
     const storyNodes: StoryNode[] = useMemo(() => {
         // 检查 script 中的节点是否已经包含 title 和 dialogues
         const firstNode = project.script?.[0] as any;
@@ -65,7 +66,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode }: FlowEditorProps)
         }
         // 旧格式，使用转换
         return convertScriptToStoryNodes(project.script || []);
-    }, [project.script]);
+    }, [project]);  // ✅ 依赖整个 project,确保任何更新都重新计算
 
     // 转换为 React Flow 节点和边
     const initialNodes: Node[] = storyNodes.map(node => ({
@@ -146,6 +147,54 @@ export function FlowEditor({ project, onUpdate, onSelectNode }: FlowEditorProps)
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const [selectedNode, setSelectedNode] = useState<StoryNode | null>(null);
     const [showIssues, setShowIssues] = useState(false);
+    
+    // ✅ 当 storyNodes 更新时,重新同步 React Flow 节点
+    useEffect(() => {
+        const newNodes: Node[] = storyNodes.map(node => ({
+            id: node.id,
+            type: 'storyNode',
+            position: node.position,
+            data: { 
+                storyNode: node,
+                characters: project.characters,
+            },
+        }));
+        setNodes(newNodes);
+        
+        const newEdges: Edge[] = [];
+        storyNodes.forEach(node => {
+            if (node.nextNodeId) {
+                newEdges.push({
+                    id: `${node.id}-${node.nextNodeId}`,
+                    source: node.id,
+                    target: node.nextNodeId,
+                    type: 'smoothstep',
+                    animated: true,
+                    markerEnd: { type: MarkerType.ArrowClosed },
+                });
+            }
+            
+            if (node.choices && node.choices.length > 0) {
+                node.choices.forEach((choice, index) => {
+                    if (choice.targetNodeId) {
+                        newEdges.push({
+                            id: `${node.id}-choice-${index}`,
+                            source: node.id,
+                            target: choice.targetNodeId,
+                            type: 'smoothstep',
+                            label: choice.text,
+                            animated: true,
+                            markerEnd: { type: MarkerType.ArrowClosed },
+                            style: { stroke: '#f59e0b', strokeWidth: 2 },
+                            labelBgStyle: { fill: '#fef3c7' },
+                            labelStyle: { fill: '#92400e', fontSize: 12, fontWeight: 600 },
+                        });
+                    }
+                });
+            }
+        });
+        setEdges(newEdges);
+    }, [storyNodes, project.characters, setNodes, setEdges]);
 
     // 逻辑检查
     const checkIssues = useCallback(() => {
@@ -212,17 +261,86 @@ export function FlowEditor({ project, onUpdate, onSelectNode }: FlowEditorProps)
 
     // 更新节点
     const handleUpdateNode = useCallback((updatedNode: StoryNode) => {
-        // 更新 storyNodes
-        const newStoryNodes = storyNodes.map(n => 
-            n.id === updatedNode.id ? updatedNode : n
-        );
-        
-        // 转换回 ScriptNode 并更新项目
-        const newScript = convertStoryNodesToScript(newStoryNodes);
-        onUpdate?.({
-            ...project,
-            script: newScript,
+        console.log('[FlowEditor] handleUpdateNode 被调用:', {
+            nodeId: updatedNode.id,
+            title: updatedNode.title,
+            sceneName: updatedNode.sceneName,
+            narration: updatedNode.narration,
+            dialoguesCount: updatedNode.dialogues?.length,
+            audioAssets: updatedNode.audioAssets,  // ✅ 添加音频资源调试
         });
+        
+        // ✅ 检查project.script格式
+        const firstNode = project.script?.[0] as any;
+        const isNewFormat = firstNode && firstNode.title && firstNode.dialogues;
+        
+        console.log('[FlowEditor] Script格式检查:', {
+            isNewFormat,
+            firstNodeHasTitle: !!firstNode?.title,
+            firstNodeHasDialogues: !!firstNode?.dialogues,
+        });
+        
+        if (isNewFormat) {
+            // ✅ 新格式: 直接更新script中的节点,保留所有字段
+            const newScript = project.script.map((node: any) => {
+                if (node.id === updatedNode.id) {
+                    // 转换choices格式: StoryNode用targetNodeId, ScriptNode用nextNodeId
+                    const convertedChoices = updatedNode.choices?.map(choice => ({
+                        id: choice.id,
+                        text: choice.text,
+                        nextNodeId: choice.targetNodeId,  // ✅ 转回nextNodeId
+                        condition: choice.condition,
+                    }));
+                    
+                    const updated = {
+                        ...node,  // ✅ 保留原节点的所有字段
+                        title: updatedNode.title,
+                        sceneName: updatedNode.sceneName,
+                        narration: updatedNode.narration,
+                        dialogues: updatedNode.dialogues,
+                        choices: convertedChoices,
+                        nextNodeId: updatedNode.nextNodeId,
+                        visualAssets: updatedNode.visualAssets,
+                        audioAssets: updatedNode.audioAssets,  // ✅ 保存音频资源
+                        position: updatedNode.position,
+                        // 保留type相关字段
+                        type: updatedNode.type === 'branch' ? 'choice' : updatedNode.type,
+                        isStart: updatedNode.isStart,
+                        isEnding: updatedNode.isEnding,
+                    };
+                    
+                    console.log('[FlowEditor] 节点更新后:', {
+                        id: updated.id,
+                        title: updated.title,
+                        sceneName: updated.sceneName,
+                        narration: updated.narration,
+                        dialoguesCount: updated.dialogues?.length,
+                        audioAssets: updated.audioAssets,  // ✅ 打印音频资源
+                    });
+                    
+                    return updated;
+                }
+                return node;
+            });
+            
+            console.log('[FlowEditor] 更新后的script节点数:', newScript.length);
+            
+            onUpdate?.({
+                ...project,
+                script: newScript,
+            });
+        } else {
+            // 旧格式: 使用转换函数
+            console.log('[FlowEditor] 使用旧格式转换');
+            const newStoryNodes = storyNodes.map(n => 
+                n.id === updatedNode.id ? updatedNode : n
+            );
+            const newScript = convertStoryNodesToScript(newStoryNodes);
+            onUpdate?.({
+                ...project,
+                script: newScript,
+            });
+        }
         
         setSelectedNode(null);
     }, [storyNodes, project, onUpdate]);

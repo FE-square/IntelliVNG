@@ -30,10 +30,12 @@ export default function ScenesPage() {
             if (editingId) {
                 // 编辑模式
                 updateScene(editingId, currentScene);
+                alert('✅ 场景更新成功!\n\n背景图已自动同步到素材库 🎨');
                 setEditingId(null);
             } else {
                 // 添加模式
                 addScene(currentScene);
+                alert('✅ 场景添加成功!\n\n背景图已自动添加到素材库 🎨');
             }
             
             // 重置表单
@@ -106,7 +108,7 @@ export default function ScenesPage() {
                 imageUrl,
             });
             
-            alert('背景图生成成功!');
+            alert('✅ 背景图生成成功!\n\n💾 请点击「添加场景」按钮以保存到素材库');
         } catch (error) {
             console.error('生成失败:', error);
             alert(`生成失败: ${error instanceof Error ? error.message : '请重试'}`);

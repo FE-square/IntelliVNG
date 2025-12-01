@@ -649,6 +649,8 @@ ${backgroundsInfo}
             orphanNodes.forEach(n => {
                 console.error(`   - ${n.id}: ${n.title} (type: ${n.type})`);
             });
+            // ✅ 抛出错误,阻止生成
+            throw new Error(`AI生成的脚本包含 ${orphanNodes.length} 个孤立节点,请重新生成。孤立节点: ${orphanNodes.map(n => n.id).join(', ')}`);
         } else {
             console.log('✅ 所有节点都可以从 start 节点到达');
         }
@@ -694,37 +696,38 @@ ${backgroundsInfo}
             deadEnds.forEach(n => {
                 console.error(`   - ${n.id}: ${n.title} (type: ${n.type})`);
             });
+            // ✅ 抛出错误,阻止生成
+            throw new Error(`AI生成的脚本包含 ${deadEnds.length} 个死胡同节点,请重新生成。死胡同节点: ${deadEnds.map(n => n.id).join(', ')}`);
         } else {
             console.log('✅ 所有节点都能到达 ending 节点');
         }
         
         // 7. 检查 nextNodeId 和 choices 的有效性
-        let invalidLinks = 0;
+        const invalidLinks: string[] = [];
         storyNodes.forEach(node => {
             if (node.nextNodeId && !nodeIds.has(node.nextNodeId)) {
-                console.error(`❌ 错误: ${node.id} 的 nextNodeId "${node.nextNodeId}" 不存在`);
-                invalidLinks++;
+                const error = `${node.id} 的 nextNodeId "${node.nextNodeId}" 不存在`;
+                console.error(`❌ 错误: ${error}`);
+                invalidLinks.push(error);
             }
             node.choices?.forEach(choice => {
                 if (choice.targetNodeId && !nodeIds.has(choice.targetNodeId)) {
-                    console.error(`❌ 错误: ${node.id} 的选项 "${choice.text}" 指向不存在的节点 "${choice.targetNodeId}"`);
-                    invalidLinks++;
+                    const error = `${node.id} 的选项 "${choice.text}" 指向不存在的节点 "${choice.targetNodeId}"`;
+                    console.error(`❌ 错误: ${error}`);
+                    invalidLinks.push(error);
                 }
             });
         });
         
-        if (invalidLinks === 0) {
+        if (invalidLinks.length > 0) {
+            // ✅ 抛出错误,阻止生成
+            throw new Error(`AI生成的脚本包含 ${invalidLinks.length} 个无效连接,请重新生成。错误: ${invalidLinks.join('; ')}`);
+        } else {
             console.log('✅ 所有连接都指向有效节点');
         }
         
-        // 8. 汇总
-        const totalIssues = orphanNodes.length + deadEnds.length + invalidLinks;
-        if (totalIssues === 0) {
-            console.log('✅✅✅ 节点连接验证通过! 所有支线都完整且连通!');
-        } else {
-            console.error(`❌❌❌ 节点连接验证失败! 发现 ${totalIssues} 个问题`);
-            console.error('请检查 AI 生成的节点连接，确保每条支线都有完整的路径');
-        }
+        // 8. 汇总 - 此时如果有任何问题,已经抛出错误,所以这里只会执行到无问题的情况
+        console.log('✅✅✅ 节点连接验证通过! 所有支线都完整且连通!');
     }
 }
 

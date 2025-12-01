@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Save, Plus, Trash2, ArrowUp, ArrowDown, Image as ImageIcon, ChevronDown, ChevronUp, Wand2 } from 'lucide-react';
+import { X, Save, Plus, Trash2, ArrowUp, ArrowDown, Image as ImageIcon, ChevronDown, ChevronUp, Wand2, Music } from 'lucide-react';
 import type { StoryNode, Character, StoryDialogue, Scene } from '@vng/core';
 import { createId } from '@vng/core';
 import { Button, Card, CardContent } from '@vng/ui';
@@ -31,6 +31,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose }
     });
     const [selectedDialogues, setSelectedDialogues] = useState<Set<number>>(new Set());
     const [showVisualAssets, setShowVisualAssets] = useState(false);
+    const [showAudioAssets, setShowAudioAssets] = useState(false);  // ✅ 音频配置折叠状态
     const [generatingCharacterId, setGeneratingCharacterId] = useState<string | null>(null);
     
     // 根据 sceneName 获取对应场景
@@ -745,6 +746,157 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose }
                                             点击上方下拉框添加角色立绘
                                         </div>
                                     )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* ✅ 音频素材配置区 */}
+                <div className="space-y-3 border-t pt-4">
+                    <button
+                        onClick={() => setShowAudioAssets(!showAudioAssets)}
+                        className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Music className="w-5 h-5 text-blue-600" />
+                            <span className="font-medium text-blue-900">🎵 音频配乐</span>
+                        </div>
+                        {showAudioAssets ? (
+                            <ChevronUp className="w-5 h-5 text-blue-600" />
+                        ) : (
+                            <ChevronDown className="w-5 h-5 text-blue-600" />
+                        )}
+                    </button>
+
+                    {showAudioAssets && (
+                        <div className="space-y-4 bg-blue-50/50 p-4 rounded-lg">
+                            {/* 背景音乐 */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">🎼 背景音乐 (BGM)</label>
+                                <div className="space-y-2">
+                                    {/* 音乐URL输入 */}
+                                    <input
+                                        type="text"
+                                        className="w-full border rounded px-3 py-2 text-sm"
+                                        placeholder="输入音乐URL (支持 mp3, ogg, wav)"
+                                        value={editedNode.audioAssets?.bgmUrl || ''}
+                                        onChange={(e) => {
+                                            setEditedNode({
+                                                ...editedNode,
+                                                audioAssets: {
+                                                    ...editedNode.audioAssets,
+                                                    bgmUrl: e.target.value,
+                                                    bgmLoop: editedNode.audioAssets?.bgmLoop ?? true,
+                                                    bgmVolume: editedNode.audioAssets?.bgmVolume ?? 0.5,
+                                                },
+                                            });
+                                        }}
+                                    />
+                                    
+                                    {/* 快捷选择 - 免费音乐库 */}
+                                    <select
+                                        className="w-full border rounded px-3 py-2 text-sm bg-white"
+                                        value={editedNode.audioAssets?.bgmUrl || ''}
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                setEditedNode({
+                                                    ...editedNode,
+                                                    audioAssets: {
+                                                        ...editedNode.audioAssets,
+                                                        bgmUrl: e.target.value,
+                                                        bgmLoop: editedNode.audioAssets?.bgmLoop ?? true,
+                                                        bgmVolume: editedNode.audioAssets?.bgmVolume ?? 0.5,
+                                                    },
+                                                });
+                                            }
+                                        }}
+                                    >
+                                        <option value="">从预设音乐库选择 (30秒纯音乐)</option>
+                                        <optgroup label="情感/温馨">
+                                            <option value="https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3">浪漫钢琴 (29s)</option>
+                                            <option value="https://cdn.pixabay.com/audio/2021/08/09/audio_12b0c7443c.mp3">温馨回忆 (30s)</option>
+                                        </optgroup>
+                                        <optgroup label="悬疑/紧张">
+                                            <option value="https://cdn.pixabay.com/audio/2022/03/15/audio_a2c792e3ff.mp3">神秘氛围 (32s)</option>
+                                            <option value="https://cdn.pixabay.com/audio/2022/11/22/audio_0c2c26542e.mp3">紧张时刻 (28s)</option>
+                                        </optgroup>
+                                        <optgroup label="欢快/轻松">
+                                            <option value="https://cdn.pixabay.com/audio/2022/03/23/audio_c8a9027dc1.mp3">欢快节奏 (31s)</option>
+                                            <option value="https://cdn.pixabay.com/audio/2021/11/23/audio_ce0ca8693f.mp3">轻松愉快 (30s)</option>
+                                        </optgroup>
+                                        <optgroup label="史诗/壮阔">
+                                            <option value="https://cdn.pixabay.com/audio/2022/09/14/audio_730c175ac3.mp3">史诗配乐 (33s)</option>
+                                            <option value="https://cdn.pixabay.com/audio/2023/02/28/audio_4135c14c6f.mp3">冒险旅程 (29s)</option>
+                                        </optgroup>
+                                        <optgroup label="日常/平静">
+                                            <option value="https://cdn.pixabay.com/audio/2022/08/02/audio_884fe25f21.mp3">宁静时光 (30s)</option>
+                                            <option value="https://cdn.pixabay.com/audio/2023/06/12/audio_9a3b8f2d53.mp3">午后茶点 (31s)</option>
+                                        </optgroup>
+                                    </select>
+                                    
+                                    {/* 音量控制 */}
+                                    <div className="flex items-center gap-3">
+                                        <label className="text-sm text-gray-600 w-16">🔊 音量</label>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            className="flex-1"
+                                            value={(editedNode.audioAssets?.bgmVolume ?? 0.5) * 100}
+                                            onChange={(e) => {
+                                                setEditedNode({
+                                                    ...editedNode,
+                                                    audioAssets: {
+                                                        ...editedNode.audioAssets,
+                                                        bgmUrl: editedNode.audioAssets?.bgmUrl,
+                                                        bgmVolume: Number(e.target.value) / 100,
+                                                        bgmLoop: editedNode.audioAssets?.bgmLoop ?? true,
+                                                    },
+                                                });
+                                            }}
+                                        />
+                                        <span className="text-sm text-gray-600 w-12">
+                                            {Math.round((editedNode.audioAssets?.bgmVolume ?? 0.5) * 100)}%
+                                        </span>
+                                    </div>
+                                    
+                                    {/* 循环播放 */}
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={editedNode.audioAssets?.bgmLoop ?? true}
+                                            onChange={(e) => {
+                                                setEditedNode({
+                                                    ...editedNode,
+                                                    audioAssets: {
+                                                        ...editedNode.audioAssets,
+                                                        bgmUrl: editedNode.audioAssets?.bgmUrl,
+                                                        bgmVolume: editedNode.audioAssets?.bgmVolume ?? 0.5,
+                                                        bgmLoop: e.target.checked,
+                                                    },
+                                                });
+                                            }}
+                                            className="rounded"
+                                        />
+                                        <span className="text-gray-700">循环播放</span>
+                                    </label>
+                                    
+                                    {/* 音乐预览 */}
+                                    {editedNode.audioAssets?.bgmUrl && (
+                                        <div className="mt-2 p-3 bg-white rounded border">
+                                            <audio
+                                                controls
+                                                className="w-full"
+                                                src={editedNode.audioAssets.bgmUrl}
+                                            />
+                                        </div>
+                                    )}
+                                    
+                                    {/* 提示 */}
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        💡 提示：当玩家进入此节点时，将自动播放此背景音乐（30秒左右纯音乐）
+                                    </p>
                                 </div>
                             </div>
                         </div>

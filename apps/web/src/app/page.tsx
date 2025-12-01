@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@vng/ui';
-import { Sparkles, Users, Image, Wand2 } from 'lucide-react';
+import { Sparkles, Users, Image, Wand2, FolderOpen } from 'lucide-react';
 
 export default function Home() {
     const router = useRouter();
@@ -56,12 +56,23 @@ export default function Home() {
                     </div>
 
                     {/* 开始按钮 */}
-                    <Button
-                        className="w-full h-14 text-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 border-0"
-                        onClick={() => router.push('/setup')}
-                    >
-                        开始创作 ✨
-                    </Button>
+                    <div className="space-y-3">
+                        <Button
+                            className="w-full h-14 text-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 border-0"
+                            onClick={() => router.push('/setup')}
+                        >
+                            开始创作 ✨
+                        </Button>
+                        
+                        <Button
+                            variant="outline"
+                            className="w-full h-12 text-lg border-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                            onClick={() => router.push('/dashboard')}
+                        >
+                            <FolderOpen className="w-5 h-5 mr-2" />
+                            查看我的项目
+                        </Button>
+                    </div>
 
                     {/* 额外说明 */}
                     <div className="text-center text-sm text-gray-500 pt-2">

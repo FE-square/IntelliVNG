@@ -63,11 +63,19 @@ export async function POST(request: NextRequest) {
                 model: 'wanx-v1',
                 input: {
                     prompt: prompt,
+                    // ✅ 如果是立绘或头像，强化排除复杂背景
+                    ...(type === 'sprite' || type === 'avatar' ? {
+                        negative_prompt: 'complex background, detailed background, scenery, landscape, outdoor, indoor scene, room, furniture, props, objects, 复杂背景, 场景, 风景, 室内, 室外, 家具, 道具',
+                    } : {}),
                 },
                 parameters: {
                     size: imageSize,
                     n: 1,
                     seed: Math.floor(Math.random() * 1000000),
+                    // ✅ 尝试设置refiner来提高质量
+                    ...(type === 'sprite' || type === 'avatar' ? {
+                        style: '<anime>',  // 动漫风格
+                    } : {}),
                 },
             }),
         });

@@ -1,201 +1,193 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@vng/ui';
-import { Loader2, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button } from '@vng/ui';
+import { Plus, Trash2, Edit, Calendar, Users, Image as ImageIcon, FileCode, ArrowLeft } from 'lucide-react';
+import { getAllProjects, deleteProject, ProjectMetadata } from '@/lib/projectStorage';
 
-const STORAGE_KEY = 'intellivng_generated_project';
-
-// Generation steps
-const STEPS = [
-    { id: 'story', label: 'Generating Story Outline...' },
-    { id: 'characters', label: 'Designing Characters...' },
-    { id: 'script', label: 'Writing Script...' },
-    { id: 'assets', label: 'Creating Assets...' },
-    { id: 'assembling', label: 'Assembling Game...' },
-];
-
+/**
+ * 项目列表页 - 显示所有已保存的项目
+ */
 export default function DashboardPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const idea = searchParams.get('idea');
-
-    const [currentStep, setCurrentStep] = useState(0);
-    const [logs, setLogs] = useState<string[]>([]);
-    const [error, setError] = useState<string | null>(null);
-    const [isComplete, setIsComplete] = useState(false);
+    const [projects, setProjects] = useState<ProjectMetadata[]>([]);
+    const [loading, setLoading] = useState(true);
     
-    // 防止重复请求
-    const isGeneratingRef = useRef(false);
-
     useEffect(() => {
-        if (!idea) {
-            setError('No idea provided. Please go back and enter your story idea.');
-            return;
-        }
-
-        // 防止重复调用
-        if (isGeneratingRef.current) {
-            return;
-        }
-
-        const generateGame = async () => {
-            try {
-                addLog(`Starting generation for: "${idea}"`);
-                
-                // 模拟步骤进度
-                const stepInterval = setInterval(() => {
-                    setCurrentStep(prev => {
-                        if (prev < STEPS.length - 1) return prev + 1;
-                        clearInterval(stepInterval);
-                        return prev;
-                    });
-                }, 3000);
-
-                const response = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idea }),
-                });
-
-                clearInterval(stepInterval);
-                
-                isGeneratingRef.current = true;
-
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                    throw new Error(errorData.error || `HTTP ${response.status}`);
-                }
-
-                const data = await response.json();
-                
-                addLog(`Generation complete! Created: "${data.title}"`);
-                addLog(`- ${data.characters?.length || 0} characters`);
-                addLog(`- ${data.backgrounds?.length || 0} backgrounds`);
-                addLog(`- ${data.script?.length || 0} dialogue nodes`);
-                
-                // 保存生成的项目到 localStorage
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                
-                setCurrentStep(STEPS.length);
-                setIsComplete(true);
-                
-                addLog('Redirecting to editor...');
-                
-                // 延迟跳转，让用户看到完成信息
-                setTimeout(() => {
-                    router.push(`/editor?project=${data.id}`);
-                }, 2000);
-
-            } catch (err) {
-                const message = err instanceof Error ? err.message : 'Unknown error';
-                console.error('Generation error:', err);
-                addLog(`Error: ${message}`);
-                setError(message);
+        loadProjects();
+    }, []);
+    
+    const loadProjects = () => {
+        setLoading(true);
+        const allProjects = getAllProjects();
+        setProjects(allProjects);
+        setLoading(false);
+    };
+    
+    const handleDelete = (projectId: string, projectTitle: string) => {
+        if (confirm(`确定删除项目「${projectTitle}」吗?此操作不可恢复!`)) {
+            const success = deleteProject(projectId);
+            if (success) {
+                loadProjects(); // 重新加载列表
+            } else {
+                alert('删除失败,请重试');
             }
-        };
-
-        generateGame();
-        
-        // Cleanup
-        return () => {
-            isGeneratingRef.current = false;
-        };
-    }, [idea, router]);
-
-    const addLog = (message: string) => {
-        const timestamp = new Date().toLocaleTimeString();
-        setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+        }
+    };
+    
+    const formatDate = (dateStr: string) => {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('zh-CN', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 p-8">
-            <div className="max-w-4xl mx-auto space-y-8">
-                <div className="text-center space-y-2">
-                    <h1 className="text-3xl font-bold text-slate-900">
-                        {error ? 'Generation Failed' : isComplete ? 'Generation Complete!' : 'Creating Your Visual Novel'}
-                    </h1>
-                    <p className="text-slate-500">"{idea}"</p>
-                </div>
-
-                {error && (
-                    <Card className="border-red-200 bg-red-50">
-                        <CardContent className="p-6 flex items-center gap-4">
-                            <AlertCircle className="w-8 h-8 text-red-500" />
-                            <div>
-                                <p className="font-medium text-red-800">Error occurred</p>
-                                <p className="text-red-600">{error}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Progress Column */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Progress</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {STEPS.map((step, index) => (
-                                <div key={step.id} className="flex items-center gap-3">
-                                    {index < currentStep ? (
-                                        <CheckCircle2 className="w-6 h-6 text-green-500" />
-                                    ) : index === currentStep && !error ? (
-                                        <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
-                                    ) : error ? (
-                                        <AlertCircle className="w-6 h-6 text-red-400" />
-                                    ) : (
-                                        <Circle className="w-6 h-6 text-slate-200" />
-                                    )}
-                                    <span className={`font-medium ${
-                                        index === currentStep && !error ? 'text-blue-600' :
-                                        index < currentStep ? 'text-green-600' : 
-                                        error ? 'text-red-400' : 'text-slate-400'
-                                    }`}>
-                                        {step.label}
-                                    </span>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-
-                    {/* Logs Column */}
-                    <Card className="h-[400px] flex flex-col">
-                        <CardHeader>
-                            <CardTitle>System Logs</CardTitle>
-                            <CardDescription>Real-time generation details</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-1 overflow-auto font-mono text-sm bg-slate-950 text-green-400 p-4 rounded-b-lg mx-6 mb-6">
-                            <div className="space-y-2">
-                                {logs.map((log, i) => (
-                                    <div key={i} className={log.includes('Error') ? 'text-red-400' : ''}>{log}</div>
-                                ))}
-                                {!isComplete && !error && (
-                                    <div className="animate-pulse">_</div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Actions */}
-                {error && (
-                    <div className="flex justify-center gap-4">
-                        <button 
-                            onClick={() => window.location.reload()}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8">
+            <div className="max-w-7xl mx-auto">
+                {/* 标题栏 */}
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-4xl font-bold text-white mb-2">📋 我的项目</h1>
+                        <p className="text-white/80">管理你的所有视觉小说项目</p>
+                    </div>
+                    <div className="flex gap-3">
+                        <Button
+                            className="bg-white/20 text-white border-white/40 hover:bg-white/30 border"
+                            onClick={() => router.push('/setup')}
                         >
-                            Retry
-                        </button>
-                        <button 
+                            <Plus className="w-4 h-4 mr-2" />
+                            创建新项目
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="bg-white/20 text-white border-white/40 hover:bg-white/30"
                             onClick={() => router.push('/')}
-                            className="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300"
                         >
-                            Back to Home
-                        </button>
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            返回首页
+                        </Button>
+                    </div>
+                </div>
+
+                {/* 项目列表 */}
+                {loading ? (
+                    <div className="text-center py-20">
+                        <div className="inline-block w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                        <p className="text-white mt-4">加载中...</p>
+                    </div>
+                ) : projects.length === 0 ? (
+                    <Card className="text-center py-20">
+                        <CardContent>
+                            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-100 flex items-center justify-center">
+                                <FileCode className="w-12 h-12 text-slate-400" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-800 mb-3">还没有项目</h2>
+                            <p className="text-slate-500 mb-6">开始创建你的第一个视觉小说吧!</p>
+                            <Button
+                                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                                onClick={() => router.push('/setup')}
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                创建项目
+                            </Button>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {projects.map((project) => (
+                            <Card 
+                                key={project.id} 
+                                className="hover:shadow-2xl transition-all cursor-pointer group overflow-hidden"
+                            >
+                                {/* 封面图 */}
+                                <div 
+                                    className="h-40 bg-gradient-to-br from-slate-200 to-slate-300 relative overflow-hidden"
+                                    style={{
+                                        backgroundImage: project.coverImage ? `url(${project.coverImage})` : undefined,
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center'
+                                    }}
+                                >
+                                    {!project.coverImage && (
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <ImageIcon className="w-16 h-16 text-slate-400" />
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+
+                                <CardHeader>
+                                    <CardTitle className="text-xl line-clamp-1">{project.title}</CardTitle>
+                                    <CardDescription className="line-clamp-2">
+                                        {project.description || '暂无描述'}
+                                    </CardDescription>
+                                </CardHeader>
+
+                                <CardContent>
+                                    {/* 统计信息 */}
+                                    <div className="grid grid-cols-3 gap-2 mb-4 text-sm">
+                                        <div className="text-center p-2 bg-indigo-50 rounded">
+                                            <Users className="w-4 h-4 mx-auto mb-1 text-indigo-600" />
+                                            <div className="font-semibold text-indigo-700">{project.characterCount}</div>
+                                            <div className="text-xs text-slate-500">角色</div>
+                                        </div>
+                                        <div className="text-center p-2 bg-purple-50 rounded">
+                                            <ImageIcon className="w-4 h-4 mx-auto mb-1 text-purple-600" />
+                                            <div className="font-semibold text-purple-700">{project.sceneCount}</div>
+                                            <div className="text-xs text-slate-500">场景</div>
+                                        </div>
+                                        <div className="text-center p-2 bg-pink-50 rounded">
+                                            <FileCode className="w-4 h-4 mx-auto mb-1 text-pink-600" />
+                                            <div className="font-semibold text-pink-700">{project.nodeCount}</div>
+                                            <div className="text-xs text-slate-500">故事情节</div>
+                                        </div>
+                                    </div>
+
+                                    {/* 时间信息 + 保存备注 */}
+                                    <div className="space-y-2 mb-4">
+                                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                                            <Calendar className="w-3 h-3" />
+                                            <span>更新: {formatDate(project.updatedAt)}</span>
+                                            {project.autoSaved && (
+                                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">自动保存</span>
+                                            )}
+                                        </div>
+                                        {project.saveNote && (
+                                            <div className="text-xs text-slate-600 bg-amber-50 px-2 py-1.5 rounded border border-amber-200">
+                                                <span className="font-semibold text-amber-700">📝 备注:</span> {project.saveNote}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 操作按钮 */}
+                                    <div className="flex gap-2">
+                                        <Button
+                                            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                                            onClick={() => router.push(`/editor?projectId=${project.id}`)}
+                                        >
+                                            <Edit className="w-4 h-4 mr-1" />
+                                            编辑
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="border-red-200 text-red-600 hover:bg-red-50"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDelete(project.id, project.title);
+                                            }}
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
                     </div>
                 )}
             </div>

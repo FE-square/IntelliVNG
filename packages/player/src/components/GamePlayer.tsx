@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GameProject, StoryNode, StoryDialogue } from '@vng/core';
 import { GameEngine } from '../engine/GameEngine';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +16,9 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
     const [dialogueIndex, setDialogueIndex] = useState(0);
     const [showTransition, setShowTransition] = useState(false);  // ✅ 节点过渡状态
     const [transitionText, setTransitionText] = useState('');  // ✅ 过渡文本
+    
+    // ✅ 音频播放器引用
+    const bgmRef = useRef<HTMLAudioElement | null>(null);
 
     // ✅ 每次节点变化时打印节点信息
     useEffect(() => {
@@ -28,9 +31,96 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
                 dialoguesCount: currentNode.dialogues?.length || 0,
                 hasChoices: !!currentNode.choices,
                 choicesCount: currentNode.choices?.length || 0,
+                // ✅ 添加音频资源调试
+                hasAudioAssets: !!currentNode.audioAssets,
+                audioAssets: currentNode.audioAssets,
+                bgmUrl: currentNode.audioAssets?.bgmUrl,
                 rawNode: currentNode,
             });
         }
+    }, [currentNode]);
+    
+    // ✅ 节点切换时自动播放背景音乐
+    useEffect(() => {
+        console.log('[GamePlayer] BGM useEffect 触发:', {
+            hasCurrentNode: !!currentNode,
+            hasAudioAssets: !!currentNode?.audioAssets,
+            hasBgmUrl: !!currentNode?.audioAssets?.bgmUrl,
+            bgmUrl: currentNode?.audioAssets?.bgmUrl,
+        });
+        
+        if (!currentNode?.audioAssets?.bgmUrl) {
+            console.log('[GamePlayer] 节点没有配置BGM,跳过播放');
+            // 如果没有BGM,暂停当前BGM
+            if (bgmRef.current && !bgmRef.current.paused) {
+                bgmRef.current.pause();
+            }
+            return;
+        }
+        
+        const bgmUrl = currentNode.audioAssets.bgmUrl;
+        const bgmVolume = currentNode.audioAssets.bgmVolume ?? 0.5;
+        const bgmLoop = currentNode.audioAssets.bgmLoop ?? true;
+        
+        console.log('[GamePlayer] 检查BGM配置:', { 
+            bgmUrl, 
+            bgmVolume, 
+            bgmLoop,
+            currentBgmSrc: bgmRef.current?.src,
+        });
+        
+        // ✅ 使用规范化的URL进行比较
+        const normalizeUrl = (url: string) => {
+            try {
+                return new URL(url, window.location.href).href;
+            } catch {
+                return url;
+            }
+        };
+        
+        const normalizedNewUrl = normalizeUrl(bgmUrl);
+        const normalizedCurrentUrl = bgmRef.current?.src ? normalizeUrl(bgmRef.current.src) : '';
+        
+        // 如果BGM变化了，或者是新节点
+        if (!bgmRef.current || normalizedCurrentUrl !== normalizedNewUrl) {
+            // 停止旧BGM
+            if (bgmRef.current) {
+                bgmRef.current.pause();
+                bgmRef.current.currentTime = 0;
+            }
+            
+            console.log('[GamePlayer] 创建新BGM:', normalizedNewUrl);
+            
+            // 创建新BGM
+            const audio = new Audio(bgmUrl);
+            audio.loop = bgmLoop;
+            audio.volume = bgmVolume;
+            bgmRef.current = audio;
+            
+            // 播放新BGM
+            audio.play().catch(err => {
+                console.error('[GamePlayer] BGM播放失败:', {
+                    error: err,
+                    url: bgmUrl,
+                    errorMessage: err.message,
+                });
+            });
+            
+            console.log('[GamePlayer] 开始播放BGM:', { bgmUrl, bgmVolume, bgmLoop });
+        } else {
+            // BGM没变，但更新音量和循环设置
+            console.log('[GamePlayer] BGM未变化，更新设置');
+            bgmRef.current.volume = bgmVolume;
+            bgmRef.current.loop = bgmLoop;
+        }
+        
+        // 组件卸载时停止BGM
+        return () => {
+            if (bgmRef.current) {
+                bgmRef.current.pause();
+                bgmRef.current = null;
+            }
+        };
     }, [currentNode]);
 
     // 获取当前场景背景和立绘
@@ -102,24 +192,18 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
     const currentCharacterSprite = currentCharacter?.sprites?.[0]?.imageUrl || currentCharacter?.avatarUrl;
 
     const handleNext = () => {
-        console.log('[GamePlayer] handleNext 被调用');
-        
-        // ✅ 兼容 'branch' 和 'choice' 两种类型
         const nodeType = (currentNode as any)?.type;
         const isBranchNode = nodeType === 'branch' || nodeType === 'choice';
         
         // 分支节点等待选择 - 但如果还有对话,先播放对话
         if (isBranchNode && currentNode?.choices && !currentDialogue) {
-            console.log('[GamePlayer] 分支节点已无对话,等待选择');
             return; // 对话已播放完,等待用户选择
         }
         
-        console.log('[GamePlayer] 调用 engine.next()');
-        const prevNodeId = currentNode?.id;  // ✅ 记录当前节点ID
+        const prevNodeId = currentNode?.id;  // 记录当前节点ID
         const next = engine.next();
-        console.log('[GamePlayer] engine.next() 返回:', next?.id, next?.title);
         
-        // ✅ 只在真正切换节点时才显示过渡效果
+        // 只在真正切换节点时才显示过渡效果
         const isNodeChanged = next && next.id !== prevNodeId;
         
         if (isNodeChanged && next.narration) {
@@ -143,7 +227,7 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
             engine.makeChoice(choice);
             const nextNode = engine.getCurrentNode();
             
-            // ✅ 如果下一个节点有旁白,显示过渡效果
+            // 如果下一个节点有旁白,显示过渡效果
             if (nextNode && nextNode.narration) {
                 setTransitionText(nextNode.narration);
                 setShowTransition(true);
@@ -172,18 +256,6 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-black">
-            {/* ✅ 调试信息层 - 在屏幕左上角显示 */}
-            <div className="absolute top-4 left-4 z-[200] bg-black/80 text-white p-3 rounded text-xs font-mono max-w-xs">
-                <div>节点: {currentNode?.title}</div>
-                <div>类型: {(currentNode as any)?.type}</div>
-                <div>对话: {currentDialogue ? `${engine.getCurrentDialogueIndex() + 1}/${currentNode?.dialogues?.length}` : '无'}</div>
-                <div>选项: {currentNode?.choices?.length || 0}</div>
-                <div className="mt-1 text-yellow-400">
-                    {isBranchNode && currentNode?.choices && !currentDialogue ? '✅ 应该显示选项框' : ''}
-                    {isBranchNode && currentDialogue ? '⏳ 请点击对话继续' : ''}
-                </div>
-            </div>
-
             {/* 过渡层 - 黑底白字居中 */}
             <AnimatePresence>
                 {showTransition && (
@@ -224,19 +296,26 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
                 <AnimatePresence mode="wait">
                     {/* 如果是对话，显示当前角色的立绘 */}
                     {!isNarration && currentCharacterSprite && (
-                        <motion.img
+                        <motion.div
                             key={currentDialogue?.characterId}
-                            src={currentCharacterSprite}
                             initial={{ opacity: 0, x: -100 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -100 }}
                             transition={{ duration: 0.5 }}
-                            className="absolute bottom-0 left-[10%] h-[75%] object-contain drop-shadow-2xl"
-                            style={{
-                                filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.3))'
-                            }}
-                            alt="立绘"
-                        />
+                            className="absolute bottom-0 left-[10%] h-[75%]"
+                        >
+                            <img
+                                src={currentCharacterSprite}
+                                className="h-full object-contain"
+                                style={{
+                                    filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))',
+                                    // ✅ 多层去除白色背景方案
+                                    // 方案1: 使用multiply混合模式,白色会变透明
+                                    mixBlendMode: 'multiply' as const,
+                                }}
+                                alt="立绘"
+                            />
+                        </motion.div>
                     )}
                 </AnimatePresence>
             </div>
@@ -264,7 +343,6 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
             )}
 
             {/* 对话层 - 显示在底部右侧 */}
-            {/* ✅ 修改: 即使没有找到角色也显示对话(作为旁白) */}
             {!isNarration && currentDialogue && (
                 <div
                     className="absolute bottom-0 right-0 w-[55%] p-6 pb-8"
@@ -312,90 +390,84 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
                 </div>
             )}
 
-            {/* 分支选择层 - 只在对话播放完后显示 */}
+            {/* 分支选择层 - 优化设计 */}
             {(() => {
-                // ✅ 兼容 'branch' 和 'choice' 两种类型
                 const nodeType = (currentNode as any)?.type;
                 const isBranchNode = nodeType === 'branch' || nodeType === 'choice';
                 const shouldShow = isBranchNode && currentNode.choices && currentNode.choices.length > 0 && !currentDialogue;
                 
-                // ✅ 调试日志: 检查显示条件
-                if (isBranchNode) {
-                    console.log('[GamePlayer] 选项框显示条件:', {
-                        nodeType,
-                        is_branch_or_choice: isBranchNode,
-                        has_choices: !!currentNode.choices,
-                        choices_not_empty: currentNode.choices && currentNode.choices.length > 0,
-                        no_dialogue: !currentDialogue,
-                        shouldShow,
-                    });
-                    
-                    // ✅ 如果应该显示但没显示,打印详细信息
-                    if (shouldShow) {
-                        console.log('[GamePlayer] ✅✅✅ 选项框应该显示!', {
-                            choicesCount: currentNode.choices?.length,
-                            choicesDetail: currentNode.choices,
-                        });
-                    } else {
-                        console.log('[GamePlayer] ❌ 选项框不显示,原因:', {
-                            has_choices: !!currentNode.choices,
-                            choices_length: currentNode.choices?.length,
-                            has_dialogue: !!currentDialogue,
-                            dialogue_text: currentDialogue?.text,
-                        });
-                    }
-                }
-                
                 if (!shouldShow) return null;
                 
                 return (
-                    <div className="absolute inset-0 flex items-center justify-center z-50 px-6">
-                        {/* 对话框背景 */}
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-6 animate-in fade-in duration-300">
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-indigo-200 overflow-hidden max-w-2xl w-full"
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            transition={{ type: "spring", duration: 0.5 }}
+                            className="bg-gradient-to-br from-white via-white to-indigo-50 rounded-3xl shadow-2xl border-2 border-indigo-300/50 overflow-hidden max-w-2xl w-full"
                         >
-                            {/* 标题栏 */}
-                            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
-                                <div className="text-white text-xl font-bold text-center">
-                                    {currentNode.title || '请选择'}
+                            {/* 标题栏 - 渐变背景 */}
+                            <div className="relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600" />
+                                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
+                                <div className="relative px-8 py-6 text-center">
+                                    <div className="inline-block px-4 py-1 bg-white/20 rounded-full text-white/90 text-xs font-medium mb-2">
+                                        分支选择
+                                    </div>
+                                    <h2 className="text-white text-2xl font-bold drop-shadow-lg">
+                                        {currentNode.title || '做出你的选择'}
+                                    </h2>
                                 </div>
                             </div>
                             
                             {/* 选项列表 */}
-                            <div className="p-6 space-y-3">
+                            <div className="p-8 space-y-4">
                                 {currentNode.choices!.map((choice, index) => {
-                                    // ✅ 调试日志: 检查choice的结构
-                                    if (index === 0) {
-                                        console.log('[GamePlayer] 分支选项:', currentNode.choices!.map(c => ({
-                                            id: c.id,
-                                            text: c.text,
-                                            targetNodeId: (c as any).targetNodeId,
-                                            nextNodeId: (c as any).nextNodeId,
-                                        })));
-                                    }
-                                    
                                     return (
                                         <motion.button
                                             key={choice.id}
                                             onClick={() => handleChoice(choice.id)}
-                                            initial={{ opacity: 0, x: -20 }}
+                                            initial={{ opacity: 0, x: -30 }}
                                             animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: index * 0.1 }}
-                                            whileHover={{ scale: 1.02, x: 4 }}
+                                            transition={{ delay: 0.1 + index * 0.08, type: "spring" }}
+                                            whileHover={{ scale: 1.02, x: 8 }}
                                             whileTap={{ scale: 0.98 }}
-                                            className="w-full px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-900 rounded-xl font-semibold text-left shadow-md hover:shadow-lg transition-all border-2 border-indigo-200 hover:border-indigo-400 flex items-center gap-3"
+                                            className="group relative w-full overflow-hidden"
                                         >
-                                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold">
-                                                {index + 1}
-                                            </div>
-                                            <div className="flex-1 text-base">
-                                                {choice.text}
+                                            <div className="relative px-6 py-5 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 hover:from-indigo-100 hover:via-purple-100 hover:to-pink-100 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-indigo-200/50 hover:border-indigo-400/80">
+                                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/0 via-purple-600/0 to-pink-600/0 group-hover:from-indigo-600/5 group-hover:via-purple-600/5 group-hover:to-pink-600/5 transition-all duration-300" />
+                                                
+                                                <div className="relative flex items-center gap-4">
+                                                    {/* 序号 */}
+                                                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">
+                                                        {index + 1}
+                                                    </div>
+                                                    
+                                                    {/* 选项文本 */}
+                                                    <div className="flex-1 text-left">
+                                                        <p className="text-gray-900 font-semibold text-lg leading-relaxed">
+                                                            {choice.text}
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    {/* 箭头指示 */}
+                                                    <div className="flex-shrink-0 text-indigo-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </motion.button>
                                     );
                                 })}
+                            </div>
+                            
+                            {/* 底部提示 */}
+                            <div className="px-8 pb-6 text-center">
+                                <p className="text-sm text-gray-500">
+                                    选择一个选项继续故事
+                                </p>
                             </div>
                         </motion.div>
                     </div>
