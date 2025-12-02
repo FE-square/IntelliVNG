@@ -11,6 +11,7 @@
 import { mastra, getStoryWorkflow } from "../mastra";
 import type { NarrativePlan, NodeDraft, CriticReport, WorkflowInput } from "../agents/schemas";
 import { NarrativePlanSchema, NodeDraftSchema, CriticReportSchema } from "../agents/schemas";
+import { generateNarrativePlanWithToT, storyPlannerAgent } from "../agents/storyPlanner";
 import { ProgressEmitter, createProgressEmitter } from "./progress-emitter";
 
 // ============ 类型定义（与 game-generator.ts 保持一致）============
@@ -566,22 +567,19 @@ export class GameGeneratorAgent {
     let rewritten: string[] = [];
 
     try {
-      // ============ 规划阶段 ============
-      progressEmitter.stageStart("planning", "Story Planner 规划故事结构", "Tree-of-Thoughts 正在探索多条叙事路径...");
+      // ============ 规划阶段（真正的 Tree-of-Thoughts） ============
+      progressEmitter.stageStart("planning", "Story Planner 规划故事结构", "Tree-of-Thoughts 第 1 轮：生成候选叙事方向...");
       
-      const plannerAgent = mastra.getAgent("story-planner");
-      const planPrompt = this.buildPlannerPrompt(workflowInput);
+      // 使用真正的 ToT 多轮调用
+      // Round 1: 生成候选方向
+      // Round 2: 评估并选择最佳方向  
+      // Round 3: 展开为完整节点骨架
+      plan = await generateNarrativePlanWithToT(storyPlannerAgent, workflowInput);
 
-      const planResponse = await plannerAgent.generate(planPrompt, {
-        structuredOutput: {
-          schema: NarrativePlanSchema,
-        },
-      });
-      plan = planResponse.object as NarrativePlan;
-
-      progressEmitter.stageComplete("planning", "故事骨架规划完成", 
-        `生成了 ${plan.nodes.length} 个节点的故事结构`, {
+      progressEmitter.stageComplete("planning", "故事骨架规划完成 (ToT 3轮)", 
+        `探索了多条叙事路径，最终生成 ${plan.nodes.length} 个节点`, {
         nodeCount: plan.nodes.length,
+        endingCount: plan.nodes.filter(n => n.isEnding).length,
       });
 
       // ============ 规划验证阶段 ============
