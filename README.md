@@ -340,102 +340,71 @@ const response = await this.openai.chat.completions.create({
 
 ## 📊 开发进度
 
-基于 [ARCHITECTURE.md](./ARCHITECTURE.md) 的规划，当前开发进度如下：
-
 ### ✅ 已完成
 
 | 模块 | 功能 | 状态 |
 |------|------|------|
 | **基础架构** | Monorepo (pnpm + turborepo) | ✅ 完成 |
 | **@vng/core** | 核心类型定义 (GameProject, Character, ScriptNode 等) | ✅ 完成 |
-| **@vng/core** | 常量定义 (GENRES, ART_STYLES) | ✅ 完成 |
-| **@vng/core** | ID 生成工具 | ✅ 完成 |
-| **@vng/ui** | 基础 UI 组件 (Button, Card, Input) | ✅ 完成 |
-| **@vng/editor** | React Flow 画布集成 | ✅ 完成 |
-| **@vng/editor** | DialogueNode 对话节点 | ✅ 完成 |
-| **@vng/editor** | ChoiceNode 选择节点 | ✅ 完成 |
-| **@vng/editor** | Zustand 状态管理 | ✅ 完成 |
-| **@vng/player** | GameEngine 游戏引擎 | ✅ 完成 |
+| **@vng/ui** | 基础 UI 组件 (Button, Card, Input, Toast) | ✅ 完成 |
+| **@vng/editor** | React Flow 画布集成与交互 | ✅ 完成 |
+| **@vng/editor** | 节点属性编辑面板 (对话、旁白、场景设置) | ✅ 完成 |
+| **@vng/editor** | 节点图片生成集成 (立绘、背景) | ✅ 完成 |
+| **@vng/player** | GameEngine 游戏引擎核心 | ✅ 完成 |
 | **@vng/player** | GamePlayer 播放器组件 | ✅ 完成 |
-| **@vng/player** | DialogueBox 对话框 | ✅ 完成 |
-| **apps/web** | 首页创意输入 | ✅ 完成 |
-| **apps/web** | Dashboard 生成进度页 | ✅ 完成 |
-| **apps/web** | Editor 编辑器页面 | ✅ 完成 |
-| **apps/web** | API Routes 代理 | ✅ 完成 |
+| **apps/web** | Dashboard 与项目管理 | ✅ 完成 |
+| **apps/web** | 游戏设定管理 (世界观、角色、场景、背景) | ✅ 完成 |
+| **apps/web** | 国际化支持 (I18n + Locale机制) | ✅ 完成 |
 | **intelli-services** | Hono 后端服务框架 | ✅ 完成 |
-| **intelli-services** | OpenAI API 集成 | ✅ 完成 |
-| **intelli-services** | 项目缓存系统 | ✅ 完成 |
+| **intelli-services** | Mastra Agent 框架集成 | ✅ 完成 |
+| **intelli-services** | Director Agent (故事规划/StoryPlanner) | ✅ 完成 |
+| **intelli-services** | Writer Agent (剧本编写/NodeWriter) | ✅ 完成 |
+| **intelli-services** | 图像生成服务 (通义万相, 文生图/图生图) | ✅ 完成 |
+| **intelli-services** | 统一 Prompt 管理与多语言注入系统 | ✅ 完成 |
 
 ### 🚧 进行中
 
 | 模块 | 功能 | 进度 |
 |------|------|------|
-| **@vng/player** | 角色立绘渲染 | 🚧 50% |
-| **@vng/editor** | 节点编辑面板 | 🚧 30% |
+| **@vng/agent** | Agent 协作工作流 (StoryGeneration Workflow) | 🚧 优化中 |
+| **@vng/editor** | 复杂分支与条件逻辑可视化 | 🚧 40% |
+| **导出功能** | 项目 JSON 导入/导出 | 🚧 已实现基础版 |
 
 ### ❌ 待开发
 
 | 模块 | 功能 | 优先级 |
 |------|------|--------|
-| **@vng/agent** | Mastra AI Agent 框架集成 | 🔴 高 |
-| **@vng/agent** | Director Agent (总导演) | 🔴 高 |
-| **@vng/agent** | Writer Agent (编剧) | 🔴 高 |
-| **@vng/agent** | Artist Agent (美术) | 🟡 中 |
-| **@vng/agent** | MCP Tools 定义 | 🟡 中 |
-| **@vng/agent** | createGame Workflow | 🔴 高 |
-| **@vng/editor** | SceneChangeNode 场景切换节点 | 🟡 中 |
-| **@vng/editor** | NarrationNode 旁白节点 | 🟡 中 |
-| **@vng/editor** | ConditionNode 条件节点 | 🟢 低 |
-| **@vng/editor** | NodePalette 节点工具面板 | 🟡 中 |
-| **@vng/editor** | PropertyPanel 属性编辑面板 | 🟡 中 |
-| **@vng/player** | ChoicePanel 选项面板优化 | 🟡 中 |
-| **@vng/player** | Background 背景组件 | 🟡 中 |
-| **apps/web** | 角色管理页面 | 🟡 中 |
-| **apps/web** | 背景管理页面 | 🟡 中 |
-| **图像生成** | 角色立绘生成 (Stable Diffusion/通义万相) | 🔴 高 |
-| **图像生成** | 场景背景生成 | 🔴 高 |
-| **导出功能** | 单 HTML 文件导出 | 🔴 高 |
-| **导出功能** | 播放器运行时打包 | 🟡 中 |
+| **导出功能** | 提供单 HTML 播放器 + DSL (允许用户用HTML+JSON离线运行) | 🔴 高 |
+| **导出功能** | 播放器 DSL 打包优化 | 🟡 中 |
+| **@vng/editor** | 变量系统与条件分支节点 | 🟡 中 |
+| **apps/web** | 用户账号系统 | 🟢 低 |
+| **apps/web** | 社区分享与发布平台 | 🟢 低 |
 
 ---
 
 ## 🗺️ Roadmap
 
-### Phase 1: MVP 完善 (当前)
+### Phase 1: 核心功能与 MVP (已完成)
 
-- [ ] 完善编辑器属性面板，支持编辑节点内容
-- [ ] 实现更多节点类型 (旁白、场景切换)
-- [ ] 优化 AI 生成质量和稳定性
-- [ ] 添加项目列表和管理功能
+- [x] 基础编辑器与播放器引擎
+- [x] 角色、场景、世界观管理
+- [x] 集成 Mastra 实现 AI 辅助创作 (规划与写作)
+- [x] 集成通义万相实现角色与背景生成
+- [x] 多语言架构支持 (前端 + AI生成)
 
-### Phase 2: Multi-Agent 架构
+### Phase 2: 体验优化与工作流 (当前)
 
-- [ ] 集成 Mastra AI Agent 框架
-- [ ] 实现 Director Agent (故事规划)
-- [ ] 实现 Writer Agent (剧本编写)
-- [ ] 实现 Artist Agent (美术指导)
-- [ ] 设计 Agent 协作工作流
+- [ ] 优化 Agent 协作工作流，提升长篇故事的一致性
+- [ ] 增强编辑器交互，支持更复杂的剧情分支逻辑
+- [ ] 完善项目导入导出功能，支持数据迁移
+- [ ] 提升图像生成的稳定性和风格一致性 (图生图优化)
 
-### Phase 3: 图像生成
+### Phase 3: 发布与生态
 
-- [ ] 集成图像生成服务 (Stable Diffusion / 通义万相)
-- [ ] 实现角色立绘生成
-- [ ] 实现场景背景生成
-- [ ] 支持多表情/多变体
-
-### Phase 4: 导出与发布
-
-- [ ] 实现单 HTML 文件导出
-- [ ] 打包 Player 运行时
-- [ ] 图片资源内联 (Base64)
-- [ ] 支持分享和发布
-
-### Phase 5: 高级功能
-
-- [ ] 变量系统和条件分支
-- [ ] 存档/读档功能
-- [ ] 多语言支持
-- [ ] 用户账号系统
+- [ ] 实现单 HTML 导出，支持独立部署
+- [ ] 优化播放器性能与移动端适配
+- [ ] (可选) 用户账户与云端同步
+- [ ] (可选) 游戏作品分享社区
 
 ---
 
