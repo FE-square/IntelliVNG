@@ -14,6 +14,7 @@ import { NarrativePlanSchema, NodeDraftSchema, CriticReportSchema } from "../age
 import { generateNarrativePlanWithToT, storyPlannerAgent } from "../agents/storyPlanner";
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { ProgressEmitter, createProgressEmitter } from "./progress-emitter";
+import { promptManager } from '../prompts';
 
 // ============ 类型定义（与 game-generator.ts 保持一致）============
 
@@ -627,26 +628,18 @@ export class GameGeneratorAgent {
           layer.map(async (node) => {
             const previousSummary = this.getPreviousSummary(node, plan!.nodes, drafts);
             
-            const { addLocaleToUserPrompt } = await import('../utils/locale');
-            const writePrompt = addLocaleToUserPrompt(`## 当前要写的节点
-${JSON.stringify(node, null, 2)}
-
-## 前序节点摘要
-${previousSummary || "（这是故事的开始）"}
-
-## 角色档案
-${JSON.stringify(workflowInput.characterDB.characters.map((c: any) => ({
-  name: c.name,
-  displayName: c.displayName || c.name,
-  personality: c.personality?.traits || [],
-  identity: c.identity,
-  description: c.description,
-})), null, 2)}
-
-## 风格指南
-${JSON.stringify(workflowInput.styleGuide || {}, null, 2)}
-
-请为这个节点撰写对话和旁白。`, locale);
+            const { user: writePrompt } = promptManager.build('workflow.write-node', {
+              planNode: JSON.stringify(node, null, 2),
+              previousNodeSummary: previousSummary || "（这是故事的开始）",
+              characters: JSON.stringify(workflowInput.characterDB.characters.map((c: any) => ({
+                name: c.name,
+                displayName: c.displayName || c.name,
+                personality: c.personality?.traits || [],
+                identity: c.identity,
+                description: c.description,
+              })), null, 2),
+              styleGuide: JSON.stringify(workflowInput.styleGuide || {}, null, 2),
+            }, locale);
 
             const response = await writerAgent.generate(writePrompt, {
               structuredOutput: {
@@ -683,30 +676,16 @@ ${JSON.stringify(workflowInput.styleGuide || {}, null, 2)}
         narration: d.narration,
       }));
 
-      const { addLocaleToUserPrompt } = await import('../utils/locale');
-      const reviewPrompt = addLocaleToUserPrompt(`## 待审阅的节点草稿
-${JSON.stringify(Object.values(drafts), null, 2)}
-
-## 原始故事规划
-${JSON.stringify(plan.outline, null, 2)}
-
-## 角色档案
-${JSON.stringify(workflowInput.characterDB.characters.map((c: any) => ({
-  name: c.name,
-  displayName: c.displayName,
-  personality: c.personality?.traits,
-})), null, 2)}
-
----
-
-请按照 ReAct 模式审阅这个故事：
-1. 调用 validate-structure 检查结构
-2. 调用 analyze-paths 分析路径多样性
-3. 调用 analyze-dialogue-quality 检查对话质量
-4. 基于工具输出，给出综合评分和修改建议
-
-检查用的节点数据:
-${JSON.stringify(nodesForValidation, null, 2)}`, locale);
+      const { user: reviewPrompt } = promptManager.build('workflow.review', {
+        drafts: JSON.stringify(Object.values(drafts), null, 2),
+        planOutline: JSON.stringify(plan.outline, null, 2),
+        characters: JSON.stringify(workflowInput.characterDB.characters.map((c: any) => ({
+          name: c.name,
+          displayName: c.displayName,
+          personality: c.personality?.traits,
+        })), null, 2),
+        nodesForValidation: JSON.stringify(nodesForValidation, null, 2),
+      }, locale);
 
       const reviewResponse = await reviewerAgent.generate(reviewPrompt, {
         structuredOutput: {
@@ -742,27 +721,18 @@ ${JSON.stringify(nodesForValidation, null, 2)}`, locale);
             
             if (!originalDraft) return;
 
-            const { addLocaleToUserPrompt } = await import('../utils/locale');
-            const rewritePrompt = addLocaleToUserPrompt(`## 原始草稿
-${JSON.stringify(originalDraft, null, 2)}
-
-## 审稿人的修改建议
-${issue?.suggestion || "请优化对话质量，使其更加生动自然"}
-
-## 问题类型
-${issue?.type || "dialogue"} - ${issue?.description || "需要优化"}
-
-## 角色档案
-${JSON.stringify(workflowInput.characterDB.characters.map((c: any) => ({
-  name: c.name,
-  displayName: c.displayName || c.name,
-  personality: c.personality?.traits || [],
-})), null, 2)}
-
-## 风格指南
-${JSON.stringify(workflowInput.styleGuide || {}, null, 2)}
-
-请根据审稿人的修改建议重写这个节点。`, locale);
+            const { user: rewritePrompt } = promptManager.build('workflow.rewrite', {
+              originalDraft: JSON.stringify(originalDraft, null, 2),
+              suggestion: issue?.suggestion || "请优化对话质量，使其更加生动自然",
+              issueType: issue?.type || "dialogue",
+              issueDescription: issue?.description || "需要优化",
+              characters: JSON.stringify(workflowInput.characterDB.characters.map((c: any) => ({
+                name: c.name,
+                displayName: c.displayName || c.name,
+                personality: c.personality?.traits || [],
+              })), null, 2),
+              styleGuide: JSON.stringify(workflowInput.styleGuide || {}, null, 2),
+            }, locale);
 
             const response = await writerAgent.generate(rewritePrompt, {
               structuredOutput: {

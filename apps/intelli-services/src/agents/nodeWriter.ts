@@ -3,7 +3,8 @@
  * 采用 Few-Shot CoT 模式为单个节点撰写对话和旁白
  */
 import { Agent } from "@mastra/core/agent";
-import { addLocaleToUserPrompt, type Locale, DEFAULT_LOCALE } from '../utils/locale';
+import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
+import { promptManager } from '../prompts';
 
 export const nodeWriterAgent = new Agent({
   name: "node-writer",
@@ -107,29 +108,18 @@ export async function writeNodeContent(
   // 找出本节点涉及的角色（简化版：暂时传所有角色）
   const characters = input.characterDB.characters || [];
 
-  const prompt = addLocaleToUserPrompt(`## 当前要写的节点
-${JSON.stringify(input.planNode, null, 2)}
-
-## 前序节点摘要
-${input.previousNodeSummary || "（这是故事的开始）"}
-
-## 角色档案
-${JSON.stringify(characters.map((c: any) => ({
-    name: c.name,
-    displayName: c.displayName || c.name,
-    personality: c.personality?.traits || [],
-    identity: c.identity,
-    description: c.description,
-  })), null, 2)}
-
-## 风格指南
-${JSON.stringify(input.styleGuide || {}, null, 2)}
-
-请为这个节点撰写对话和旁白。
-- 如果是 branch 类型，必须包含 choices
-- 如果是 scene 类型，必须包含 nextNodeId
-- ending 类型不需要 choices 和 nextNodeId
-- summary 必须填写，这对保证故事连贯性非常重要`, locale);
+  const { user: prompt } = promptManager.build('node-writer.write', {
+    planNode: JSON.stringify(input.planNode, null, 2),
+    previousNodeSummary: input.previousNodeSummary || "（这是故事的开始）",
+    characters: JSON.stringify(characters.map((c: any) => ({
+      name: c.name,
+      displayName: c.displayName || c.name,
+      personality: c.personality?.traits || [],
+      identity: c.identity,
+      description: c.description,
+    })), null, 2),
+    styleGuide: JSON.stringify(input.styleGuide || {}, null, 2),
+  }, locale);
 
   const response = await agent.generate(prompt, {
     structuredOutput: {

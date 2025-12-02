@@ -10,7 +10,8 @@
  */
 
 import OpenAI from 'openai';
-import { addLocaleToSystemPrompt, addLocaleToUserPrompt, type Locale, DEFAULT_LOCALE } from '../utils/locale';
+import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
+import { promptManager } from '../prompts';
 
 // 支持的表单类型
 export type FormType = 'character' | 'world' | 'scene' | 'theme' | 'background';
@@ -301,7 +302,14 @@ export class FormAutocomplete {
      * 构建系统 prompt
      */
     private buildSystemPrompt(schema: FormSchema, context?: AutocompleteRequest['context'], locale: Locale = DEFAULT_LOCALE): string {
-        let prompt = schema.systemPrompt;
+        const promptName = `form-autocomplete.${schema.type}.system` as const;
+        const { system: basePrompt } = promptManager.build(promptName, {}, locale);
+        
+        if (!basePrompt) {
+            throw new Error(`Prompt template "${promptName}" not found`);
+        }
+
+        let prompt = basePrompt;
 
         if (context) {
             prompt += '\n\n上下文信息：';
@@ -315,7 +323,8 @@ export class FormAutocomplete {
 
         prompt += '\n\n规则：\n1. 返回纯 JSON 格式，不要使用 markdown 代码块\n2. 只填写空缺字段，保持已填内容不变';
 
-        return addLocaleToSystemPrompt(prompt, locale);
+        // promptManager.build() 已经自动添加了locale，所以直接返回
+        return prompt;
     }
 
     /**
@@ -330,20 +339,14 @@ export class FormAutocomplete {
     ): string {
         const exampleJson = this.generateExampleJson(schema.fields);
 
-        const prompt = `## ${schema.title}自动填充
+        const { user } = promptManager.build('form-autocomplete.user', {
+            formTitle: schema.title,
+            filledFields: filledFields.length > 0 ? filledFields.join('\n') : '(用户尚未填写任何内容)',
+            emptyFields: emptyFields.join('\n'),
+            exampleJson: JSON.stringify(exampleJson, null, 2),
+        }, locale);
 
-### 用户已填写的内容：
-${filledFields.length > 0 ? filledFields.join('\n') : '(用户尚未填写任何内容)'}
-
-### 需要补全的字段：
-${emptyFields.join('\n')}
-
-### 返回格式示例：
-${JSON.stringify(exampleJson, null, 2)}
-
-请直接返回 JSON，不要使用代码块包裹：`;
-
-        return addLocaleToUserPrompt(prompt, locale);
+        return user;
     }
 
     /**

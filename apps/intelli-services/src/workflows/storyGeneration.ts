@@ -11,7 +11,8 @@ import {
   WorkflowInputSchema,
   type WorkflowInput,
 } from "../agents/schemas";
-import { addLocaleToUserPrompt, type Locale, DEFAULT_LOCALE } from '../utils/locale';
+import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
+import { promptManager } from '../prompts';
 
 // ============ 提示词构建函数 ============
 
@@ -21,76 +22,14 @@ import { addLocaleToUserPrompt, type Locale, DEFAULT_LOCALE } from '../utils/loc
  */
 function buildPlannerPrompt(inputData: WorkflowInput): string {
   const locale = (inputData.locale as Locale) || DEFAULT_LOCALE;
-  const basePrompt = `## 你的任务
-设计一个非线性视觉小说的**故事结构骨架**（只规划结构，不写对话）。
-
-## 世界观设定
-${JSON.stringify(inputData.worldBible, null, 2)}
-
-## 角色档案
-${JSON.stringify(inputData.characterDB, null, 2)}
-
-## 风格指南
-${JSON.stringify(inputData.styleGuide || {}, null, 2)}
-
-## 约束条件
-- 目标节点数: ${inputData.constraints?.targetNodeCount || 12}
-- 目标结局数: ${inputData.constraints?.targetEndingCount || 3}
-
----
-
-## 🌳 请使用 Tree-of-Thoughts (ToT) 方法进行设计
-
-ToT 是一种结构化思维方法，你需要像下棋一样"向前看几步"，探索多种可能性后选择最优解。
-
-### Step 1: 生成故事前提 (Premise)
-首先，用一句话描述故事核心：
-> "一个关于 [主角名字] 在 [世界背景] 中 [面对什么核心冲突] 的故事"
-
-### Step 2: 分支思考 - 探索 2-3 条叙事路径
-针对这个前提，思考 2-3 种不同的叙事方向。对每条路径进行评估：
-
-| 路径 | 描述 | 戏剧性(1-5) | 角色契合度(1-5) | 分支潜力(1-5) | 总分 |
-|------|------|------------|----------------|--------------|------|
-| A    | ...  | ?          | ?              | ?            | ?    |
-| B    | ...  | ?          | ?              | ?            | ?    |
-| C    | ...  | ?          | ?              | ?            | ?    |
-
-### Step 3: 选择最优路径
-选择总分最高的路径，并简要说明选择理由。
-
-### Step 4: 展开节点骨架
-基于选定的路径，设计具体的节点结构：
-
-1. **START 节点** (唯一，isStart: true)
-   - functionTag: "setup"
-   - 介绍主角和世界观
-
-2. **发展节点** (SCENE 类型)
-   - functionTag: "rising" → "conflict"
-   - 矛盾逐渐升温
-
-3. **分支节点** (BRANCH 类型，2-3 个)
-   - functionTag: 通常是 "conflict" 或 "climax"
-   - 每个选项必须有：
-     * emotionalWeight: "轻松" | "沉重" | "痛苦抉择"
-     * consequenceHint: 暗示后果（不剧透）
-     * pathType: "通向好结局" | "通向坏结局" | "中立路线"
-
-4. **结局节点** (ENDING 类型，2-3 个，isEnding: true)
-   - functionTag: "resolution"
-   - 不同选择导向不同结局
-
-### Step 5: 验证连通性
-- ✅ 每个节点都能从 START 到达
-- ✅ 每条路径最终都能到达某个 ENDING
-- ✅ 非 ENDING 节点必须有 nextNodeId 或 choicesMeta
-- ✅ sceneName 都来自用户定义的场景列表
-
----
-
-请按照上述步骤思考，然后输出符合 NarrativePlan 格式的 JSON。`;
-  return addLocaleToUserPrompt(basePrompt, locale);
+  const { user } = promptManager.build('workflow.planner-single-call', {
+    worldBible: JSON.stringify(inputData.worldBible, null, 2),
+    characterDB: JSON.stringify(inputData.characterDB, null, 2),
+    styleGuide: JSON.stringify(inputData.styleGuide || {}, null, 2),
+    targetNodeCount: String(inputData.constraints?.targetNodeCount || 12),
+    targetEndingCount: String(inputData.constraints?.targetEndingCount || 3),
+  }, locale);
+  return user;
 }
 
 // ============ Step 1: 规划阶段 ============
@@ -160,26 +99,18 @@ export const writeStep = createStep({
           // 获取前序节点摘要
           const previousSummary = getPreviousSummary(node, plan.nodes, drafts);
 
-          const basePrompt = `## 当前要写的节点
-${JSON.stringify(node, null, 2)}
-
-## 前序节点摘要
-${previousSummary || "（这是故事的开始）"}
-
-## 角色档案
-${JSON.stringify(characterDB.characters?.map((c: any) => ({
-  name: c.name,
-  displayName: c.displayName || c.name,
-  personality: c.personality?.traits || [],
-  identity: c.identity,
-  description: c.description,
-})), null, 2)}
-
-## 风格指南
-${JSON.stringify(styleGuide, null, 2)}
-
-请为这个节点撰写对话和旁白。`;
-          const prompt = addLocaleToUserPrompt(basePrompt, locale);
+          const { user: prompt } = promptManager.build('workflow.write-node', {
+            planNode: JSON.stringify(node, null, 2),
+            previousNodeSummary: previousSummary || "（这是故事的开始）",
+            characters: JSON.stringify(characterDB.characters?.map((c: any) => ({
+              name: c.name,
+              displayName: c.displayName || c.name,
+              personality: c.personality?.traits || [],
+              identity: c.identity,
+              description: c.description,
+            })), null, 2),
+            styleGuide: JSON.stringify(styleGuide, null, 2),
+          }, locale);
 
           const response = await agent.generate(prompt, {
             structuredOutput: {
@@ -199,7 +130,7 @@ ${JSON.stringify(styleGuide, null, 2)}
 
     console.log(`[WriteStep] 写作完成，共生成 ${Object.keys(drafts).length} 个节点草稿`);
 
-    return { plan, drafts, worldBible, characterDB, styleGuide };
+    return { plan, drafts, worldBible, characterDB, styleGuide, locale };
   },
 });
 
@@ -212,6 +143,7 @@ export const reviewStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   outputSchema: z.object({
     plan: NarrativePlanSchema,
@@ -240,31 +172,16 @@ export const reviewStep = createStep({
       narration: d.narration,
     }));
 
-    const locale = (inputData.styleGuide?.locale as Locale) || DEFAULT_LOCALE;
-    const basePrompt = `## 待审阅的节点草稿
-${JSON.stringify(Object.values(drafts), null, 2)}
-
-## 原始故事规划
-${JSON.stringify(plan.outline, null, 2)}
-
-## 角色档案
-${JSON.stringify(characterDB.characters?.map((c: any) => ({
-  name: c.name,
-  displayName: c.displayName,
-  personality: c.personality?.traits,
-})), null, 2)}
-
----
-
-请按照 ReAct 模式审阅这个故事：
-1. 调用 validate-structure 检查结构
-2. 调用 analyze-paths 分析路径多样性
-3. 调用 analyze-dialogue-quality 检查对话质量
-4. 基于工具输出，给出综合评分和修改建议
-
-检查用的节点数据:
-${JSON.stringify(nodesForValidation, null, 2)}`;
-    const prompt = addLocaleToUserPrompt(basePrompt, locale);
+    const { user: prompt } = promptManager.build('workflow.review', {
+      drafts: JSON.stringify(Object.values(drafts), null, 2),
+      planOutline: JSON.stringify(plan.outline, null, 2),
+      characters: JSON.stringify(characterDB.characters?.map((c: any) => ({
+        name: c.name,
+        displayName: c.displayName,
+        personality: c.personality?.traits,
+      })), null, 2),
+      nodesForValidation: JSON.stringify(nodesForValidation, null, 2),
+    }, locale);
 
     const response = await agent.generate(prompt, {
       structuredOutput: {
@@ -290,6 +207,7 @@ export const rewriteStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   outputSchema: z.object({
     plan: NarrativePlanSchema,
@@ -324,28 +242,18 @@ export const rewriteStep = createStep({
           return;
         }
 
-        const locale = (inputData.styleGuide?.locale as Locale) || DEFAULT_LOCALE;
-        const basePrompt = `## 原始草稿
-${JSON.stringify(originalDraft, null, 2)}
-
-## 审稿人的修改建议
-${issue?.suggestion || "请优化对话质量，使其更加生动自然"}
-
-## 问题类型
-${issue?.type || "dialogue"} - ${issue?.description || "需要优化"}
-
-## 角色档案
-${JSON.stringify(characterDB.characters?.map((c: any) => ({
-  name: c.name,
-  displayName: c.displayName || c.name,
-  personality: c.personality?.traits || [],
-})), null, 2)}
-
-## 风格指南
-${JSON.stringify(styleGuide, null, 2)}
-
-请根据审稿人的修改建议重写这个节点，保持 id、type、sceneName、nextNodeId/choices 结构不变。`;
-        const prompt = addLocaleToUserPrompt(basePrompt, locale);
+        const { user: prompt } = promptManager.build('workflow.rewrite', {
+          originalDraft: JSON.stringify(originalDraft, null, 2),
+          suggestion: issue?.suggestion || "请优化对话质量，使其更加生动自然",
+          issueType: issue?.type || "dialogue",
+          issueDescription: issue?.description || "需要优化",
+          characters: JSON.stringify(characterDB.characters?.map((c: any) => ({
+            name: c.name,
+            displayName: c.displayName || c.name,
+            personality: c.personality?.traits || [],
+          })), null, 2),
+          styleGuide: JSON.stringify(styleGuide, null, 2),
+        }, locale);
 
         const response = await agent.generate(prompt, {
           structuredOutput: {

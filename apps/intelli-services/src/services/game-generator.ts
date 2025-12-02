@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
-import { addLocaleToSystemPrompt, addLocaleToUserPrompt, type Locale, DEFAULT_LOCALE } from '../utils/locale';
+import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
+import { promptManager } from '../prompts';
 
 // Types - 统一使用 StoryNode 格式（与 @vng/core 保持一致）
 interface GameProject {
@@ -215,15 +216,19 @@ export class GameGenerator {
         console.log(`[GameGenerator] Using model: ${this.modelName}`);
         console.log(`[GameGenerator] User locale: ${locale}`);
 
-        // Call OpenAI to generate the game design
-        const systemPrompt = addLocaleToSystemPrompt(DIRECTOR_SYSTEM_PROMPT, locale);
-        const userPrompt = addLocaleToUserPrompt(`Design and compose a visual novel script based on:\n\n${idea}`, locale);
+        // 使用统一的prompt管理器
+        const { system, user } = promptManager.build('game-generator.idea', {
+            idea,
+        }, locale);
+        
+        // 获取系统prompt
+        const { system: systemPrompt } = promptManager.build('game-generator.director-system', {}, locale);
         
         const response = await this.openai.chat.completions.create({
             model: this.modelName,
             messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt },
+                ...(system ? [{ role: 'system' as const, content: system }] : []),
+                { role: 'user' as const, content: user },
             ],
             temperature: 0.8,
             max_tokens: 10000,  // 增加 token 限制以避免截断
@@ -319,41 +324,20 @@ export class GameGenerator {
         backgroundsInfo = `${worldInfo}\n\n场景设定：\n${scenesInfo}${themeInfo}`;
         }
 
-        const setupPrompt = `角色设定：
-${charactersInfo}
-
-背景设定：
-${backgroundsInfo}
-
-
-要求：
-1. 创作 10-15 个场景，每个场景 5-10 段对话
-2. 故事要有完整的起承转合（开端、发展、高潮、结局）
-3. 充分展现每个角色的性格特点和技能
-4. 利用背景世界观构建冲突和剧情
-5. 对话要生动、符合角色性格
-6. 必须生成唯一开头 (isStart: true) + 多分支 + 2-3个结尾 (isEnding: true)
-7. 每个节点必须在 sceneName 字段中使用用户定义的场景名称，从上述场景列表中选择
-8. 分支节点的选项必须带有 condition 标签
-9. 严格遵循主题风格要求
-
-🔴 CRITICAL - 节点连接完整性要求:
-- 每个分支的EVERY选项都必须有完整的路径到达结局
-- 不允许有断开的节点或孤立的节点
-- 每条支线都必须是一个完整的故事(有头有尾)
-- 示例: start → scene1 → branch1 → [选项A → scene2a → ending1, 选项B → scene2b → ending2]
-- 确保每个节点都可以从start节点到达
-- 确保每条路径最终都能到达某个ending节点`;
-
-        // Call OpenAI
-        const systemPrompt = addLocaleToSystemPrompt(DIRECTOR_SYSTEM_PROMPT, locale);
-        const userPrompt = addLocaleToUserPrompt(setupPrompt, locale);
+        // 使用统一的prompt管理器
+        const { user } = promptManager.build('game-generator.setup', {
+            charactersInfo,
+            backgroundsInfo,
+        }, locale);
+        
+        // 获取系统prompt
+        const { system: directorSystem } = promptManager.build('game-generator.director-system', {}, locale);
         
         const response = await this.openai.chat.completions.create({
             model: this.modelName,
             messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt },
+                ...(directorSystem ? [{ role: 'system' as const, content: directorSystem }] : []),
+                { role: 'user' as const, content: user },
             ],
             temperature: 0.8,
             max_tokens: 10000,
