@@ -11,6 +11,7 @@ import {
   WorkflowInputSchema,
   type WorkflowInput,
 } from "../agents/schemas";
+import { addLocaleToUserPrompt, type Locale, DEFAULT_LOCALE } from '../utils/locale';
 
 // ============ 提示词构建函数 ============
 
@@ -19,7 +20,8 @@ import {
  * 详细说明 Tree-of-Thoughts (ToT) 方法的执行步骤
  */
 function buildPlannerPrompt(inputData: WorkflowInput): string {
-  return `## 你的任务
+  const locale = (inputData.locale as Locale) || DEFAULT_LOCALE;
+  const basePrompt = `## 你的任务
 设计一个非线性视觉小说的**故事结构骨架**（只规划结构，不写对话）。
 
 ## 世界观设定
@@ -88,6 +90,7 @@ ToT 是一种结构化思维方法，你需要像下棋一样"向前看几步"�
 ---
 
 请按照上述步骤思考，然后输出符合 NarrativePlan 格式的 JSON。`;
+  return addLocaleToUserPrompt(basePrompt, locale);
 }
 
 // ============ Step 1: 规划阶段 ============
@@ -139,6 +142,7 @@ export const writeStep = createStep({
   execute: async ({ inputData, mastra }) => {
     const agent = mastra.getAgent("node-writer");
     const { plan, characterDB, styleGuide, worldBible } = inputData;
+    const locale = (inputData.locale as Locale) || DEFAULT_LOCALE;
 
     // 拓扑排序：按深度分层
     const layers = topologicalSort(plan.nodes);
@@ -156,7 +160,7 @@ export const writeStep = createStep({
           // 获取前序节点摘要
           const previousSummary = getPreviousSummary(node, plan.nodes, drafts);
 
-          const prompt = `## 当前要写的节点
+          const basePrompt = `## 当前要写的节点
 ${JSON.stringify(node, null, 2)}
 
 ## 前序节点摘要
@@ -175,6 +179,7 @@ ${JSON.stringify(characterDB.characters?.map((c: any) => ({
 ${JSON.stringify(styleGuide, null, 2)}
 
 请为这个节点撰写对话和旁白。`;
+          const prompt = addLocaleToUserPrompt(basePrompt, locale);
 
           const response = await agent.generate(prompt, {
             structuredOutput: {
@@ -219,6 +224,7 @@ export const reviewStep = createStep({
   execute: async ({ inputData, mastra }) => {
     const agent = mastra.getAgent("story-reviewer");
     const { plan, drafts, worldBible, characterDB, styleGuide } = inputData;
+    const locale = (inputData.locale as Locale) || DEFAULT_LOCALE;
 
     console.log(`[ReviewStep] 开始审阅故事...`);
 
@@ -234,7 +240,8 @@ export const reviewStep = createStep({
       narration: d.narration,
     }));
 
-    const prompt = `## 待审阅的节点草稿
+    const locale = (inputData.styleGuide?.locale as Locale) || DEFAULT_LOCALE;
+    const basePrompt = `## 待审阅的节点草稿
 ${JSON.stringify(Object.values(drafts), null, 2)}
 
 ## 原始故事规划
@@ -257,6 +264,7 @@ ${JSON.stringify(characterDB.characters?.map((c: any) => ({
 
 检查用的节点数据:
 ${JSON.stringify(nodesForValidation, null, 2)}`;
+    const prompt = addLocaleToUserPrompt(basePrompt, locale);
 
     const response = await agent.generate(prompt, {
       structuredOutput: {
@@ -291,6 +299,7 @@ export const rewriteStep = createStep({
   }),
   execute: async ({ inputData, mastra }) => {
     const { plan, drafts, report, characterDB, styleGuide } = inputData;
+    const locale = (inputData.locale as Locale) || DEFAULT_LOCALE;
 
     // 如果不需要重写，直接返回
     if (!report.shouldRegenerate || report.regenerateTarget === "none") {
@@ -315,7 +324,8 @@ export const rewriteStep = createStep({
           return;
         }
 
-        const prompt = `## 原始草稿
+        const locale = (inputData.styleGuide?.locale as Locale) || DEFAULT_LOCALE;
+        const basePrompt = `## 原始草稿
 ${JSON.stringify(originalDraft, null, 2)}
 
 ## 审稿人的修改建议
@@ -335,6 +345,7 @@ ${JSON.stringify(characterDB.characters?.map((c: any) => ({
 ${JSON.stringify(styleGuide, null, 2)}
 
 请根据审稿人的修改建议重写这个节点，保持 id、type、sceneName、nextNodeId/choices 结构不变。`;
+        const prompt = addLocaleToUserPrompt(basePrompt, locale);
 
         const response = await agent.generate(prompt, {
           structuredOutput: {

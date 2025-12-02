@@ -153,8 +153,10 @@ export const WorkflowInputSchema = z.object({
     targetNodeCount: z.number().default(12),
     targetEndingCount: z.number().default(3),
   }).optional(),
+  locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
 });
 
 export type WorkflowInput = z.infer<typeof WorkflowInputSchema>;
+
 
 

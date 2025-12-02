@@ -6,7 +6,10 @@ const SERVICES_URL = process.env.INTELLI_SERVICES_URL || 'http://localhost:4000'
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { idea, characters, worldSetting, scenes, backgrounds } = body;
+        const { idea, characters, worldSetting, scenes, backgrounds, locale } = body;
+        
+        // 获取locale，如果没有则从URL参数获取
+        const userLocale = locale || 'zh-CN';
 
         // 支持三种模式：
         // 1. 旧的 idea 模式

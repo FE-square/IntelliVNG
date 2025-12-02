@@ -78,14 +78,16 @@ export const storyPlannerAgent = new Agent({
  */
 export async function generateNarrativePlanWithToT(
   agent: typeof storyPlannerAgent,
-  input: WorkflowInput
+  input: WorkflowInput,
+  locale: string = 'zh-CN'
 ): Promise<NarrativePlan> {
   console.log("[ToT] 🌳 开始 Tree-of-Thoughts 规划...");
 
   // ============ Round 1: 生成候选叙事方向 ============
   console.log("[ToT] Round 1: 生成候选叙事方向...");
   
-  const generatePrompt = `## 任务
+  const { addLocaleToUserPrompt } = await import('../utils/locale');
+  const generatePrompt = addLocaleToUserPrompt(`## 任务
 基于以下设定，生成 3 个不同的叙事方向（候选方案）。
 
 ## 世界观设定
@@ -105,7 +107,7 @@ ${JSON.stringify(input.styleGuide || {}, null, 2)}
 - description: 一句话描述这个方向的特点
 - premise: 故事前提（"一个关于...的故事"）
 - centralConflict: 核心冲突
-- potentialEndings: 可能的结局类型列表（2-3 个）`;
+- potentialEndings: 可能的结局类型列表（2-3 个）`, locale as any);
 
   const candidatesResponse = await agent.generate(generatePrompt, {
     structuredOutput: {
@@ -122,7 +124,7 @@ ${JSON.stringify(input.styleGuide || {}, null, 2)}
   // ============ Round 2: 评估每个候选方向 ============
   console.log("[ToT] Round 2: 评估候选方向...");
   
-  const evaluatePrompt = `## 任务
+  const evaluatePrompt = addLocaleToUserPrompt(`## 任务
 评估以下 ${candidates.paths.length} 个叙事方向，为每个方向打分并选择最佳方向。
 
 ## 候选方向
@@ -145,7 +147,7 @@ ${JSON.stringify(candidates.paths, null, 2)}
 请：
 1. 为每个方向打分并给出理由
 2. 计算总分 (totalScore = dramatic + characterFit + branchPotential + thematicDepth)
-3. 选择总分最高的方向，并解释选择理由`;
+3. 选择总分最高的方向，并解释选择理由`, locale as any);
 
   const evaluationResponse = await agent.generate(evaluatePrompt, {
     structuredOutput: {
@@ -169,7 +171,7 @@ ${JSON.stringify(candidates.paths, null, 2)}
   // ============ Round 3: 展开为完整节点骨架 ============
   console.log("[ToT] Round 3: 展开节点骨架...");
   
-  const expandPrompt = `## 任务
+  const expandPrompt = addLocaleToUserPrompt(`## 任务
 基于选定的叙事方向，展开为完整的故事节点骨架。
 
 ## 选定的叙事方向

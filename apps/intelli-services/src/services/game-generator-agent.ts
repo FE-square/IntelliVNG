@@ -12,6 +12,7 @@ import { mastra, getStoryWorkflow } from "../mastra";
 import type { NarrativePlan, NodeDraft, CriticReport, WorkflowInput } from "../agents/schemas";
 import { NarrativePlanSchema, NodeDraftSchema, CriticReportSchema } from "../agents/schemas";
 import { generateNarrativePlanWithToT, storyPlannerAgent } from "../agents/storyPlanner";
+import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { ProgressEmitter, createProgressEmitter } from "./progress-emitter";
 
 // ============ 类型定义（与 game-generator.ts 保持一致）============
@@ -127,15 +128,17 @@ export class GameGeneratorAgent {
    * @param worldSetting 世界观设定
    * @param scenes 场景列表
    * @param themeSetting 主题风格设定
+   * @param locale 用户语言
    */
   async generateFromSetup(
     characters: any[],
     worldSetting: any,
     scenes?: any[],
-    themeSetting?: any
+    themeSetting?: any,
+    locale: Locale = DEFAULT_LOCALE
   ): Promise<GameProject> {
     console.log(`[GameGeneratorAgent] 🚀 启动多智能体剧本生成系统`);
-    console.log(`[GameGeneratorAgent] 角色: ${characters.length}, 场景: ${scenes?.length || 0}`);
+    console.log(`[GameGeneratorAgent] 角色: ${characters.length}, 场景: ${scenes?.length || 0}, locale: ${locale}`);
 
     // 构建工作流输入
     const workflowInput: WorkflowInput = {
@@ -173,6 +176,7 @@ export class GameGeneratorAgent {
         targetNodeCount: 12,
         targetEndingCount: 3,
       },
+      locale: locale,
     };
 
     // 获取并运行工作流
@@ -512,7 +516,8 @@ export class GameGeneratorAgent {
     worldSetting: any,
     scenes: any[] | undefined,
     themeSetting: any | undefined,
-    progressEmitter: ProgressEmitter
+    progressEmitter: ProgressEmitter,
+    locale: Locale = DEFAULT_LOCALE
   ): Promise<GameProject> {
     const startTime = Date.now();
     
@@ -555,6 +560,7 @@ export class GameGeneratorAgent {
         targetNodeCount: 12,
         targetEndingCount: 3,
       },
+      locale: locale,
     };
 
     progressEmitter.stageComplete("init", "初始化完成", `已加载 ${characters.length} 个角色, ${scenes?.length || 0} 个场景`, {
@@ -574,7 +580,7 @@ export class GameGeneratorAgent {
       // Round 1: 生成候选方向
       // Round 2: 评估并选择最佳方向  
       // Round 3: 展开为完整节点骨架
-      plan = await generateNarrativePlanWithToT(storyPlannerAgent, workflowInput);
+      plan = await generateNarrativePlanWithToT(storyPlannerAgent, workflowInput, locale);
 
       progressEmitter.stageComplete("planning", "故事骨架规划完成 (ToT 3轮)", 
         `探索了多条叙事路径，最终生成 ${plan.nodes.length} 个节点`, {
@@ -621,7 +627,8 @@ export class GameGeneratorAgent {
           layer.map(async (node) => {
             const previousSummary = this.getPreviousSummary(node, plan!.nodes, drafts);
             
-            const writePrompt = `## 当前要写的节点
+            const { addLocaleToUserPrompt } = await import('../utils/locale');
+            const writePrompt = addLocaleToUserPrompt(`## 当前要写的节点
 ${JSON.stringify(node, null, 2)}
 
 ## 前序节点摘要
@@ -639,7 +646,7 @@ ${JSON.stringify(workflowInput.characterDB.characters.map((c: any) => ({
 ## 风格指南
 ${JSON.stringify(workflowInput.styleGuide || {}, null, 2)}
 
-请为这个节点撰写对话和旁白。`;
+请为这个节点撰写对话和旁白。`, locale);
 
             const response = await writerAgent.generate(writePrompt, {
               structuredOutput: {
@@ -676,7 +683,8 @@ ${JSON.stringify(workflowInput.styleGuide || {}, null, 2)}
         narration: d.narration,
       }));
 
-      const reviewPrompt = `## 待审阅的节点草稿
+      const { addLocaleToUserPrompt } = await import('../utils/locale');
+      const reviewPrompt = addLocaleToUserPrompt(`## 待审阅的节点草稿
 ${JSON.stringify(Object.values(drafts), null, 2)}
 
 ## 原始故事规划
@@ -698,7 +706,7 @@ ${JSON.stringify(workflowInput.characterDB.characters.map((c: any) => ({
 4. 基于工具输出，给出综合评分和修改建议
 
 检查用的节点数据:
-${JSON.stringify(nodesForValidation, null, 2)}`;
+${JSON.stringify(nodesForValidation, null, 2)}`, locale);
 
       const reviewResponse = await reviewerAgent.generate(reviewPrompt, {
         structuredOutput: {
@@ -734,7 +742,8 @@ ${JSON.stringify(nodesForValidation, null, 2)}`;
             
             if (!originalDraft) return;
 
-            const rewritePrompt = `## 原始草稿
+            const { addLocaleToUserPrompt } = await import('../utils/locale');
+            const rewritePrompt = addLocaleToUserPrompt(`## 原始草稿
 ${JSON.stringify(originalDraft, null, 2)}
 
 ## 审稿人的修改建议
@@ -753,7 +762,7 @@ ${JSON.stringify(workflowInput.characterDB.characters.map((c: any) => ({
 ## 风格指南
 ${JSON.stringify(workflowInput.styleGuide || {}, null, 2)}
 
-请根据审稿人的修改建议重写这个节点。`;
+请根据审稿人的修改建议重写这个节点。`, locale);
 
             const response = await writerAgent.generate(rewritePrompt, {
               structuredOutput: {

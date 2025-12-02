@@ -3,6 +3,7 @@
  * 采用 Few-Shot CoT 模式为单个节点撰写对话和旁白
  */
 import { Agent } from "@mastra/core/agent";
+import { addLocaleToUserPrompt, type Locale, DEFAULT_LOCALE } from '../utils/locale';
 
 export const nodeWriterAgent = new Agent({
   name: "node-writer",
@@ -100,12 +101,13 @@ export async function writeNodeContent(
     styleGuide: any;
     previousNodeSummary?: string;
   },
-  schema: any
+  schema: any,
+  locale: Locale = DEFAULT_LOCALE
 ): Promise<any> {
   // 找出本节点涉及的角色（简化版：暂时传所有角色）
   const characters = input.characterDB.characters || [];
 
-  const prompt = `## 当前要写的节点
+  const prompt = addLocaleToUserPrompt(`## 当前要写的节点
 ${JSON.stringify(input.planNode, null, 2)}
 
 ## 前序节点摘要
@@ -127,7 +129,7 @@ ${JSON.stringify(input.styleGuide || {}, null, 2)}
 - 如果是 branch 类型，必须包含 choices
 - 如果是 scene 类型，必须包含 nextNodeId
 - ending 类型不需要 choices 和 nextNodeId
-- summary 必须填写，这对保证故事连贯性非常重要`;
+- summary 必须填写，这对保证故事连贯性非常重要`, locale);
 
   const response = await agent.generate(prompt, {
     structuredOutput: {

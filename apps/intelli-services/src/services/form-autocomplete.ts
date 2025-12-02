@@ -10,6 +10,7 @@
  */
 
 import OpenAI from 'openai';
+import { addLocaleToSystemPrompt, addLocaleToUserPrompt, type Locale, DEFAULT_LOCALE } from '../utils/locale';
 
 // 支持的表单类型
 export type FormType = 'character' | 'world' | 'scene' | 'theme' | 'background';
@@ -201,7 +202,7 @@ export class FormAutocomplete {
     /**
      * 通用表单自动填充
      */
-    async autocomplete(request: AutocompleteRequest): Promise<AutocompleteResult> {
+    async autocomplete(request: AutocompleteRequest, locale: Locale = DEFAULT_LOCALE): Promise<AutocompleteResult> {
         const { formType, partialData, context } = request;
         
         const schema = FORM_SCHEMAS[formType];
@@ -209,7 +210,7 @@ export class FormAutocomplete {
             return { success: false, error: `不支持的表单类型: ${formType}` };
         }
 
-        console.log(`[FormAutocomplete] 开始自动填充: ${formType}`);
+        console.log(`[FormAutocomplete] 开始自动填充: ${formType}, locale: ${locale}`);
 
         // 分析已填写和未填写的字段
         const { filledFields, emptyFields } = this.analyzeFields(schema.fields, partialData);
@@ -220,8 +221,8 @@ export class FormAutocomplete {
         }
 
         // 构建 prompt
-        const systemPrompt = this.buildSystemPrompt(schema, context);
-        const userPrompt = this.buildUserPrompt(schema, filledFields, emptyFields, context);
+        const systemPrompt = this.buildSystemPrompt(schema, context, locale);
+        const userPrompt = this.buildUserPrompt(schema, filledFields, emptyFields, context, locale);
 
         try {
             const response = await this.openai.chat.completions.create({
@@ -299,7 +300,7 @@ export class FormAutocomplete {
     /**
      * 构建系统 prompt
      */
-    private buildSystemPrompt(schema: FormSchema, context?: AutocompleteRequest['context']): string {
+    private buildSystemPrompt(schema: FormSchema, context?: AutocompleteRequest['context'], locale: Locale = DEFAULT_LOCALE): string {
         let prompt = schema.systemPrompt;
 
         if (context) {
@@ -314,7 +315,7 @@ export class FormAutocomplete {
 
         prompt += '\n\n规则：\n1. 返回纯 JSON 格式，不要使用 markdown 代码块\n2. 只填写空缺字段，保持已填内容不变';
 
-        return prompt;
+        return addLocaleToSystemPrompt(prompt, locale);
     }
 
     /**
@@ -324,11 +325,12 @@ export class FormAutocomplete {
         schema: FormSchema,
         filledFields: string[],
         emptyFields: string[],
-        context?: AutocompleteRequest['context']
+        context?: AutocompleteRequest['context'],
+        locale: Locale = DEFAULT_LOCALE
     ): string {
         const exampleJson = this.generateExampleJson(schema.fields);
 
-        return `## ${schema.title}自动填充
+        const prompt = `## ${schema.title}自动填充
 
 ### 用户已填写的内容：
 ${filledFields.length > 0 ? filledFields.join('\n') : '(用户尚未填写任何内容)'}
@@ -340,6 +342,8 @@ ${emptyFields.join('\n')}
 ${JSON.stringify(exampleJson, null, 2)}
 
 请直接返回 JSON，不要使用代码块包裹：`;
+
+        return addLocaleToUserPrompt(prompt, locale);
     }
 
     /**
@@ -430,6 +434,7 @@ ${JSON.stringify(exampleJson, null, 2)}
         return FORM_SCHEMAS[formType];
     }
 }
+
 
 
 

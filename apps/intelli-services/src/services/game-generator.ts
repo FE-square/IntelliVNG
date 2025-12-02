@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { addLocaleToSystemPrompt, addLocaleToUserPrompt, type Locale, DEFAULT_LOCALE } from '../utils/locale';
 
 // Types - 统一使用 StoryNode 格式（与 @vng/core 保持一致）
 interface GameProject {
@@ -209,16 +210,20 @@ export class GameGenerator {
         this.modelName = process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo';
     }
 
-    async generate(idea: string): Promise<GameProject> {
+    async generate(idea: string, locale: Locale = DEFAULT_LOCALE): Promise<GameProject> {
         console.log(`[GameGenerator] Starting generation for: "${idea}"`);
         console.log(`[GameGenerator] Using model: ${this.modelName}`);
+        console.log(`[GameGenerator] User locale: ${locale}`);
 
         // Call OpenAI to generate the game design
+        const systemPrompt = addLocaleToSystemPrompt(DIRECTOR_SYSTEM_PROMPT, locale);
+        const userPrompt = addLocaleToUserPrompt(`Design and compose a visual novel script based on:\n\n${idea}`, locale);
+        
         const response = await this.openai.chat.completions.create({
             model: this.modelName,
             messages: [
-                { role: 'system', content: DIRECTOR_SYSTEM_PROMPT },
-                { role: 'user', content: `Design and compose a visual novel script based on:\n\n${idea}` },
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
             ],
             temperature: 0.8,
             max_tokens: 10000,  // 增加 token 限制以避免截断
@@ -248,7 +253,7 @@ export class GameGenerator {
     /**
      * 新方法：基于用户自定义的角色、世界观、场景和主题风格生成游戏
      */
-    async generateFromSetup(characters: any[], worldSettingOrBackgrounds: any, scenes?: any[], themeSetting?: any): Promise<GameProject> {
+    async generateFromSetup(characters: any[], worldSettingOrBackgrounds: any, scenes?: any[], themeSetting?: any, locale: Locale = DEFAULT_LOCALE): Promise<GameProject> {
         // 兼容旧模式：如果没有 scenes，说明是旧模式 (characters + backgrounds)
         const isLegacyMode = !scenes || !Array.isArray(scenes);
         const backgrounds = isLegacyMode ? worldSettingOrBackgrounds : [];
@@ -262,6 +267,7 @@ export class GameGenerator {
             console.log(`[GameGenerator] New mode: world setting "${worldSetting?.name}" and ${actualScenes.length} scenes`);
         }
         console.log(`[GameGenerator] Using model: ${this.modelName}`);
+        console.log(`[GameGenerator] User locale: ${locale}`);
 
         // 构建角色信息
         const charactersInfo = characters.map((char, i) => {
@@ -340,11 +346,14 @@ ${backgroundsInfo}
 - 确保每条路径最终都能到达某个ending节点`;
 
         // Call OpenAI
+        const systemPrompt = addLocaleToSystemPrompt(DIRECTOR_SYSTEM_PROMPT, locale);
+        const userPrompt = addLocaleToUserPrompt(setupPrompt, locale);
+        
         const response = await this.openai.chat.completions.create({
             model: this.modelName,
             messages: [
-                { role: 'system', content: DIRECTOR_SYSTEM_PROMPT },
-                { role: 'user', content: setupPrompt },
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
             ],
             temperature: 0.8,
             max_tokens: 10000,

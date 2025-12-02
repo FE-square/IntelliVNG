@@ -7,6 +7,7 @@ import { createProgressEmitter, removeProgressEmitter, type ProgressEvent } from
 import { ImageGenerator, ImageType } from '../services/image-generator';
 import { FormAutocomplete, FormType } from '../services/form-autocomplete';
 import { getCacheKey, getFromCache, saveToCache, saveProject, getProject, listProjects } from '../services/cache';
+import { getLocaleFromRequest, type Locale } from '../utils/locale';
 
 export const gameRoutes = new Hono();
 
@@ -24,6 +25,9 @@ const generateSchema = z.object({
     // 兼容旧模式：角色 + 背景
     backgrounds: z.array(z.any()).optional(),
     
+    // 用户语言
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
+    
     skipCache: z.boolean().optional().default(false),
 });
 
@@ -33,7 +37,11 @@ gameRoutes.post(
     zValidator('json', generateSchema),
     async (c) => {
         try {
-            const { idea, characters, worldSetting, scenes, themeSetting, backgrounds, skipCache } = c.req.valid('json');
+            const { idea, characters, worldSetting, scenes, themeSetting, backgrounds, locale, skipCache } = c.req.valid('json');
+            
+            // 获取locale
+            const userLocale = getLocaleFromRequest(locale);
+            console.log(`[GameRoute] User locale: ${userLocale}`);
             
             // 验证：必须提供 idea 或 characters
             if (!idea && (!characters || characters.length === 0)) {
@@ -49,12 +57,12 @@ gameRoutes.post(
             // 新模式：基于角色/世界观/场景/主题风格生成
             if (characters && worldSetting && scenes) {
                 console.log(`[GameRoute] Generating from ${characters.length} characters, world setting, ${scenes.length} scenes, and theme setting`);
-                result = await generator.generateFromSetup(characters, worldSetting, scenes, themeSetting);
+                result = await generator.generateFromSetup(characters, worldSetting, scenes, themeSetting, userLocale);
             }
             // 兼容旧模式：基于角色/背景生成
             else if (characters && backgrounds) {
                 console.log(`[GameRoute] Generating from ${characters.length} characters and ${backgrounds.length} backgrounds (legacy mode)`);
-                result = await generator.generateFromSetup(characters, backgrounds);
+                result = await generator.generateFromSetup(characters, backgrounds, undefined, undefined, userLocale);
             }
             // 旧模式：基于创意生成
             else if (idea) {
@@ -74,7 +82,7 @@ gameRoutes.post(
                     }
                 }
                 
-                result = await generator.generate(idea);
+                result = await generator.generate(idea, userLocale);
                 
                 // 保存到 idea 缓存
                 saveToCache(cacheKey, result);
@@ -119,6 +127,9 @@ const generateByAgentsSchema = z.object({
     scenes: z.array(z.any()).optional(),
     themeSetting: z.any().optional(),
     
+    // 用户语言
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
+    
     // 模式选择
     mode: z.enum(['agent', 'fast']).default('agent'),
 });
@@ -128,15 +139,17 @@ gameRoutes.post(
     '/generate-by-agents',
     zValidator('json', generateByAgentsSchema),
     async (c) => {
-        const { characters, worldSetting, scenes, themeSetting, mode } = c.req.valid('json');
+        const { characters, worldSetting, scenes, themeSetting, locale, mode } = c.req.valid('json');
         
-        console.log(`[GameRoute] 开始生成剧本: mode=${mode}, ${characters.length} 角色, ${scenes?.length || 0} 场景`);
+        // 获取locale
+        const userLocale = getLocaleFromRequest(locale);
+        console.log(`[GameRoute] 开始生成剧本: mode=${mode}, locale=${userLocale}, ${characters.length} 角色, ${scenes?.length || 0} 场景`);
         
         // Fast 模式：使用旧的单次 LLM 调用（非 SSE）
         if (mode === 'fast') {
             try {
                 const generator = new GameGenerator();
-                const result = await generator.generateFromSetup(characters, worldSetting, scenes, themeSetting);
+                const result = await generator.generateFromSetup(characters, worldSetting, scenes, themeSetting, userLocale);
                 
                 saveProject(result);
                 
@@ -190,7 +203,8 @@ gameRoutes.post(
                             worldSetting,
                             scenes,
                             themeSetting,
-                            progressEmitter
+                            progressEmitter,
+                            userLocale
                         );
                         
                         // 保存项目
@@ -447,6 +461,7 @@ const autocompleteFormSchema = z.object({
         worldSetting: z.string().optional(),
         existingItems: z.array(z.string()).optional(),
     }).optional(),
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
 });
 
 // POST /api/game/autocomplete-form - 通用表单AI自动补全
@@ -455,16 +470,17 @@ gameRoutes.post(
     zValidator('json', autocompleteFormSchema),
     async (c) => {
         try {
-            const { formType, partialData, context } = c.req.valid('json');
+            const { formType, partialData, context, locale } = c.req.valid('json');
+            const userLocale = getLocaleFromRequest(locale);
             
-            console.log(`[GameRoute] 自动补全表单: ${formType}`);
+            console.log(`[GameRoute] 自动补全表单: ${formType}, locale: ${userLocale}`);
             
             const autocomplete = new FormAutocomplete();
             const result = await autocomplete.autocomplete({
                 formType: formType as FormType,
                 partialData,
                 context,
-            });
+            }, userLocale);
             
             if (!result.success) {
                 return c.json({

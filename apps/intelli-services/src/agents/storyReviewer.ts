@@ -305,6 +305,8 @@ export const storyReviewerAgent = new Agent({
  * 1. ReAct 阶段：让模型自由调用工具，进行 Thought → Action → Observation 循环
  * 2. 格式化阶段：将 ReAct 的结论格式化为结构化输出
  */
+import { addLocaleToUserPrompt, type Locale, DEFAULT_LOCALE } from '../utils/locale';
+
 export async function reviewStory(
   agent: typeof storyReviewerAgent,
   input: {
@@ -313,7 +315,8 @@ export async function reviewStory(
     worldBible: any;
     characterDB: any;
   },
-  schema: any
+  schema: any,
+  locale: Locale = DEFAULT_LOCALE
 ): Promise<any> {
   const { plan, drafts, characterDB } = input;
 
@@ -333,7 +336,7 @@ export async function reviewStory(
 
   // ============ 阶段 1: ReAct 循环（工具调用） ============
   // 不使用 structuredOutput，让模型自由进行工具调用
-  const reactPrompt = `## 任务
+  const reactPrompt = addLocaleToUserPrompt(`## 任务
 你需要审阅以下故事草稿，使用工具收集信息，然后给出评估。
 
 ## 待审阅的节点草稿
@@ -372,7 +375,7 @@ ${JSON.stringify(nodesForValidation, null, 2)}
 - 对话质量结果（是否有过短或过长的节点）
 - 你对每个评分维度的判断（plotCoherence, characterConsistency, dialogueQuality, branchMeaningfulness, pacing）
 - 发现的问题列表
-- 是否需要重新生成`;
+- 是否需要重新生成`, locale);
 
   const reactResponse = await agent.generate(reactPrompt, {
     maxSteps: 6,  // 允许足够的工具调用轮次
@@ -392,7 +395,7 @@ ${JSON.stringify(nodesForValidation, null, 2)}
   // 使用另一个 Agent 调用（或同一个 Agent 的不同调用）来格式化输出
   console.log("[ReAct] 📝 格式化审阅报告...");
 
-  const formatPrompt = `## 任务
+  const formatPrompt = addLocaleToUserPrompt(`## 任务
 将以下审阅分析转换为结构化的 CriticReport 格式。
 
 ## 审阅分析
@@ -435,7 +438,7 @@ ${JSON.stringify(reactResponse.toolResults || [], null, 2)}
 - "none": 不需要重写
 
 ### targetNodeIds
-只在 regenerateTarget = "specific_nodes" 时填写`;
+只在 regenerateTarget = "specific_nodes" 时填写`, locale);
 
   // 第二次调用：纯结构化输出，不需要工具
   const formatResponse = await agent.generate(formatPrompt, {
@@ -461,7 +464,8 @@ export async function reviewStoryWithTrace(
     worldBible: any;
     characterDB: any;
   },
-  schema: any
+  schema: any,
+  locale: Locale = DEFAULT_LOCALE
 ): Promise<{
   report: any;
   trace: {
@@ -473,7 +477,7 @@ export async function reviewStoryWithTrace(
   const startTime = Date.now();
   
   // 执行审阅
-  const report = await reviewStory(agent, input, schema);
+  const report = await reviewStory(agent, input, schema, locale);
   
   const trace = {
     toolCalls: [], // 可以通过修改 reviewStory 来收集

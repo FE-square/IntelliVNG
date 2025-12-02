@@ -42,6 +42,11 @@ export default function SummaryPage() {
                 themeSetting: themeSetting,
             });
 
+            // 获取当前locale
+            const currentLocale = typeof window !== 'undefined' 
+                ? (new URLSearchParams(window.location.search).get('locale') || 'zh-CN')
+                : 'zh-CN';
+
             // 调用 API 生成游戏
             const response = await fetch('/api/generate', {
                 method: 'POST',
@@ -51,6 +56,7 @@ export default function SummaryPage() {
                     worldSetting,
                     scenes,
                     themeSetting,
+                    locale: currentLocale,
                 }),
             });
 
