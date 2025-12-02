@@ -444,3 +444,4 @@ const response = await this.openai.chat.completions.create({
 **Made with ❤️ by IntelliVNG Team: FE Square**
 
 </div>
+

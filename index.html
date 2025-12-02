@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliVNG Studio - 多智能体系统设计架构</title>
+    <style>
+        :root {
+            --primary: #4f46e5; /* Indigo 600 */
+            --primary-light: #e0e7ff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --bg: #ffffff;
+            --bg-alt: #f8fafc;
+            --border: #e2e8f0;
+            --code-bg: #1e1e1e;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.7;
+            color: var(--text);
+            background-color: var(--bg);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar TOC */
+        aside {
+            width: 280px;
+            background: var(--bg-alt);
+            border-right: 1px solid var(--border);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 2rem 1.5rem;
+            display: none; /* Hidden on mobile */
+        }
+
+        @media (min-width: 1024px) {
+            aside { display: block; }
+            main { margin-left: 280px; }
+        }
+
+        aside h3 {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+
+        aside ul { list-style: none; }
+        aside li { margin-bottom: 0.5rem; }
+        aside a {
+            text-decoration: none;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            display: block;
+            padding: 0.25rem 0;
+            transition: color 0.2s;
+        }
+        aside a:hover, aside a.active { color: var(--primary); font-weight: 500; }
+        aside a.sub-link { padding-left: 1rem; font-size: 0.85rem; }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            width: 100%;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4 { color: #0f172a; margin-top: 2.5rem; margin-bottom: 1rem; line-height: 1.3; }
+        h1 { font-size: 2.5rem; font-weight: 800; margin-top: 1rem; border-bottom: 3px solid var(--primary); padding-bottom: 1rem; }
+        h2 { font-size: 1.8rem; font-weight: 700; position: relative; padding-left: 1rem; border-left: 4px solid var(--primary); }
+        h3 { font-size: 1.4rem; font-weight: 600; }
+        p { margin-bottom: 1.2rem; }
+        
+        /* Hero Abstract */
+        .abstract {
+            background: linear-gradient(to right, var(--primary-light), #fff);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+            color: #334155;
+        }
+
+        /* Code Blocks */
+        pre {
+            background: var(--code-bg);
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: "Menlo", "Monaco", "Consolas", monospace;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            box-shadow: var(--shadow);
+        }
+        
+        /* Diagrams (ASCII Art Containers) */
+        .diagram-box {
+            background: #1e293b;
+            color: #94a3b8;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            font-family: "Menlo", monospace;
+            white-space: pre;
+            overflow-x: auto;
+            border: 1px solid #334155;
+            position: relative;
+        }
+        .diagram-box::before {
+            content: "SYSTEM ARCHITECTURE / DIAGRAM VIEW";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #0f172a;
+            color: #64748b;
+            font-size: 0.7rem;
+            padding: 4px 12px;
+            border-top-left-radius: 7px;
+            border-top-right-radius: 7px;
+        }
+
+        /* Cards for Agents */
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        .agent-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .agent-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+            border-color: var(--primary);
+        }
+        .agent-title {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .agent-role { font-size: 0.85rem; color: var(--text-light); text-transform: uppercase; font-weight: 600; margin-bottom: 1rem; display: block;}
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        th { background: var(--bg-alt); text-align: left; font-weight: 600; padding: 1rem; color: var(--text); }
+        td { padding: 1rem; border-top: 1px solid var(--border); }
+        tr:nth-child(even) { background: #fcfcfc; }
+
+        /* Lists */
+        ul, ol { margin-bottom: 1.2rem; padding-left: 1.5rem; }
+        li { margin-bottom: 0.5rem; }
+
+        /* Tags/Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25em 0.6em;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+        }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-purple { background: #f3e8ff; color: #6b21a8; }
+
+        /* Footer */
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-light);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        /* Mobile Menu Toggle (Simple) */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            box-shadow: var(--shadow);
+            z-index: 100;
+        }
+        @media (max-width: 1023px) {
+            .mobile-menu-btn { display: flex; justify-content: center; align-items: center; font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<button class="mobile-menu-btn" onclick="document.querySelector('aside').style.display = document.querySelector('aside').style.display === 'block' ? 'none' : 'block'">☰</button>
+
+<aside>
+    <h3>IntelliVNG Studio</h3>
+    <ul id="toc">
+        <!-- Generated by JS -->
+    </ul>
+</aside>
+
+<main>
+    <!-- Header Section -->
+    <header>
+        <div style="text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 0.5rem;">Technical Architecture</div>
+        <h1>IntelliVNG Studio 多智能体视觉小说创作编排系统</h1>
+        <div style="color: var(--text-light); margin-bottom: 2rem;">
+            Design & Implementation of a Multi-Agent Visual Novel Creation System
+        </div>
+    </header>
+
+    <!-- Abstract -->
+    <div class="abstract">
+        <strong>摘要：</strong> 本文详细介绍 IntelliVNG 的核心创新——多智能体小说剧本创作系统。该系统采用 <strong>3 Agent + 1 Orchestrator</strong> 架构，通过 Tree-of-Thoughts、ReAct、Few-Shot CoT 等先进的 AI Agent 设计模式与工具调用，实现了从"单一 Prompt 调用"到"多智能体协作"的技术跃迁。
+    </div>
+
+    <section id="intro">
+        <h2>写在前面：我们到底在做什么？</h2>
+        <p>如果你从来没有玩过视觉小说游戏，也不太了解我们在做的工具，这一小节就是专门写给你的。</p>
+        
+        <h3>什么是“视觉小说”？</h3>
+        <p>简单说，视觉小说是一种<strong>以文字和立绘为主的互动叙事游戏</strong>：</p>
+        <ul>
+            <li>🎨 屏幕上通常只有几个人物立绘 + 一段段对话/旁白</li>
+            <li>🖱️ 玩家通过阅读对话，在关键节点做出选择</li>
+            <li>🔀 不同选择会走向不同的剧情分支，最终到达不同的结局</li>
+        </ul>
+        <p>你可以把它想象成：<strong>“可以玩的电子小说 / 漫画脚本”</strong>。</p>
+
+        <h3>我们的工具要做什么？</h3>
+        <p>IntelliVNG Studio 想做的是一款 <strong>“从 0 到 可玩的多结局视觉小说” 的一站式 AI 创作工具</strong>：</p>
+        
+        <div class="agent-grid">
+            <div class="agent-card">
+                <div class="agent-title">🚪 极简入口</div>
+                <p>用户只需填写表单：世界观、角色、场景、主题，甚至允许 AI 帮你写。无需写任何 Prompt 或代码。</p>
+            </div>
+            <div class="agent-card">
+                <div class="agent-title">🧠 智能过程</div>
+                <p>AI Agents 自主探索、协作设计故事骨架、撰写完整对话、生成多结局分支。</p>
+            </div>
+            <div class="agent-card">
+                <div class="agent-title">🎮 直接可玩</div>
+                <p>生成结果直接导入可视化故事线编辑器 Editor，一键试玩、一键导出</p>
+            </div>
+        </div>
+        
+        <p>换句话说：<strong>普通人即使完全不会写剧本，也可以在 5–10 分钟内，从一个模糊的想法走到一部“能玩”的多结局视觉小说。</strong></p>
+    </section>
+
+    <section id="why-agents">
+        <h2>一、需求初衷：为什么需要多智能体方案？</h2>
+        
+        <h3>1.1 原有方案的局限</h3>
+        <p>在早期版本中，我们使用单一的 LLM 调用来生成剧本。这种方案就像把所有压力都压在一个“大脑”上：</p>
+
+        <pre><code>// 旧版：一个巨大的 Prompt，一次调用
+const response = await openai.chat.completions.create({
+  messages: [
+    { role: 'system', content: DIRECTOR_SYSTEM_PROMPT }, // 500+ 行的 prompt
+    { role: 'user', content: userSetupPrompt },
+  ],
+  max_tokens: 10000, // 极其容易截断
+});</code></pre>
+
+        <table>
+            <tr>
+                <th>问题</th>
+                <th>表现</th>
+                <th>影响</th>
+            </tr>
+            <tr>
+                <td><strong>可控性差</strong></td>
+                <td>无法干预生成过程</td>
+                <td>输出质量不稳定，经常偏题</td>
+            </tr>
+            <tr>
+                <td><strong>可解释性弱</strong></td>
+                <td>黑盒生成，无法追踪决策</td>
+                <td>难以调试和优化</td>
+            </tr>
+            <tr>
+                <td><strong>扩展性受限</strong></td>
+                <td>所有逻辑压缩在一个 Prompt</td>
+                <td>难以添加新功能或工具</td>
+            </tr>
+        </table>
+
+        <h3>1.2 设计目标</h3>
+        <p>我们希望下一代系统不仅能“生成”，还能“思考”和“自我修正”。</p>
+        <div class="diagram-box">
+┌──────────────────────────────────────────────────────────────┐
+│                        设计目标                               │
+├──────────────────────────────────────────────────────────────┤
+│  ✓ 可追踪性：每个决策都有推理过程，可观测、可解释            │
+│  ✓ 可控性：支持阶段性干预，可以重试特定步骤                  │
+│  ✓ 高质量：多轮迭代优化，自动检测和修复问题                  │
+│  ✓ 可扩展性：模块化设计，易于添加新的 Agent 或工具           │
+└──────────────────────────────────────────────────────────────┘</div>
+    </section>
+
+    <section id="architecture">
+        <h2>二、设计哲学与架构总览</h2>
+        
+        <h3>2.1 核心理念：分而治之</h3>
+        <p>创作一个视觉小说剧本涉及多个维度的决策：<strong>故事结构设计（宏观）</strong>、<strong>对话撰写（微观）</strong>、<strong>质量把控（元层面）</strong>。这些任务性质不同，需要不同的思维模式。</p>
+
+        <h3>2.2 架构图</h3>
+        <div class="diagram-box">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           ORCHESTRATOR (编排者)                              │
+│                        采用 Plan-and-Execute 状态机                          │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                      │
+│  │   PLANNING  │───►│   WRITING   │───►│  REVIEWING  │──┐                   │
+│  │    阶段     │    │    阶段     │    │    阶段     │  │                   │
+│  └─────────────┘    └─────────────┘    └─────────────┘  │                   │
+│         ▲                                    │          │                   │
+│         └────────────────────────────────────┘          │                   │
+│                    (需要重写时回退)                       │                   │
+│                                                          ▼                   │
+│                                              ┌─────────────┐                │
+│                                              │   OUTPUT    │                │
+│                                              │ GameProject │                │
+│                                              └─────────────┘                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          SHARED CONTEXT (共享上下文)                          │
+│                                                                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │  WorldBible  │  │ CharacterDB  │  │  StyleGuide  │  │  NodeDrafts  │    │
+│  │  (世界观)     │  │  (角色档案)   │  │  (风格指南)   │  │  (节点草稿)   │    │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘</div>
+    </section>
+
+    <section id="agents-detail">
+        <h2>三、Agent 设计：三位专家 + 一位指挥</h2>
+
+        <div class="agent-grid">
+            <div class="agent-card" style="border-top: 4px solid #8b5cf6;">
+                <span class="agent-role">Story Planner (总编剧)</span>
+                <div class="agent-title">🌲 Tree-of-Thoughts</div>
+                <p><strong>职责：</strong> 设计故事骨架、规划分支。</p>
+                <p><strong>模式：</strong> ToT (思维树)。不急于得出结论，先探索多种故事走向，评估评分后选出最优路径。</p>
+            </div>
+
+            <div class="agent-card" style="border-top: 4px solid #ec4899;">
+                <span class="agent-role">Node Writer (场景写手)</span>
+                <div class="agent-title">✍️ Few-Shot CoT</div>
+                <p><strong>职责：</strong> 撰写具体的对话、旁白和选项。</p>
+                <p><strong>模式：</strong> 结合示例（Few-Shot）和思维链（CoT），并行生成各个节点的具体内容。</p>
+            </div>
+
+            <div class="agent-card" style="border-top: 4px solid #ef4444;">
+                <span class="agent-role">Story Reviewer (责任编辑)</span>
+                <div class="agent-title">🛡️ ReAct</div>
+                <p><strong>职责：</strong> 质量审核、逻辑检查。</p>
+                <p><strong>模式：</strong> ReAct (推理+行动)。使用工具（结构验证、路径分析）收集客观证据，再进行评分。</p>
+            </div>
+        </div>
+
+        <h3>3.1 Story Planner: Tree-of-Thoughts (ToT) 实现</h3>
+        <p>ToT 让我们有意识地探索多种可能性。例如面对同样的“校园+恋爱”设定，Planner 会先构思“冲突型”、“成长型”、“悬疑型”三个方向，打分后选择最优解。</p>
+        
+        <pre><code>// 3轮 ToT 流程伪代码
+console.log("[ToT] Round 1: 生成候选叙事方向...");
+const candidates = await agent.generate(generatePrompt);
+
+console.log("[ToT] Round 2: 评估候选方向...");
+const evaluation = await agent.generate(evaluatePrompt);
+// 比如选择了 "Path A: 冲突型" (得分 16/20)
+
+console.log("[ToT] Round 3: 展开节点骨架...");
+const plan = await agent.generate(expandPrompt);</code></pre>
+
+        <h3>3.2 Story Reviewer: ReAct 模式</h3>
+        <p>Reviewer 不会凭空说“这故事不错”，而是通过调用工具来“看到”剧本的结构问题。</p>
+        <div class="diagram-box">
+[ReAct 循环示例]
+Thought: "我需要先检查故事的结构是否完整..."
+    │
+    ▼
+Action: validate-structure(nodes)
+    │
+    ▼
+Observation: { 
+  valid: false, 
+  deadEnds: ["scene-3"] // 发现死胡同！
+}
+    │
+    ▼
+Thought: "发现 scene-3 是死胡同，这是结构性问题。"
+    │
+    ▼
+Final Answer: { 
+  score: 65, 
+  issues: [{ type: "critical", msg: "scene-3 缺少后续连接" }],
+  shouldRegenerate: true 
+}</div>
+
+    </section>
+
+    <section id="data-flow">
+        <h2>四、数据流与协作</h2>
+        <h3>Schema 驱动开发</h3>
+        <p>所有 Agent 之间的数据交换都通过 <strong>Zod Schema</strong> 定义，这确保了类型安全，并且 Schema 本身就是最好的 API 文档。</p>
+        
+        <pre><code>// Node Writer 输出结构定义
+const NodeDraftSchema = z.object({
+  id: z.string(),
+  type: z.enum(["scene", "branch", "ending"]),
+  narration: z.string().optional(),
+  dialogues: z.array(DialogueDraftSchema),
+  choices: z.array(ChoiceDraftSchema).optional(),
+  summary: z.string(),  // ← 供后续节点引用的摘要
+});</code></pre>
+
+        <h3>并行写作优化</h3>
+        <p>为了提高速度，我们采用了<strong>拓扑排序分层</strong>的策略。同一层级（Layer）的节点之间没有依赖关系，可以并行调用 LLM 生成。</p>
+    </section>
+
+    <section id="conclusion">
+        <h2>五、结语</h2>
+        <p>IntelliVNG 多智能体系统展示了如何将学术界的 Agent 设计模式落地到实际产品中。</p>
+        <ul>
+            <li><strong>从黑盒到白盒</strong>：每个决策都有推理过程</li>
+            <li><strong>从单次到迭代</strong>：支持自动重试和局部修正</li>
+            <li><strong>从串行到并行</strong>：拓扑分层提升效率</li>
+        </ul>
+        <p>这不仅是一个剧本生成工具，更是对“下一代 AI 辅助创作”形态的一次探索。</p>
+    </section>
+
+    <footer>
+        <p><a href="https://github.com/FE-Square/IntelliVNG" target="_blank">项目已开源至 GitHub 仓库</a></p>
+        <p>&copy; 2025 IntelliVNG Team: FE Square: { Rui Ma (Ponyray) & Xinyu Liu (Melxy97)}</p>
+    </footer>
+</main>
+
+<script>
+    // 自动生成目录
+    document.addEventListener('DOMContentLoaded', () => {
+        const toc = document.getElementById('toc');
+        const headers = document.querySelectorAll('main h2, main h3');
+        
+        headers.forEach(header => {
+            const id = header.id || header.innerText.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            header.id = id;
+            
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = '#' + id;
+            a.innerText = header.innerText;
+            if (header.tagName === 'H3') {
+                a.classList.add('sub-link');
+            }
+            
+            li.appendChild(a);
+            toc.appendChild(li);
+        });
+
+        // 简单的滚动监听高亮
+        window.addEventListener('scroll', () => {
+            let current = '';
+            headers.forEach(header => {
+                const top = header.offsetTop;
+                if (window.scrollY >= top - 100) {
+                    current = header.id;
+                }
+            });
+
+            document.querySelectorAll('aside a').forEach(a => {
+                a.classList.remove('active');
+                if (a.getAttribute('href').slice(1) === current) {
+                    a.classList.add('active');
+                }
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
