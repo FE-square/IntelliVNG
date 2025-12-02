@@ -73,23 +73,49 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
     }, [currentNode]);
 
     // 获取当前场景背景和立绘
-    // ✅ 优先从 visualAssets 获取,如果没有则通过 sceneId 从 backgrounds 查找
+    // ✅ 优先从 visualAssets 获取,如果没有则通过 backgroundId/sceneName 从 backgrounds 查找
     const getSceneBackground = () => {
+        // 🐛 调试信息
+        console.log('[GamePlayer] 查找场景背景:', {
+            nodeId: currentNode?.id,
+            nodeTitle: currentNode?.title,
+            hasVisualAssets: !!currentNode?.visualAssets?.backgroundImageUrl,
+            backgroundId: currentNode?.backgroundId,
+            sceneName: currentNode?.sceneName,
+            projectBackgrounds: project.backgrounds?.length || 0,
+            backgroundsPreview: project.backgrounds?.map(bg => ({ id: bg.id, name: bg.name, hasImage: !!bg.imageUrl })),
+        });
+        
         // 方式1: visualAssets 中直接配置的背景图
         if (currentNode?.visualAssets?.backgroundImageUrl) {
+            console.log('[GamePlayer] ✅ 使用visualAssets背景图');
             return currentNode.visualAssets.backgroundImageUrl;
         }
         
-        // 方式2: 通过 sceneId 从 project.backgrounds 查找场景背景图
-        const sceneId = (currentNode as any)?.sceneId;
-        if (sceneId) {
-            const scene = project.backgrounds?.find(bg => bg.id === sceneId);
+        // 方式2: 通过 backgroundId 从 project.backgrounds 查找场景背景图
+        if (currentNode?.backgroundId) {
+            const scene = project.backgrounds?.find(bg => bg.id === currentNode.backgroundId);
             if (scene?.imageUrl) {
+                console.log('[GamePlayer] ✅ 通过backgroundId找到背景图:', scene.name);
                 return scene.imageUrl;
+            } else {
+                console.warn('[GamePlayer] ⚠️ backgroundId存在但未找到匹配的场景:', currentNode.backgroundId);
             }
         }
         
-        // 方式3: 兜底背景图
+        // 方式3: 通过 sceneName 从 project.backgrounds 查找场景背景图
+        if (currentNode?.sceneName) {
+            const scene = project.backgrounds?.find(bg => bg.name === currentNode.sceneName);
+            if (scene?.imageUrl) {
+                console.log('[GamePlayer] ✅ 通过sceneName找到背景图:', scene.name);
+                return scene.imageUrl;
+            } else {
+                console.warn('[GamePlayer] ⚠️ sceneName存在但未找到匹配的场景:', currentNode.sceneName);
+            }
+        }
+        
+        // 方式4: 兜底背景图
+        console.warn('[GamePlayer] ⚠️ 未找到任何场景背景,使用兜底图片');
         return 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1280&h=720&fit=crop';
     };
     

@@ -150,10 +150,27 @@
             left: 2rem;
             background: var(--name-bg);
             padding: 0.4rem 1.2rem;
+            padding-left: 3.5rem; /* ✅ 为头像留出空间 */
             border-radius: 4px;
             font-weight: bold;
             font-size: 1.1rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+        }
+        
+        /* ✅ 新增: 头像样式 */
+        .name-tag-avatar {
+            position: absolute;
+            left: 0.4rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            border: 2px solid white;
+            object-fit: cover;
+            background: rgba(255,255,255,0.2);
         }
 
         .text-content {
@@ -285,7 +302,11 @@
         
         <div id="ui-layer">
             <div id="dialogue-box" class="dialogue-box" onclick="game.next()">
-                <div id="name-tag" class="name-tag"></div>
+                <div id="name-tag" class="name-tag">
+                    <!-- ✅ 新增: 头像 -->
+                    <img id="name-tag-avatar" class="name-tag-avatar" style="display: none;" />
+                    <span id="name-tag-text"></span>
+                </div>
                 <div id="text-content" class="text-content"></div>
                 <div class="next-indicator">▼ 点击继续</div>
             </div>
@@ -438,26 +459,54 @@ null
             if (node.visualAssets?.backgroundImageUrl) {
                 bgUrl = node.visualAssets.backgroundImageUrl;
             } 
-            // 其次查找 ID
+            // 其次查找 backgroundId
             else if (node.backgroundId) {
                 const bg = this.project.backgrounds.find(b => b.id === node.backgroundId);
-                if (bg) bgUrl = bg.url;
+                if (bg) bgUrl = bg.imageUrl;  // ✅ 修复: 使用 imageUrl 而不是 url
             }
+            // 再次尝试通过 sceneName 查找
+            else if (node.sceneName) {
+                const bg = this.project.backgrounds.find(b => b.name === node.sceneName);
+                if (bg) bgUrl = bg.imageUrl;
+            }
+
+            console.log('[updateBackground]', {
+                nodeId: node.id,
+                nodeTitle: node.title,
+                hasVisualAssets: !!node.visualAssets?.backgroundImageUrl,
+                backgroundId: node.backgroundId,
+                sceneName: node.sceneName,
+                foundBgUrl: bgUrl,
+                projectBackgrounds: this.project.backgrounds?.length
+            });
 
             if (bgUrl) {
                 this.layers.background.style.backgroundImage = `url('${bgUrl}')`;
             } else {
+                console.warn('[updateBackground] 未找到背景图,使用默认颜色');
                 this.layers.background.style.backgroundColor = '#333'; // 默认背景
+                this.layers.background.style.backgroundImage = 'none';
             }
         }
 
         updateCharacters(node) {
             this.layers.characters.innerHTML = '';
             
-            if (node.visualAssets?.characters) {
+            console.log('[updateCharacters]', {
+                nodeId: node.id,
+                hasVisualAssets: !!node.visualAssets,
+                charactersCount: node.visualAssets?.characters?.length || 0,
+                characters: node.visualAssets?.characters
+            });
+            
+            // 方式1: 使用 visualAssets.characters 中的立绘配置
+            if (node.visualAssets?.characters && node.visualAssets.characters.length > 0) {
                 node.visualAssets.characters.forEach(charConfig => {
                     const char = this.characterMap.get(charConfig.characterId);
-                    if (!char) return;
+                    if (!char) {
+                        console.warn('[updateCharacters] 未找到角色:', charConfig.characterId);
+                        return;
+                    }
 
                     // 尝试获取立绘 URL
                     let spriteUrl = charConfig.spriteUrl;
@@ -465,14 +514,24 @@ null
                         const sprite = char.sprites?.find(s => s.id === char.defaultSpriteId);
                         if (sprite) spriteUrl = sprite.imageUrl;
                     }
+                    // 如果还是没有,尝试使用第一个立绘
+                    if (!spriteUrl && char.sprites && char.sprites.length > 0) {
+                        spriteUrl = char.sprites[0].imageUrl;
+                    }
+
+                    console.log('[updateCharacters] 角色立绘:', {
+                        characterId: charConfig.characterId,
+                        characterName: char.displayName || char.name,
+                        spriteUrl,
+                        configSpriteUrl: charConfig.spriteUrl,
+                        defaultSpriteId: char.defaultSpriteId
+                    });
 
                     if (spriteUrl) {
                         const img = document.createElement('img');
                         img.src = spriteUrl;
                         img.className = 'character-sprite';
                         
-                        // 简单的位置处理
-                        // x 0-100, y 0-100
                         const left = charConfig.position?.x || 50;
                         const scale = charConfig.scale || 1;
                         
@@ -480,8 +539,67 @@ null
                         img.style.transform = `translateX(-50%) scale(${scale})`;
                         
                         this.layers.characters.appendChild(img);
+                    } else {
+                        console.warn('[updateCharacters] 角色没有立绘:', char.displayName || char.name);
                     }
                 });
+            }
+            // 方式2: ✅ 如果没有visualAssets配置,自动从对话中提取出场角色
+            else if (node.dialogues && node.dialogues.length > 0) {
+                console.log('[updateCharacters] ✅ 没有visualAssets配置,自动从对话中提取立绘');
+                
+                // 收集所有对话中的角色ID
+                const dialogueCharacterIds = new Set();
+                node.dialogues.forEach(d => {
+                    if (d.characterId && d.characterId !== 'narrator') {
+                        dialogueCharacterIds.add(d.characterId);
+                    }
+                });
+                
+                // 为每个角色显示立绘
+                let index = 0;
+                dialogueCharacterIds.forEach(characterId => {
+                    const char = this.characterMap.get(characterId);
+                    if (!char) {
+                        console.warn('[updateCharacters] 未找到角色:', characterId);
+                        return;
+                    }
+                    
+                    // 获取立绘URL
+                    let spriteUrl;
+                    if (char.defaultSpriteId) {
+                        const sprite = char.sprites?.find(s => s.id === char.defaultSpriteId);
+                        if (sprite) spriteUrl = sprite.imageUrl;
+                    }
+                    if (!spriteUrl && char.sprites && char.sprites.length > 0) {
+                        spriteUrl = char.sprites[0].imageUrl;
+                    }
+                    
+                    console.log('[updateCharacters] 自动添加角色立绘:', {
+                        characterId,
+                        characterName: char.displayName || char.name,
+                        spriteUrl
+                    });
+                    
+                    if (spriteUrl) {
+                        const img = document.createElement('img');
+                        img.src = spriteUrl;
+                        img.className = 'character-sprite';
+                        
+                        // 自动排列: 每个角色间隄25%
+                        const left = 30 + (index * 25);
+                        
+                        img.style.left = `${left}%`;
+                        img.style.transform = `translateX(-50%)`;
+                        
+                        this.layers.characters.appendChild(img);
+                        index++;
+                    } else {
+                        console.warn('[updateCharacters] 角色没有立绘:', char.displayName || char.name);
+                    }
+                });
+            } else {
+                console.log('[updateCharacters] 没有角色需要显示');
             }
         }
 
@@ -508,14 +626,33 @@ null
             const char = this.characterMap.get(dialogue.characterId);
             const name = char ? (char.displayName || char.name) : '???';
             const text = dialogue.text;
+            const avatarUrl = char?.avatarUrl;
+
+            console.log('[renderDialogue]', {
+                characterId: dialogue.characterId,
+                name,
+                hasAvatar: !!avatarUrl,
+                avatarUrl
+            });
 
             // 显示 UI
             this.layers.ui.classList.remove('hidden');
             this.dialogueBox.container.classList.remove('narration-mode');
             this.dialogueBox.nameTag.style.display = 'block';
             
+            // ✅ 更新头像
+            const avatarEl = document.getElementById('name-tag-avatar');
+            const nameTextEl = document.getElementById('name-tag-text');
+            
+            if (avatarUrl) {
+                avatarEl.src = avatarUrl;
+                avatarEl.style.display = 'block';
+            } else {
+                avatarEl.style.display = 'none';
+            }
+            
             // 更新内容
-            this.dialogueBox.nameTag.textContent = name;
+            nameTextEl.textContent = name;
             this.dialogueBox.text.textContent = text;
         }
 

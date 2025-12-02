@@ -12,7 +12,10 @@ interface NodeEditPanelProps {
     scenes?: Scene[];
     onSave: (node: StoryNode) => void;
     onClose: () => void;
-    onGenerateImage?: (characterId: string, prompt: string) => Promise<string>;  // 可选的图片生成回调
+    onGenerateImage?: (characterId: string, prompt: string, refImageUrl?: string) => Promise<string>;
+    onDelete?: (nodeId: string) => void;
+    onAddNodeAfter?: (nodeId: string) => void;
+    allNodes?: StoryNode[];
 }
 
 export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, onGenerateImage }: NodeEditPanelProps) {
@@ -74,7 +77,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
         }
     };
     
-    const handleGenerateCharacterSprite = async (characterId: string) => {
+    const handleGenerateCharacterSprite = async (characterId: string, customState?: string) => {
         if (!onGenerateImage) {
             alert('图片生成功能不可用');
             return;
@@ -88,8 +91,51 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
         
         setGeneratingCharacterId(characterId);
         try {
-            const prompt = `${character.displayName}, ${character.description || ''}, 全身立绘, 动漫风格, 高质量`;
-            const imageUrl = await onGenerateImage(characterId, prompt);
+            // ✅ 智能构建prompt: 结合情节内容 + 角色状态 + 角色外观特征
+            let stateDescription = customState || '';
+            
+            // 如果没有自定义状态,尝试从情节内容中提取
+            if (!stateDescription) {
+                const nodeContext = [
+                    editedNode.title,
+                    editedNode.narration,
+                    ...editedNode.dialogues.filter(d => d.characterId === characterId).map(d => d.text)
+                ].filter(Boolean).join(', ');
+                
+                // 简单的关键词匹配
+                if (nodeContext.includes('受伤') || nodeContext.includes('伤痛') || nodeContext.includes('血')) {
+                    stateDescription = '受伤, 痛苦表情';
+                } else if (nodeContext.includes('开心') || nodeContext.includes('微笑') || nodeContext.includes('笑')) {
+                    stateDescription = '开心, 微笑';
+                } else if (nodeContext.includes('愤怒') || nodeContext.includes('生气') || nodeContext.includes('怒')) {
+                    stateDescription = '愤怒, 生气表情';
+                } else if (nodeContext.includes('悲伤') || nodeContext.includes('哭') || nodeContext.includes('泪')) {
+                    stateDescription = '悲伤, 哭泣';
+                } else if (nodeContext.includes('惊讶') || nodeContext.includes('惊讶') || nodeContext.includes('吃惊')) {
+                    stateDescription = '惊讶, 吃惊表情';
+                }
+            }
+            
+            // 构建prompt: 角色名 + 外观特征 + 当前状态 + 固定元素
+            const appearanceDesc = [
+                character.appearance?.hairStyle,
+                character.appearance?.clothing,
+                character.appearance?.facialFeatures,
+            ].filter(Boolean).join(', ');
+            
+            const prompt = [
+                character.displayName,
+                appearanceDesc || character.description,
+                stateDescription,
+                '全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量'
+            ].filter(Boolean).join(', ');
+            
+            console.log('[NodeEditPanel] 生成立绘 prompt:', prompt);
+            
+            // ✅ 使用角色原有立绘作为参考图(保持外观一致性)
+            const referenceSprite = character.sprites?.[0]?.imageUrl || character.avatarUrl;
+            
+            const imageUrl = await onGenerateImage(characterId, prompt, referenceSprite);
             
             if (!imageUrl) {
                 throw new Error('未获取到图片URL');
@@ -538,6 +584,13 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                         ))}
                                     </select>
                                 </div>
+                                
+                                {/* 使用提示 */}
+                                {onGenerateImage && editedNode.visualAssets?.characters && editedNode.visualAssets.characters.length > 0 && (
+                                    <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                                        💡 点击角色卡片的<strong>"AI生成"</strong>按钮,根据情节内容生成新立绘(会保持角色外观特征)
+                                    </div>
+                                )}
 
                                 <div className="space-y-2">
                                     {editedNode.visualAssets?.characters?.map((charSprite, index) => {
@@ -569,15 +622,17 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                                                     <button
                                                                         onClick={() => handleGenerateCharacterSprite(charSprite.characterId)}
                                                                         disabled={isGenerating}
-                                                                        className="px-2 py-1 text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded disabled:opacity-50 flex items-center gap-1"
+                                                                        className="px-2 py-1 text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded disabled:opacity-50 flex items-center gap-1 hover:from-purple-600 hover:to-pink-600 transition-all"
+                                                                        title="根据情节内容智能生成立绘"
                                                                     >
                                                                         <Wand2 className="w-3 h-3" />
-                                                                        {isGenerating ? '生成中...' : '生成'}
+                                                                        {isGenerating ? '生成中...' : 'AI生成'}
                                                                     </button>
                                                                 )}
                                                                 <button
                                                                     onClick={() => handleRemoveCharacterSprite(index)}
-                                                                    className="text-red-600 p-1"
+                                                                    className="text-red-600 p-1 hover:bg-red-50 rounded"
+                                                                    title="移除角色"
                                                                 >
                                                                     <Trash2 className="w-4 h-4" />
                                                                 </button>

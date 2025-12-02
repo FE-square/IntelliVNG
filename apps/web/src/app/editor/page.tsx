@@ -226,6 +226,40 @@ function EditorPageContent() {
         }
     };
     
+    // ✅ AI生成立绘
+    const handleGenerateImage = async (characterId: string, prompt: string, refImageUrl?: string): Promise<string> => {
+        try {
+            toast.info('生成中', '正在生成角色立绘,请稍候...');
+            
+            const response = await fetch('/api/generate-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    prompt,
+                    refImageUrl,
+                    refStrength: refImageUrl ? 0.7 : undefined  // 使用参考图时保持70%相似度
+                }),
+            });
+            
+            if (!response.ok) {
+                throw new Error('图片生成失败');
+            }
+            
+            const data = await response.json();
+            
+            if (!data.imageUrl) {
+                throw new Error('未返回图片URL');
+            }
+            
+            toast.success('生成成功', '角色立绘已生成 ✨');
+            return data.imageUrl;
+        } catch (error) {
+            console.error('[Editor] 图片生成失败:', error);
+            toast.error('生成失败', error instanceof Error ? error.message : '请重试');
+            throw error;
+        }
+    };
+    
     // ✅ 格式化最后保存时间
     const formatLastSaveTime = () => {
         if (!lastSaveTime) return '未保存';
@@ -669,6 +703,7 @@ function EditorPageContent() {
                                 // ✅ 不再在这里自动保存,由定时器处理
                             }}
                             onSelectNode={setSelectedNodeId}  // ✅ 传递选中节点回调
+                            onGenerateImage={handleGenerateImage}  // ✅ 传递AI生成立绘回调
                         />
                     </ReactFlowProvider>
                 ) : (

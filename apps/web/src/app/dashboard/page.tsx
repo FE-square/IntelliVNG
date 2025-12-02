@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, useToast, useConfirmDialog } from '@vng/ui';
-import { Plus, Trash2, Edit, Calendar, Users, Image as ImageIcon, FileCode, ArrowLeft } from 'lucide-react';
-import { getAllProjects, deleteProject, ProjectMetadata } from '@/lib/projectStorage';
+import { Plus, Trash2, Edit, Calendar, Users, Image as ImageIcon, FileCode, ArrowLeft, Upload, Settings, Download, Play } from 'lucide-react';
+import { getAllProjects, deleteProject, ProjectMetadata, saveProject, getProject } from '@/lib/projectStorage';
+import { importProjectFromJson, openFileDialog, exportProjectAsJson } from '@/lib/projectExport';
 import { I18N, t } from '@/i18n/client';
+import { ProjectSettingsEditor } from '@/components/ProjectSettingsEditor';
 
 // 定义多语言key映射
 const i18nMap = {
@@ -43,10 +45,12 @@ export default function DashboardPage() {
     const { confirm, DialogComponent } = useConfirmDialog();
     const [projects, setProjects] = useState<ProjectMetadata[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editingProject, setEditingProject] = useState<any>(null);
+    const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     
     useEffect(() => {
         loadProjects();
-    }, []);
+    }, []); // 监听URL参数变化，触发重新加载
     
     const loadProjects = async () => {
         setLoading(true);
@@ -93,6 +97,54 @@ export default function DashboardPage() {
             minute: '2-digit'
         });
     };
+    
+    // 导入项目
+    const handleImportProject = async () => {
+        try {
+            const file = await openFileDialog('.json,.vng.json');
+            const importedProject = await importProjectFromJson(file);
+            
+            const newProject = {
+                ...importedProject,
+                id: `imported-${Date.now()}`,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+            
+            const success = await saveProject(newProject);
+            
+            if (success) {
+                toast.success('导入成功', '项目已导入,即将跳转...');
+                setTimeout(() => {
+                    router.push(`/editor?projectId=${newProject.id}`);
+                }, 1000);
+            } else {
+                toast.error('导入失败', '保存项目到后端失败');
+            }
+        } catch (error) {
+            console.error('[Dashboard] 导入失败:', error);
+            toast.error('导入失败', error instanceof Error ? error.message : '未知错误');
+        }
+    };
+    
+    // 保存项目设定
+    const handleSaveSettings = async (updatedProject: any) => {
+        try {
+            const success = await saveProject(updatedProject);
+            
+            if (success) {
+                toast.success('保存成功', '项目设定已更新');
+                setShowSettingsDialog(false);
+                setEditingProject(null);
+                loadProjects(); // 重新加载项目列表
+            } else {
+                toast.error('保存失败', '请重试');
+            }
+        } catch (error) {
+            console.error('[Dashboard] 保存设定失败:', error);
+            toast.error('保存失败', error instanceof Error ? error.message : '未知错误');
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8">
@@ -104,6 +156,13 @@ export default function DashboardPage() {
                         <p className="text-white/80">{I18N[i18nMap.subtitle] || '管理你的所有视觉小说项目'}</p>
                     </div>
                     <div className="flex gap-3">
+                        <Button
+                            className="bg-white/20 text-white border-white/40 hover:bg-white/30 border"
+                            onClick={handleImportProject}
+                        >
+                            <Upload className="w-4 h-4 mr-2" />
+                            导入项目
+                        </Button>
                         <Button
                             className="bg-white/20 text-white border-white/40 hover:bg-white/30 border"
                             onClick={() => router.push('/setup')}
@@ -212,25 +271,76 @@ export default function DashboardPage() {
                                         )}
                                     </div>
 
-                                    {/* 操作按钮 */}
-                                    <div className="flex gap-2">
-                                        <Button
-                                            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-                                            onClick={() => router.push(`/editor?projectId=${project.id}`)}
-                                        >
-                                            <Edit className="w-4 h-4 mr-1" />
-                                            {I18N[i18nMap.edit] || '编辑'}
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            className="border-red-200 text-red-600 hover:bg-red-50"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDelete(project.id, project.title);
-                                            }}
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
+                                    {/* 操作按钮 - 重新设计 */}
+                                    <div className="space-y-2">
+                                        {/* 主操作按钮组 */}
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <Button
+                                                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                                                onClick={() => router.push(`/editor?projectId=${project.id}`)}
+                                            >
+                                                <Edit className="w-4 h-4 mr-1" />
+                                                编辑脚本
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                                                onClick={async () => {
+                                                    const fullProject = await getProject(project.id);
+                                                    if (fullProject) {
+                                                        setEditingProject(fullProject);
+                                                        setShowSettingsDialog(true);
+                                                    } else {
+                                                        toast.error('加载项目失败');
+                                                    }
+                                                }}
+                                            >
+                                                <Settings className="w-4 h-4 mr-1" />
+                                                编辑设定
+                                            </Button>
+                                        </div>
+                                        
+                                        {/* 次要操作按钮组 */}
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-xs"
+                                                onClick={async () => {
+                                                    const fullProject = await getProject(project.id);
+                                                    if (fullProject) {
+                                                        exportProjectAsJson(fullProject);
+                                                        toast.success('导出成功');
+                                                    }
+                                                }}
+                                            >
+                                                <Download className="w-3 h-3 mr-1" />
+                                                导出
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-xs bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                                                onClick={() => {
+                                                    router.push(`/editor?projectId=${project.id}&autoPreview=true`);
+                                                }}
+                                            >
+                                                <Play className="w-3 h-3 mr-1" />
+                                                预览
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="border-red-200 text-red-600 hover:bg-red-50 text-xs"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(project.id, project.title);
+                                                }}
+                                            >
+                                                <Trash2 className="w-3 h-3 mr-1" />
+                                                删除
+                                            </Button>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -239,6 +349,50 @@ export default function DashboardPage() {
                 )}
             </div>
             {DialogComponent}
+            
+            {/* 项目设定编辑对话框 */}
+            {showSettingsDialog && editingProject && (
+                <ProjectSettingsEditor
+                    project={editingProject}
+                    onSave={handleSaveSettings}
+                    onClose={() => {
+                        setShowSettingsDialog(false);
+                        setEditingProject(null);
+                    }}
+                    onGenerateImage={async (characterId: string, prompt: string, refImageUrl?: string) => {
+                        try {
+                            toast.info('生成中', '正在生成图片,请稍候...');
+                            
+                            const response = await fetch('/api/generate-image', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    prompt,
+                                    refImageUrl,
+                                    refStrength: refImageUrl ? 0.7 : undefined
+                                }),
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error('图片生成失败');
+                            }
+                            
+                            const data = await response.json();
+                            
+                            if (!data.imageUrl) {
+                                throw new Error('未返回图片URL');
+                            }
+                            
+                            toast.success('生成成功', '图片已生成 ✨');
+                            return data.imageUrl;
+                        } catch (error) {
+                            console.error('[Dashboard] 图片生成失败:', error);
+                            toast.error('生成失败', error instanceof Error ? error.message : '请重试');
+                            throw error;
+                        }
+                    }}
+                />
+            )}
         </div>
     );
 }
