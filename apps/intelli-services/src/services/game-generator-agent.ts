@@ -623,6 +623,11 @@ export class GameGeneratorAgent {
           totalLayers: layers.length,
           currentNode: layer.map(n => n.id).join(', '),
         });
+        console.log('details:', {
+          layer: layerIdx + 1,
+          totalLayers: layers.length,
+          currentNode: layer.map(n => n.id).join(', '),
+        });
 
         // 同一层并行调用
         const results = await Promise.all(

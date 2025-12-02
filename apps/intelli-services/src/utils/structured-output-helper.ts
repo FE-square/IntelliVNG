@@ -3,8 +3,116 @@
  * 
  * 用于处理不同模型对 structured output 的支持差异
  * 当 Mastra 的 structuredOutput 失败时，回退到 JSON 解析
+ * 
+ * 支持本地缓存机制，避免重复调用 LLM
  */
 import { z } from 'zod';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
+
+// ============ 缓存配置 ============
+
+const CACHE_DIR = path.join(process.cwd(), '.cache', 'llm');
+const CACHE_ENABLED = process.env.LLM_CACHE_ENABLED !== 'false'; // 默认启用
+
+// 确保缓存目录存在
+function ensureCacheDir(): void {
+  if (!fs.existsSync(CACHE_DIR)) {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+    console.log(`[Cache] 创建缓存目录: ${CACHE_DIR}`);
+  }
+}
+
+/**
+ * 生成缓存键
+ * 基于 agent name、prompt 和 schema 生成唯一的哈希值
+ */
+function generateCacheKey(agentName: string, prompt: string, schemaName?: string): string {
+  const content = `${agentName}::${schemaName || 'default'}::${prompt}`;
+  const hash = crypto.createHash('sha256').update(content).digest('hex').substring(0, 16);
+  return `${agentName}_${hash}`;
+}
+
+/**
+ * 从缓存读取
+ */
+function readFromCache<T>(cacheKey: string): T | null {
+  if (!CACHE_ENABLED) return null;
+  
+  ensureCacheDir();
+  const cachePath = path.join(CACHE_DIR, `${cacheKey}.json`);
+  
+  if (fs.existsSync(cachePath)) {
+    try {
+      const content = fs.readFileSync(cachePath, 'utf-8');
+      const cached = JSON.parse(content);
+      console.log(`[Cache] ✅ 命中缓存: ${cacheKey}`);
+      return cached.data as T;
+    } catch (error) {
+      console.warn(`[Cache] ⚠️ 读取缓存失败: ${cacheKey}`, error);
+      return null;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * 写入缓存
+ */
+function writeToCache<T>(cacheKey: string, data: T, metadata?: Record<string, any>): void {
+  if (!CACHE_ENABLED) return;
+  
+  ensureCacheDir();
+  const cachePath = path.join(CACHE_DIR, `${cacheKey}.json`);
+  
+  try {
+    const cacheContent = {
+      cacheKey,
+      timestamp: new Date().toISOString(),
+      metadata,
+      data,
+    };
+    fs.writeFileSync(cachePath, JSON.stringify(cacheContent, null, 2), 'utf-8');
+    console.log(`[Cache] 💾 已保存缓存: ${cacheKey}`);
+  } catch (error) {
+    console.warn(`[Cache] ⚠️ 写入缓存失败: ${cacheKey}`, error);
+  }
+}
+
+/**
+ * 清除所有缓存
+ */
+export function clearAllCache(): void {
+  if (fs.existsSync(CACHE_DIR)) {
+    const files = fs.readdirSync(CACHE_DIR);
+    files.forEach(file => {
+      fs.unlinkSync(path.join(CACHE_DIR, file));
+    });
+    console.log(`[Cache] 🗑️ 已清除 ${files.length} 个缓存文件`);
+  }
+}
+
+/**
+ * 获取缓存统计
+ */
+export function getCacheStats(): { count: number; size: number; files: string[] } {
+  ensureCacheDir();
+  const files = fs.readdirSync(CACHE_DIR).filter(f => f.endsWith('.json'));
+  let totalSize = 0;
+  
+  files.forEach(file => {
+    const stat = fs.statSync(path.join(CACHE_DIR, file));
+    totalSize += stat.size;
+  });
+  
+  return {
+    count: files.length,
+    size: totalSize,
+    files,
+  };
+}
 
 /**
  * 从文本中提取 JSON 并验证
@@ -90,6 +198,11 @@ ${schemaDescription}
  * 
  * 首先尝试使用 Mastra 的 structuredOutput，
  * 如果失败则回退到 JSON 解析
+ * 
+ * 支持缓存机制：
+ * - 默认启用缓存（设置 LLM_CACHE_ENABLED=false 禁用）
+ * - 缓存基于 agent name + prompt + schema 生成唯一键
+ * - 成功解析后自动保存缓存
  */
 export async function generateStructuredOutput<T>(
   agent: any,
@@ -99,18 +212,41 @@ export async function generateStructuredOutput<T>(
     maxSteps?: number;
     fallbackOnly?: boolean; // 是否只使用回退模式
     temperature?: number; // 模型温度参数
+    cacheKey?: string; // 自定义缓存键（用于更细粒度的控制）
+    skipCache?: boolean; // 跳过缓存（强制重新生成）
   }
 ): Promise<T> {
-  const { maxSteps, fallbackOnly = false, temperature = 1 } = options || {};
+  const { maxSteps, fallbackOnly = false, temperature = 1, cacheKey: customCacheKey, skipCache = false } = options || {};
+
+  // 获取 agent 名称和 schema 名称
+  const agentName = agent.name || 'unknown-agent';
+  const schemaName = (schema as any)._def?.typeName || 'schema';
+  
+  // 生成缓存键
+  const cacheKey = customCacheKey || generateCacheKey(agentName, prompt, schemaName);
+  
+  // 检查缓存（除非明确跳过）
+  if (!skipCache) {
+    const cached = readFromCache<T>(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+  }
 
   // 模型设置，用于支持 o1 等不支持 temperature=0 的模型
   const modelSettings = { temperature };
+  
+  let result: T;
 
   // 如果指定只使用回退模式，直接使用 JSON 解析
   if (fallbackOnly) {
     const enhancedPrompt = enhancePromptForJson(prompt, schema);
     const response = await agent.generate(enhancedPrompt, { modelSettings });
-    return extractAndValidateJson(response.text, schema);
+    result = extractAndValidateJson(response.text, schema);
+    
+    // 保存到缓存
+    writeToCache(cacheKey, result, { agentName, schemaName, mode: 'fallback' });
+    return result;
   }
 
   try {
@@ -123,13 +259,21 @@ export async function generateStructuredOutput<T>(
 
     // 检查返回值是否有效
     if (response.object !== undefined && response.object !== null) {
-      return response.object as T;
+      result = response.object as T;
+      
+      // 保存到缓存
+      writeToCache(cacheKey, result, { agentName, schemaName, mode: 'structured' });
+      return result;
     }
 
     // 如果 object 无效，尝试从 text 解析（如果有）
     if (response.text) {
       console.warn('[StructuredOutput] object 为空，尝试从 text 解析 JSON');
-      return extractAndValidateJson(response.text, schema);
+      result = extractAndValidateJson(response.text, schema);
+      
+      // 保存到缓存
+      writeToCache(cacheKey, result, { agentName, schemaName, mode: 'text-parse' });
+      return result;
     }
 
     // 都没有，抛出错误触发回退
@@ -148,7 +292,11 @@ export async function generateStructuredOutput<T>(
       throw new Error('Agent 没有返回任何文本内容');
     }
     
-    return extractAndValidateJson(response.text, schema);
+    result = extractAndValidateJson(response.text, schema);
+    
+    // 保存到缓存
+    writeToCache(cacheKey, result, { agentName, schemaName, mode: 'fallback-retry' });
+    return result;
   }
 }
 

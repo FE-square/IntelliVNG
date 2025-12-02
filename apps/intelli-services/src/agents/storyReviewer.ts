@@ -114,7 +114,16 @@ export const analyzePathsTool = createTool({
   id: "analyze-paths",
   description: "分析所有可能的故事路径，评估分支的多样性和意义性。可以了解故事有多少条不同的路线。",
   inputSchema: z.object({
-    nodes: z.array(z.any()),
+    nodes: z.array(z.object({
+      id: z.string(),
+      type: z.string().optional(),
+      isStart: z.boolean().optional(),
+      isEnding: z.boolean().optional(),
+      nextNodeId: z.string().optional(),
+      choices: z.array(z.object({
+        targetNodeId: z.string(),
+      })).optional(),
+    })),
   }),
   execute: async ({ context }) => {
     const { nodes } = context;
@@ -193,7 +202,10 @@ export const analyzeDialogueQualityTool = createTool({
   inputSchema: z.object({
     nodes: z.array(z.object({
       id: z.string(),
-      dialogues: z.array(z.any()).optional(),
+      dialogues: z.array(z.object({
+        characterId: z.string().optional(),
+        text: z.string().optional(),
+      })).optional(),
       narration: z.string().optional(),
     })),
   }),
