@@ -6,8 +6,10 @@ import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast, useC
 import { Plus, Trash2, Save, ArrowLeft, Users, Wand2, Sparkles, Loader2 } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
-import type { Character } from '@vng/core';
+import type { Character, GameProject } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
+import { saveProject } from '@/lib/projectStorage';
+import { getEditingProjectBase, buildFullProject } from '@/lib/setupUtils';
 
 // 生成状态类型
 interface GenerationStatus {
@@ -297,7 +299,7 @@ export default function CharactersPage() {
         await handleGenerateAvatar();
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!formData.name || !formData.displayName) {
             toast.warning('请至少填写角色姓名和显示名称');
             return;
@@ -327,6 +329,43 @@ export default function CharactersPage() {
             toast.success('角色更新成功', '立绘和头像已自动同步到素材库 🎨');
         }
 
+        // ✅ 如果是编辑已有项目，同步更新sessionStorage中的项目数据
+        const editingProjectData = sessionStorage.getItem('editing_project');
+        if (editingProjectData) {
+            try {
+                const project: GameProject = JSON.parse(editingProjectData);
+                // 使用当前setupStore中的最新角色列表（包含刚保存的角色）
+                const currentCharacters = editingId === 'new' 
+                    ? [...characters, character]
+                    : characters.map(c => c.id === character.id ? character : c);
+                
+                const updatedProject = {
+                    ...project,
+                    characters: currentCharacters,
+                    updatedAt: new Date().toISOString(),
+                };
+                sessionStorage.setItem('editing_project', JSON.stringify(updatedProject));
+                console.log('[角色编辑] 已同步更新到sessionStorage，角色数:', currentCharacters.length);
+                
+                // ✅ 直接保存到后端
+                const baseProject = getEditingProjectBase();
+                if (baseProject) {
+                    const { worldSetting, scenes, themeSetting } = useSetupStore.getState();
+                    const fullProject = buildFullProject(baseProject, currentCharacters, worldSetting, scenes, themeSetting);
+                    const success = await saveProject(fullProject);
+                    if (success) {
+                        console.log('[角色编辑] 项目已保存到后端');
+                        // 同时更新sessionStorage
+                        sessionStorage.setItem('editing_project', JSON.stringify(fullProject));
+                    } else {
+                        console.error('[角色编辑] 保存到后端失败');
+                    }
+                }
+            } catch (error) {
+                console.error('[角色编辑] 更新sessionStorage失败:', error);
+            }
+        }
+
         setEditingId(null);
     };
 
@@ -348,6 +387,39 @@ export default function CharactersPage() {
         if (confirmed) {
             removeCharacter(id);
             toast.success('角色已删除');
+            
+            // ✅ 如果是编辑已有项目，同步更新sessionStorage
+            const editingProjectData = sessionStorage.getItem('editing_project');
+            if (editingProjectData) {
+                try {
+                    const project: GameProject = JSON.parse(editingProjectData);
+                    const updatedCharacters = characters.filter(c => c.id !== id);
+                    const updatedProject = {
+                        ...project,
+                        characters: updatedCharacters,
+                        updatedAt: new Date().toISOString(),
+                    };
+                    sessionStorage.setItem('editing_project', JSON.stringify(updatedProject));
+                    console.log('[角色删除] 已同步更新到sessionStorage，剩余角色:', updatedCharacters.length);
+                    
+                    // ✅ 直接保存到后端
+                    const baseProject = getEditingProjectBase();
+                    if (baseProject) {
+                        const { worldSetting, scenes, themeSetting } = useSetupStore.getState();
+                        const fullProject = buildFullProject(baseProject, updatedCharacters, worldSetting, scenes, themeSetting);
+                        const success = await saveProject(fullProject);
+                        if (success) {
+                            console.log('[角色删除] 项目已保存到后端');
+                            // 同时更新sessionStorage
+                            sessionStorage.setItem('editing_project', JSON.stringify(fullProject));
+                        } else {
+                            console.error('[角色删除] 保存到后端失败');
+                        }
+                    }
+                } catch (error) {
+                    console.error('[角色删除] 更新sessionStorage失败:', error);
+                }
+            }
         }
     };
 
@@ -395,7 +467,7 @@ export default function CharactersPage() {
                     <Button
                         variant="outline"
                         className="bg-white/20 text-white border-white/40 hover:bg-white/30"
-                        onClick={() => router.push('/setup')}
+                        onClick={() => router.back()}
                     >
                         <span className="flex items-center">
                             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -893,14 +965,7 @@ export default function CharactersPage() {
                 </div>
 
                 {/* 底部导航 */}
-                <div className="mt-8 flex justify-between">
-                    <Button
-                        variant="outline"
-                        className="bg-white/20 text-white border-white/40 hover:bg-white/30"
-                        onClick={() => router.push('/setup')}
-                    >
-                        返回设置
-                    </Button>
+                <div className="mt-8 flex justify-end">
                     <Button
                         className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                         onClick={() => router.push('/setup/backgrounds')}
