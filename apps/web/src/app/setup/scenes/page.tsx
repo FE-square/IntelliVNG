@@ -139,16 +139,23 @@ export default function ScenesPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-green-500 via-teal-500 to-cyan-500 p-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-teal-50 p-8">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-6 flex items-center justify-between">
                     <div>
-                        <h1 className="text-4xl font-bold text-white mb-2">🏞️ 场景定义</h1>
-                        <p className="text-white/80">设定关键场景的类型、氛围、细节等</p>
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center shadow-lg">
+                                <Wand2 className="w-8 h-8 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-1">场景设定</h1>
+                                <p className="text-slate-600">设定关键场景的类型、氛围、细节等</p>
+                            </div>
+                        </div>
                     </div>
                     <Button
                         variant="outline"
-                        className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+                        className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -158,11 +165,11 @@ export default function ScenesPage() {
 
                 <div className="grid gap-6 md:grid-cols-2">
                     {/* 添加场景表单 */}
-                    <Card>
+                    <Card className="shadow-lg border-2 border-slate-200">
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-semibold text-lg">
-                                    {editingId ? '编辑场景' : '添加新场景'}
+                                <h3 className="font-semibold text-lg text-slate-800">
+                                    {editingId ? '✏️ 编辑场景' : '🌟 添加新场景'}
                                 </h3>
                                 {/* AI 自动补全按钮 */}
                                 <Button
@@ -170,14 +177,14 @@ export default function ScenesPage() {
                                     size="sm"
                                     onClick={handleAutocomplete}
                                     disabled={isAutocompleting}
-                                    className="gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 hover:from-amber-100 hover:to-orange-100"
+                                    className="gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 hover:from-amber-100 hover:to-orange-100 shadow-sm"
                                 >
                                     {isAutocompleting ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
                                         <Sparkles className="w-4 h-4 text-amber-600" />
                                     )}
-                                    <span className="text-amber-700">
+                                    <span className="text-amber-700 font-medium">
                                         {isAutocompleting ? 'AI补全中...' : 'AI帮我填'}
                                     </span>
                                 </Button>
@@ -323,14 +330,16 @@ export default function ScenesPage() {
 
                     {/* 已添加的场景列表 */}
                     <div className="space-y-4">
-                        <h3 className="font-semibold text-lg">已添加场景 ({scenes.length})</h3>
+                        <h3 className="font-semibold text-lg text-slate-800">已添加场景 ({scenes.length})</h3>
                         {scenes.length === 0 ? (
-                            <Card className="p-8 text-center text-gray-500">
-                                还没有添加场景
+                            <Card className="p-8 text-center text-slate-500 shadow-lg border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-green-50">
+                                <Wand2 className="w-16 h-16 mx-auto mb-3 text-slate-300" />
+                                <p className="font-medium">还没有添加场景</p>
+                                <p className="text-sm mt-1">点击左侧表单添加第一个场景</p>
                             </Card>
                         ) : (
                             scenes.map((scene) => (
-                                <Card key={scene.id} className="p-4">
+                                <Card key={scene.id} className="p-4 shadow-lg border-2 border-slate-200 hover:shadow-xl transition-shadow">
                                     <div className="flex items-start justify-between gap-4">
                                         {/* 场景背景预览 */}
                                         {scene.imageUrl && (
@@ -382,16 +391,16 @@ export default function ScenesPage() {
                 <div className="mt-8 flex justify-between">
                     <Button
                         variant="outline"
-                        className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+                        className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
-                        返回设置
+                        ← 返回设置
                     </Button>
                     <Button
-                        className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                        className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 shadow-lg"
                         onClick={() => router.push('/setup/theme')}
                     >
-                        下一步：主题风格 →
+                        下一步:主题风格 →
                     </Button>
                 </div>
             </div>

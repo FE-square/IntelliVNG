@@ -150,13 +150,20 @@ export default function ThemeSetupPage() {
     };
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-orange-500 p-8">
+        <main className="min-h-screen bg-gradient-to-br from-slate-50 via-pink-50 to-orange-50 p-8">
             <div className="max-w-5xl mx-auto">
                 {/* 标题栏 */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-4xl font-bold text-white mb-2">🎨 故事主题风格</h1>
-                        <p className="text-white/80">明确故事的核心主题与风格基调，让 AI 生成符合预期的剧情</p>
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center shadow-lg">
+                                <Palette className="w-8 h-8 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent mb-1">故事主题风格</h1>
+                                <p className="text-slate-600">明确故事的核心主题与风格基调,让 AI 生成符合预期的剧情</p>
+                            </div>
+                        </div>
                     </div>
                     <div className="flex gap-3">
                         {/* AI 自动建议按钮 */}
@@ -164,18 +171,20 @@ export default function ThemeSetupPage() {
                             variant="outline"
                             onClick={handleAutocomplete}
                             disabled={isAutocompleting}
-                            className="bg-amber-500/20 text-white border-amber-400/40 hover:bg-amber-500/30"
+                            className="gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 hover:from-amber-100 hover:to-orange-100 shadow-sm"
                         >
                             {isAutocompleting ? (
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             ) : (
-                                <Sparkles className="w-4 h-4 mr-2" />
+                                <Sparkles className="w-4 h-4 mr-2 text-amber-600" />
                             )}
-                            {isAutocompleting ? 'AI推荐中...' : 'AI帮我选'}
+                            <span className="text-amber-700 font-medium">
+                                {isAutocompleting ? 'AI推荐中...' : 'AI帮我选'}
+                            </span>
                         </Button>
                         <Button
                             variant="outline"
-                            className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+                            className="border-slate-300 hover:bg-slate-100"
                             onClick={() => router.push('/setup')}
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -186,11 +195,11 @@ export default function ThemeSetupPage() {
 
                 <div className="space-y-6">
                     {/* 主题选择 */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
+                    <Card className="shadow-lg border-2 border-slate-200">
+                        <CardHeader className="bg-gradient-to-br from-pink-50 to-rose-50">
+                            <CardTitle className="flex items-center gap-2 text-slate-800">
                                 <Palette className="w-5 h-5" />
-                                核心主题（可多选）
+                                核心主题(可多选)
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -252,11 +261,11 @@ export default function ThemeSetupPage() {
                     </Card>
 
                     {/* 风格选择 */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
+                    <Card className="shadow-lg border-2 border-slate-200">
+                        <CardHeader className="bg-gradient-to-br from-purple-50 to-blue-50">
+                            <CardTitle className="flex items-center gap-2 text-slate-800">
                                 <Palette className="w-5 h-5" />
-                                剧情风格（可多选）
+                                剧情风格(可多选)
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -318,9 +327,9 @@ export default function ThemeSetupPage() {
                     </Card>
 
                     {/* 基调与补充说明 */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>补充说明（可选）</CardTitle>
+                    <Card className="shadow-lg border-2 border-slate-200">
+                        <CardHeader className="bg-gradient-to-br from-amber-50 to-yellow-50">
+                            <CardTitle className="text-slate-800">补充说明(可选)</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
@@ -346,7 +355,7 @@ export default function ThemeSetupPage() {
                     {/* 保存按钮 */}
                     <div className="flex gap-4">
                         <Button
-                            className="flex-1 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 h-12 text-lg"
+                            className="flex-1 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 h-12 text-lg shadow-lg"
                             onClick={handleSave}
                         >
                             保存主题风格设定
@@ -358,16 +367,16 @@ export default function ThemeSetupPage() {
                 <div className="mt-8 flex justify-between">
                     <Button
                         variant="outline"
-                        className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+                        className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
-                        返回设置
+                        ← 返回设置
                     </Button>
                     <Button
-                        className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
+                        className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg"
                         onClick={() => router.push('/setup/summary')}
                     >
-                        下一步：查看汇总 →
+                        下一步:查看汇总 →
                     </Button>
                 </div>
             </div>

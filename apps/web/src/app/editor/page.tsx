@@ -273,10 +273,10 @@ function EditorPageContent() {
 
     if (loading) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
-                <div className="flex flex-col items-center gap-6 p-8 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20">
+            <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+                <div className="flex flex-col items-center gap-6 p-8 bg-white rounded-3xl shadow-2xl border-2 border-slate-200">
                     <div className="relative">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-600 to-pink-600 animate-pulse" />
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-pink-500 animate-pulse" />
                         <Loader2 className="absolute inset-0 m-auto h-10 w-10 animate-spin text-white" />
                     </div>
                     <div className="text-center">
@@ -290,9 +290,9 @@ function EditorPageContent() {
 
     if (!project) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-                <div className="flex flex-col items-center gap-6 p-8 bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md">
-                    <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+            <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+                <div className="flex flex-col items-center gap-6 p-8 bg-white rounded-3xl shadow-2xl border-2 border-slate-200 max-w-md">
+                    <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
                         <AlertCircle className="h-8 w-8 text-red-500" />
                     </div>
                     <div className="text-center">
@@ -300,7 +300,7 @@ function EditorPageContent() {
                         <p className="text-sm text-slate-500 mb-4">无法加载指定的项目数据</p>
                         <a 
                             href="/" 
-                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg"
+                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg transition-all shadow-lg"
                         >
                             <Home className="w-4 h-4" />
                             返回首页
@@ -312,25 +312,25 @@ function EditorPageContent() {
     }
 
     return (
-        <div className="flex h-screen w-full flex-col bg-slate-50">
+        <div className="flex h-screen w-full flex-col bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
             {/* Header - 现代化工具栏 */}
-            <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 shadow-lg">
+            <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-md">
                 <div className="flex items-center gap-4">
-                    <a href="/" className="text-white/80 hover:text-white transition-colors">
+                    <a href="/" className="text-slate-600 hover:text-slate-800 transition-colors">
                         <Home className="h-5 w-5" />
                     </a>
-                    <div className="h-8 w-px bg-white/30" />
+                    <div className="h-8 w-px bg-slate-300" />
                     <div>
-                        <div className="font-bold text-xl text-white drop-shadow-md">{project.title}</div>
+                        <div className="font-bold text-xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{project.title}</div>
                         {projectId && (
-                            <div className="text-xs text-white/70">ID: {projectId}</div>
+                            <div className="text-xs text-slate-500">ID: {projectId}</div>
                         )}
                     </div>
                 </div>
                 
                 {/* Error notification */}
                 {error && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-100 text-sm backdrop-blur-sm border border-amber-400/30">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-sm border border-amber-200">
                         <AlertCircle className="h-4 w-4" />
                         <span>使用演示数据 (项目未找到)</span>
                     </div>
@@ -339,7 +339,7 @@ function EditorPageContent() {
                 <div className="flex gap-2 items-center">
                     {/* ✅ 最后保存时间 */}
                     {projectId && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg border border-white/20 text-white/80 text-xs">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 text-slate-600 text-xs">
                             <Clock className="w-3 h-3" />
                             <span>最后保存: {formatLastSaveTime()}</span>
                         </div>
@@ -348,10 +348,10 @@ function EditorPageContent() {
                     {/* ✅ 手动保存按钮 */}
                     {projectId && (
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             onClick={() => setShowSaveNoteDialog(true)}
                             disabled={isSaving}
-                            className="text-white hover:bg-white/10 border border-white/30 font-medium"
+                            className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
                         >
                             <Save className="w-4 h-4 mr-1" />
                             {isSaving ? '保存中...' : '保存'}
@@ -359,9 +359,9 @@ function EditorPageContent() {
                     )}
                     
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         onClick={() => setActiveTab('editor')}
-                        className="text-white hover:bg-white/10 border border-white/30 font-medium"
+                        className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
                     >
                         📝 脚本编辑器
                     </Button>
@@ -369,13 +369,13 @@ function EditorPageContent() {
                     {/* ✅ 预览游戏下拉菜单 */}
                     <div className="relative preview-menu-container">
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             onClick={() => {
                                 // ✅ 如果已经在预览页面,直接打开菜单切换模式
                                 // 如果不在预览页面,也打开菜单选择模式
                                 setShowPreviewMenu(!showPreviewMenu);
                             }}
-                            className="text-white hover:bg-white/10 border border-white/30 font-medium"
+                            className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
                         >
                             ▶️ 预览游戏 ▼
                         </Button>
@@ -431,8 +431,8 @@ function EditorPageContent() {
                     
                     <div className="relative export-menu-container group">
                         <Button 
-                            variant="ghost"
-                            className="text-white hover:bg-white/10 border border-white/30 font-medium"
+                            variant="outline"
+                            className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
                         >
                             📦 导出 ▼
                         </Button>
@@ -852,10 +852,10 @@ function EditorPageContent() {
 export default function EditorPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-                <div className="text-white text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-                    <p>加载编辑器中...</p>
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+                <div className="text-slate-600 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-500" />
+                    <p className="font-medium">加载编辑器中...</p>
                 </div>
             </div>
         }>

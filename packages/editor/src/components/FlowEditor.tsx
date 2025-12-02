@@ -556,9 +556,9 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                         <div className="pb-2 border-b border-gray-200 relative add-node-menu-container">
                             <Button
                                 size="sm"
-                                variant="default"
+                                variant="outline"
                                 onClick={() => setShowAddNodeMenu(!showAddNodeMenu)}
-                                className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700"
+                                className="w-full gap-2"
                             >
                                 <Plus className="w-4 h-4" />
                                 新增节点

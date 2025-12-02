@@ -456,42 +456,45 @@ export default function CharactersPage() {
     };
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8">
+        <main className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 p-8">
             <div className="max-w-6xl mx-auto">
                 {/* 标题栏 */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-4xl font-bold text-white mb-2">👤 角色定义</h1>
-                        <p className="text-white/80">设置角色的详细信息，让 AI 更好地理解你的角色</p>
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                                <Users className="w-8 h-8 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">角色定义</h1>
+                                <p className="text-slate-600">设置角色的详细信息,让 AI 更好地理解你的角色</p>
+                            </div>
+                        </div>
                     </div>
                     <Button
                         variant="outline"
-                        className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+                        className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.back()}
                     >
-                        <span className="flex items-center">
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            返回
-                        </span>
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        返回
                     </Button>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-6">
-                    {/* 左侧：角色列表 */}
+                    {/* 左侧:角色列表 */}
                     <div className="md:col-span-1 space-y-4">
-                        <Card>
-                            <CardHeader>
+                        <Card className="shadow-lg border-2 border-slate-200">
+                            <CardHeader className="bg-gradient-to-br from-purple-50 to-indigo-50">
                                 <CardTitle className="flex items-center justify-between">
-                                    <span>角色列表 ({characters.length})</span>
-                                    <Button size="sm" onClick={handleNewCharacter}>
-                                        <span className="flex items-center">
-                                            <Plus className="w-4 h-4 mr-1" />
-                                            新增
-                                        </span>
+                                    <span className="text-slate-800">角色列表 ({characters.length})</span>
+                                    <Button size="sm" onClick={handleNewCharacter} className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600">
+                                        <Plus className="w-4 h-4 mr-1" />
+                                        新增
                                     </Button>
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-2">
+                            <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
                                 {characters.length === 0 && (
                                     <p className="text-gray-500 text-sm text-center py-4">
                                         还没有角色，点击「新增」创建第一个角色
@@ -500,10 +503,10 @@ export default function CharactersPage() {
                                 {characters.map((char) => (
                                     <div
                                         key={char.id}
-                                        className={`p-3 rounded border-2 cursor-pointer transition-all ${
+                                        className={`p-3 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
                                             editingId === char.id
-                                                ? 'border-indigo-500 bg-indigo-50'
-                                                : 'border-gray-200 hover:border-indigo-300'
+                                                ? 'border-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-md'
+                                                : 'border-slate-200 hover:border-indigo-300 bg-white'
                                         }`}
                                         onClick={() => handleEdit(char)}
                                     >
@@ -544,34 +547,34 @@ export default function CharactersPage() {
                         </Card>
                     </div>
 
-                    {/* 右侧：编辑表单 */}
+                    {/* 右侧:编辑表单 */}
                     <div className="md:col-span-2">
                         {editingId ? (
-                            <Card>
-                                <CardHeader>
+                            <Card className="shadow-lg border-2 border-slate-200">
+                                <CardHeader className="bg-gradient-to-br from-purple-50 to-pink-50">
                                     <div className="flex items-center justify-between">
-                                        <CardTitle>
-                                            {editingId === 'new' ? '创建新角色' : '编辑角色'}
+                                        <CardTitle className="text-slate-800">
+                                            {editingId === 'new' ? '🌟 创建新角色' : '✏️ 编辑角色'}
                                         </CardTitle>
                                         {/* AI 自动补全按钮 */}
                                         <Button
                                             variant="outline"
                                             onClick={handleAutocomplete}
                                             disabled={isAutocompleting}
-                                            className="gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 hover:from-amber-100 hover:to-orange-100"
+                                            className="gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 hover:from-amber-100 hover:to-orange-100 shadow-sm"
                                         >
                                             {isAutocompleting ? (
                                                 <Loader2 className="w-4 h-4 animate-spin" />
                                             ) : (
                                                 <Sparkles className="w-4 h-4 text-amber-600" />
                                             )}
-                                            <span className="text-amber-700">
+                                            <span className="text-amber-700 font-medium">
                                                 {isAutocompleting ? 'AI补全中...' : 'AI帮我填'}
                                             </span>
                                         </Button>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-6">
+                                <CardContent className="space-y-6 max-h-[700px] overflow-y-auto">
                                     {/* 基础信息 */}
                                     <div>
                                         <h3 className="font-semibold text-lg mb-3 text-indigo-900">基础信息</h3>
@@ -953,10 +956,10 @@ export default function CharactersPage() {
                                 </CardContent>
                             </Card>
                         ) : (
-                            <Card className="h-full flex items-center justify-center min-h-[400px]">
-                                <div className="text-center text-gray-500">
-                                    <Users className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                                    <p>请从左侧选择一个角色进行编辑</p>
+                            <Card className="h-full flex items-center justify-center min-h-[400px] shadow-lg border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-purple-50">
+                                <div className="text-center text-slate-500">
+                                    <Users className="w-20 h-20 mx-auto mb-4 text-slate-300" />
+                                    <p className="text-lg font-medium">请从左侧选择一个角色进行编辑</p>
                                     <p className="text-sm mt-2">或点击「新增」按钮创建新角色</p>
                                 </div>
                             </Card>
@@ -965,12 +968,19 @@ export default function CharactersPage() {
                 </div>
 
                 {/* 底部导航 */}
-                <div className="mt-8 flex justify-end">
+                <div className="mt-8 flex justify-between">
                     <Button
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                        variant="outline"
+                        className="border-slate-300 hover:bg-slate-100"
+                        onClick={() => router.push('/setup')}
+                    >
+                        ← 返回设置
+                    </Button>
+                    <Button
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
                         onClick={() => router.push('/setup/backgrounds')}
                     >
-                        下一步：定义背景 →
+                        下一步:定义背景 →
                     </Button>
                 </div>
             </div>

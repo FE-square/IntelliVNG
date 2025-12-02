@@ -68,17 +68,24 @@ export default function WorldSetupPage() {
     };
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 p-8">
+        <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-8">
             <div className="max-w-4xl mx-auto">
                 {/* 标题栏 */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-4xl font-bold text-white mb-2">🌍 世界观设定</h1>
-                        <p className="text-white/80">构建故事的宏观背景框架</p>
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-lg">
+                                <Globe className="w-8 h-8 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-1">世界观设定</h1>
+                                <p className="text-slate-600">构建故事的宏观背景框架</p>
+                            </div>
+                        </div>
                     </div>
                     <Button
                         variant="outline"
-                        className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+                        className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -86,10 +93,10 @@ export default function WorldSetupPage() {
                     </Button>
                 </div>
 
-                <Card>
-                    <CardHeader>
+                <Card className="shadow-lg border-2 border-slate-200">
+                    <CardHeader className="bg-gradient-to-br from-purple-50 to-blue-50">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="flex items-center gap-2">
+                            <CardTitle className="flex items-center gap-2 text-slate-800">
                                 <Globe className="w-5 h-5" />
                                 定义世界观
                             </CardTitle>
@@ -98,14 +105,14 @@ export default function WorldSetupPage() {
                                 variant="outline"
                                 onClick={handleAutocomplete}
                                 disabled={isAutocompleting}
-                                className="gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 hover:from-amber-100 hover:to-orange-100"
+                                className="gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 hover:from-amber-100 hover:to-orange-100 shadow-sm"
                             >
                                 {isAutocompleting ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
                                     <Sparkles className="w-4 h-4 text-amber-600" />
                                 )}
-                                <span className="text-amber-700">
+                                <span className="text-amber-700 font-medium">
                                     {isAutocompleting ? 'AI补全中...' : 'AI帮我填'}
                                 </span>
                             </Button>
@@ -193,7 +200,7 @@ export default function WorldSetupPage() {
                         {/* 保存按钮 */}
                         <div className="pt-4 border-t">
                             <Button
-                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 h-12 text-lg"
+                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 h-12 text-lg shadow-lg"
                                 onClick={handleSave}
                             >
                                 <Save className="w-5 h-5 mr-2" />
@@ -207,16 +214,16 @@ export default function WorldSetupPage() {
                 <div className="mt-8 flex justify-between">
                     <Button
                         variant="outline"
-                        className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+                        className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
-                        返回设置
+                        ← 返回设置
                     </Button>
                     <Button
-                        className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700"
+                        className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 shadow-lg"
                         onClick={() => router.push('/setup/scenes')}
                     >
-                        下一步：定义场景 →
+                        下一步:定义场景 →
                     </Button>
                 </div>
             </div>

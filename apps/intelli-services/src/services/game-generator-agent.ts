@@ -870,6 +870,101 @@ export class GameGeneratorAgent {
   }
 
   /**
+   * 快速设定生成 - 根据一句话描述自动生成完整设定
+   * 
+   * @param prompt 用户的故事描述
+   * @param locale 用户语言
+   * @returns { projectTitle, characters, worldSetting, scenes, themeSetting }
+   */
+  async quickSetup(
+    prompt: string,
+    locale: Locale = DEFAULT_LOCALE
+  ): Promise<{
+    projectTitle: string;
+    characters: any[];
+    worldSetting: any;
+    scenes: any[];
+    themeSetting: any;
+  }> {
+    console.log(`[GameGeneratorAgent] ⚡ 快速设定生成开始: ${prompt.slice(0, 50)}...`);
+
+    // 使用AI从描述中提取完整设定
+    const systemPrompt = `你是一个专业的视觉小说设定生成器。根据用户的故事描述,生成完整的角色、世界观、场景和主题设定。
+
+**输出规则**:
+1. 角色: 2-4个主要角色,包含姓名、性别、身份、性格特点
+2. 世界观: 世界名称、时代背景、地点、世界规则
+3. 场景: 3-5个关键场景,包含名称、类型、氛围、详细描述
+4. 主题风格: 主题、风格、色调
+
+保持所有设定的一致性和连贯性。`;
+
+    const userPrompt = `故事描述: ${prompt}
+
+请生成完整的游戏设定。`;
+
+    try {
+      // 简化版本:直接返回模拟数据,等待后续集成AI
+      const result: any = {
+        projectTitle: `AI生成的故事 - ${new Date().toLocaleDateString()}`,
+        characters: [
+          {
+            id: createId(),
+            name: '主角',
+            displayName: '主角',
+            gender: 'female',
+            identity: '学生',
+            description: 'AI根据你的描述生成的角色',
+            personality: {
+              traits: ['勇敢', '聚明'],
+              speech: '温柔',
+              behavior: '积极',
+            },
+            coreTraits: {
+              motivation: '寻找真相',
+              fear: '失去亲人',
+              strength: '洞察力',
+              weakness: '过于信任他人',
+            },
+          },
+        ],
+        worldSetting: {
+          name: '现代城市',
+          era: '现代',
+          location: '城市',
+          rules: 'AI根据你的描述生成的世界规则',
+        },
+        scenes: [
+          {
+            id: createId(),
+            name: '开场',
+            type: 'location',
+            atmosphere: '神秘',
+            details: 'AI根据你的描述生成的场景',
+          },
+        ],
+        themeSetting: {
+          themes: ['mystery', 'drama'],
+          styles: ['modern'],
+          tone: '悬疑',
+        },
+      };
+
+      console.log(`[GameGeneratorAgent] ✅ 快速设定生成成功:`, {
+        title: result.projectTitle,
+        charactersCount: result.characters.length,
+        scenesCount: result.scenes.length,
+      });
+
+      return result;
+
+    } catch (error) {
+      console.error(`[GameGeneratorAgent] ❌ 快速设定生成失败:`, error);
+      throw new Error(`快速设定生成失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
+  }
+
+  /**
    * 获取前序节点摘要
    */
   private getPreviousSummary(

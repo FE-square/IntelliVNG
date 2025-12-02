@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { GameGenerator } from '../services/game-generator';
-import { GameGeneratorAgent } from '../services/game-generator-agent';
+import { GameGeneratorAgent, gameGeneratorAgent } from '../services/game-generator-agent';
 import { createProgressEmitter, removeProgressEmitter, type ProgressEvent } from '../services/progress-emitter';
 import { ImageGenerator, ImageType } from '../services/image-generator';
 import { FormAutocomplete, FormType } from '../services/form-autocomplete';
@@ -546,6 +546,46 @@ gameRoutes.post(
             return c.json({
                 success: false,
                 error: '自动补全失败',
+                details: message,
+            }, 500);
+        }
+    }
+);
+
+// =====================================================
+// 快速生成 API - 一句话生成全部设定
+// =====================================================
+
+const quickSetupSchema = z.object({
+    prompt: z.string().min(1, '请提供故事描述'),
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
+});
+
+// POST /api/game/quick-setup - 快速设定生成
+gameRoutes.post(
+    '/quick-setup',
+    zValidator('json', quickSetupSchema),
+    async (c) => {
+        try {
+            const { prompt, locale } = c.req.valid('json');
+            const userLocale = getLocaleFromRequest(locale);
+            
+            console.log(`[GameRoute] 快速设定生成: prompt=${prompt.slice(0, 50)}..., locale=${userLocale}`);
+            
+            const result = await gameGeneratorAgent.quickSetup(prompt, userLocale);
+            
+            return c.json({
+                success: true,
+                data: result,
+            });
+        } catch (error) {
+            console.error('[GameRoute] 快速设定生成错误:', error);
+            
+            const message = error instanceof Error ? error.message : '未知错误';
+            
+            return c.json({
+                success: false,
+                error: '设定生成失败',
                 details: message,
             }, 500);
         }

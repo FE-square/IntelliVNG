@@ -93,17 +93,24 @@ export default function SummaryPage() {
     const canGenerate = characters.length > 0 && worldSetting !== null && scenes.length > 0 && themeSetting !== null && themeSetting.themes.length > 0 && themeSetting.styles.length > 0;
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8">
+        <main className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50 to-orange-50 p-8">
             <div className="max-w-5xl mx-auto">
                 {/* 标题栏 */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-4xl font-bold text-white mb-2">📋 设定汇总</h1>
-                        <p className="text-white/80">确认你的角色、世界观、场景和主题风格设定，准备生成剧情</p>
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
+                                <Wand2 className="w-8 h-8 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-1">设定汇总</h1>
+                                <p className="text-slate-600">确认你的角色、世界观、场景和主题风格设定,准备生成剧情</p>
+                            </div>
+                        </div>
                     </div>
                     <Button
                         variant="outline"
-                        className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+                        className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -112,9 +119,9 @@ export default function SummaryPage() {
                 </div>
 
                 {/* 角色汇总 */}
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <Card className="mb-6 shadow-lg border-2 border-slate-200">
+                    <CardHeader className="bg-gradient-to-br from-indigo-50 to-purple-50">
+                        <CardTitle className="flex items-center gap-2 text-slate-800">
                             <Users className="w-5 h-5" />
                             角色列表 ({characters.length})
                         </CardTitle>
@@ -160,9 +167,9 @@ export default function SummaryPage() {
                 </Card>
 
                 {/* 世界观汇总 */}
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <Card className="mb-6 shadow-lg border-2 border-slate-200">
+                    <CardHeader className="bg-gradient-to-br from-purple-50 to-blue-50">
+                        <CardTitle className="flex items-center gap-2 text-slate-800">
                             <Globe className="w-5 h-5" />
                             世界观设定
                         </CardTitle>
@@ -213,9 +220,9 @@ export default function SummaryPage() {
                 </Card>
 
                 {/* 场景汇总 */}
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <Card className="mb-6 shadow-lg border-2 border-slate-200">
+                    <CardHeader className="bg-gradient-to-br from-green-50 to-teal-50">
+                        <CardTitle className="flex items-center gap-2 text-slate-800">
                             <Image className="w-5 h-5" />
                             场景列表 ({scenes.length})
                         </CardTitle>
@@ -255,9 +262,9 @@ export default function SummaryPage() {
                 </Card>
 
                 {/* 主题风格汇总 */}
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                <Card className="mb-6 shadow-lg border-2 border-slate-200">
+                    <CardHeader className="bg-gradient-to-br from-pink-50 to-rose-50">
+                        <CardTitle className="flex items-center gap-2 text-slate-800">
                             <Palette className="w-5 h-5" />
                             故事主题风格
                         </CardTitle>
@@ -313,17 +320,23 @@ export default function SummaryPage() {
                 </Card>
 
                 {/* 生成按钮 */}
-                <Card className="border-2 border-green-400 bg-white/95">
-                    <CardContent className="pt-6">
+                <Card className="mb-6 shadow-lg border-2 border-green-300">
+                    <CardHeader className="bg-gradient-to-br from-green-50 to-teal-50">
+                        <CardTitle className="flex items-center gap-2 text-slate-800">
+                            <Wand2 className="w-5 h-5" />
+                            确认并生成
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
                         <div className="text-center mb-6">
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">准备好了吗？</h3>
-                            <p className="text-gray-600">
+                            <h3 className="text-2xl font-bold text-slate-900 mb-2">准备好了吗？</h3>
+                            <p className="text-slate-600">
                                 AI 将基于你定义的 {characters.length} 个角色、世界观设定、{scenes.length} 个场景和主题风格，
                                 生成一个包含单开头+多分支+多结尾的完整故事
                             </p>
                         </div>
                         <Button
-                            className="w-full h-14 text-xl bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600"
+                            className="w-full h-14 text-xl bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 shadow-lg"
                             onClick={handleGenerate}
                             disabled={isGenerating || !canGenerate}
                         >
@@ -331,7 +344,7 @@ export default function SummaryPage() {
                             {isGenerating ? '正在生成剧情...' : '开始 AI 生成 ✨'}
                         </Button>
                         {isGenerating && (
-                            <p className="text-center text-sm text-gray-500 mt-3">
+                            <p className="text-center text-sm text-slate-500 mt-3">
                                 这可能需要 10-30 秒，请耐心等待...
                             </p>
                         )}
@@ -347,7 +360,7 @@ export default function SummaryPage() {
                 <div className="mt-8 flex justify-between">
                     <Button
                         variant="outline"
-                        className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+                        className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup/theme')}
                     >
                         ← 返回主题风格
