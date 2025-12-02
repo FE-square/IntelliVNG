@@ -20,6 +20,15 @@
 - **Agent 定义能力**：每个智能体（Planner/Writer/Reviewer）用 Agent 定义
 - **Workflow 编排流程**：用 Workflow 串联它们的执行顺序
 
+
+| Agent | 角色 | 采用的技术模式 | 可讲点 |
+|-------|------|---------------|--------|
+| **Story Planner** | 故事规划师 | **Tree-of-Thoughts (ToT)** + JSON Schema Enforcement | 结构化推理、多路径探索 |
+| **Node Writer** | 节点写作师 | **Few-Shot CoT** + 并行生成 | 上下文学习、高效并发 |
+| **Story Reviewer** | 故事审稿人 | **ReAct (Reasoning + Acting)** | 工具增强推理、可解释性 |
+| **Orchestrator** | 流程控制器 | **Plan-and-Execute** + 状态机 | 流程编排、自适应重试 |
+
+
 ### 1.2 核心 API 概览
 
 ```typescript

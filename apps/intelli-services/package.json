@@ -10,13 +10,14 @@
         "lint": "eslint \"src/**/*.ts\""
     },
     "dependencies": {
-        "@vng/core": "workspace:*",
-        "hono": "^4.4.0",
         "@hono/node-server": "^1.11.0",
         "@hono/zod-validator": "^0.2.0",
-        "zod": "^3.23.8",
+        "@mastra/core": "^0.24.6",
+        "@vng/core": "workspace:*",
+        "dotenv": "^16.4.0",
+        "hono": "^4.4.0",
         "openai": "^4.0.0",
-        "dotenv": "^16.4.0"
+        "zod": "^3.25.76"
     },
     "devDependencies": {
         "@types/node": "^20.0.0",
@@ -24,4 +25,3 @@
         "typescript": "^5.3.0"
     }
 }
-
