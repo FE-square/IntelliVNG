@@ -23,32 +23,6 @@ export default function SetupPage() {
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {/* 角色设定卡片 */}
-                    <Card 
-                        className="hover:shadow-2xl transition-all cursor-pointer border-2 hover:border-indigo-400"
-                        onClick={() => router.push('/setup/characters')}
-                    >
-                        <CardHeader>
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                                    <Users className="w-6 h-6 text-white" />
-                                </div>
-                                <CardTitle className="text-xl">角色设定</CardTitle>
-                            </div>
-                            <CardDescription className="text-sm">
-                                设置角色的姓名、外观、性格、技能等属性
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ul className="space-y-1 text-xs text-gray-600">
-                                <li>✓ 基础信息（姓名、性别、年龄）</li>
-                                <li>✓ 外观特征（发型、服饰）</li>
-                                <li>✓ 性格属性（性格标签）</li>
-                                <li>✓ 核心特质（技能、执念）</li>
-                            </ul>
-                        </CardContent>
-                    </Card>
-
                     {/* 世界观设定卡片 */}
                     <Card 
                         className="hover:shadow-2xl transition-all cursor-pointer border-2 hover:border-purple-400"
@@ -71,6 +45,32 @@ export default function SetupPage() {
                                 <li>✓ 地域设定（城邦/校园/宇宙）</li>
                                 <li>✓ 核心规则（魔法/科技）</li>
                                 <li>✓ 社会结构（阶级/权力）</li>
+                            </ul>
+                        </CardContent>
+                    </Card>
+
+                    {/* 故事主题风格卡片 */}
+                    <Card 
+                        className="hover:shadow-2xl transition-all cursor-pointer border-2 hover:border-pink-400"
+                        onClick={() => router.push('/setup/theme')}
+                    >
+                        <CardHeader>
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+                                    <Palette className="w-6 h-6 text-white" />
+                                </div>
+                                <CardTitle className="text-xl">故事主题风格</CardTitle>
+                            </div>
+                            <CardDescription className="text-sm">
+                                明确故事的核心主题与风格基调
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="space-y-1 text-xs text-gray-600">
+                                <li>✓ 主题选择（亲情/友情/善恶）</li>
+                                <li>✓ 风格选择（悬疑/言情/热血）</li>
+                                <li>✓ 多选组合（悬疑+亲情）</li>
+                                <li>✓ 自定义主题描述</li>
                             </ul>
                         </CardContent>
                     </Card>
@@ -101,28 +101,28 @@ export default function SetupPage() {
                         </CardContent>
                     </Card>
 
-                    {/* 故事主题风格卡片 */}
+                    {/* 角色设定卡片 */}
                     <Card 
-                        className="hover:shadow-2xl transition-all cursor-pointer border-2 hover:border-pink-400"
-                        onClick={() => router.push('/setup/theme')}
+                        className="hover:shadow-2xl transition-all cursor-pointer border-2 hover:border-indigo-400"
+                        onClick={() => router.push('/setup/characters')}
                     >
                         <CardHeader>
                             <div className="flex items-center gap-3 mb-2">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
-                                    <Palette className="w-6 h-6 text-white" />
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                                    <Users className="w-6 h-6 text-white" />
                                 </div>
-                                <CardTitle className="text-xl">故事主题风格</CardTitle>
+                                <CardTitle className="text-xl">角色设定</CardTitle>
                             </div>
                             <CardDescription className="text-sm">
-                                明确故事的核心主题与风格基调
+                                设置角色的姓名、外观、性格、技能等属性
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ul className="space-y-1 text-xs text-gray-600">
-                                <li>✓ 主题选择（亲情/友情/善恶）</li>
-                                <li>✓ 风格选择（悬疑/言情/热血）</li>
-                                <li>✓ 多选组合（悬疑+亲情）</li>
-                                <li>✓ 自定义主题描述</li>
+                                <li>✓ 基础信息（姓名、性别、年龄）</li>
+                                <li>✓ 外观特征（发型、服饰）</li>
+                                <li>✓ 性格属性（性格标签）</li>
+                                <li>✓ 核心特质（技能、执念）</li>
                             </ul>
                         </CardContent>
                     </Card>
