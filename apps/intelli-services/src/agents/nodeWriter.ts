@@ -82,7 +82,7 @@ export const nodeWriterAgent = new Agent({
 }`,
 
   model: {
-    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo'}` as `${string}/${string}`,
+    id: (process.env.OPENAI_MODEL_NAME || `openai/${'gpt-4-turbo'}`) as `${string}/${string}`,
     url: process.env.OPENAI_BASE_URL,
     apiKey: process.env.OPENAI_API_KEY,
   },
@@ -104,7 +104,7 @@ export async function writeNodeContent(
 ): Promise<any> {
   // 找出本节点涉及的角色（简化版：暂时传所有角色）
   const characters = input.characterDB.characters || [];
-  
+
   const prompt = `## 当前要写的节点
 ${JSON.stringify(input.planNode, null, 2)}
 
@@ -113,12 +113,12 @@ ${input.previousNodeSummary || "（这是故事的开始）"}
 
 ## 角色档案
 ${JSON.stringify(characters.map((c: any) => ({
-  name: c.name,
-  displayName: c.displayName || c.name,
-  personality: c.personality?.traits || [],
-  identity: c.identity,
-  description: c.description,
-})), null, 2)}
+    name: c.name,
+    displayName: c.displayName || c.name,
+    personality: c.personality?.traits || [],
+    identity: c.identity,
+    description: c.description,
+  })), null, 2)}
 
 ## 风格指南
 ${JSON.stringify(input.styleGuide || {}, null, 2)}

@@ -60,7 +60,7 @@ export const storyPlannerAgent = new Agent({
 - 分支选择必须有"剧情重量"，让玩家感受到选择对故事走向的影响`,
 
   model: {
-    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo'}` as `${string}/${string}`,
+    id: (process.env.OPENAI_MODEL_NAME || `openai/${'gpt-4-turbo'}`) as `${string}/${string}`,
     url: process.env.OPENAI_BASE_URL,
     apiKey: process.env.OPENAI_API_KEY,
   },
