@@ -37,7 +37,7 @@
             background-color: #000;
         }
 
-        /* 上传界面 */
+        /* 上传界面 - 仅在无内嵌数据时显示 */
         #upload-screen {
             position: absolute;
             top: 0;
@@ -141,6 +141,7 @@
             border: 1px solid rgba(255,255,255,0.1);
             cursor: pointer;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            user-select: none;
         }
 
         .name-tag {
@@ -211,6 +212,34 @@
             display: none !important;
         }
 
+        /* 加载中 */
+        #loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(5px); }
@@ -234,6 +263,11 @@
 <body>
 
 <div id="app">
+    <!-- 加载遮罩 -->
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+    </div>
+
     <!-- 上传界面 -->
     <div id="upload-screen">
         <div class="upload-box">
@@ -263,6 +297,11 @@
     </div>
 </div>
 
+<!-- 内嵌游戏数据占位符 -->
+<script id="game-data" type="application/json">
+null
+</script>
+
 <script>
     class GamePlayer {
         constructor() {
@@ -274,7 +313,8 @@
             // DOM Elements
             this.screens = {
                 upload: document.getElementById('upload-screen'),
-                game: document.getElementById('game-screen')
+                game: document.getElementById('game-screen'),
+                loading: document.getElementById('loading-overlay')
             };
             this.layers = {
                 background: document.getElementById('background-layer'),
@@ -288,18 +328,47 @@
                 text: document.getElementById('text-content')
             };
 
+            this.init();
+        }
+
+        init() {
             this.initEventListeners();
+            this.checkEmbeddedData();
         }
 
         initEventListeners() {
             const fileInput = document.getElementById('file-input');
             fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+
+            // 键盘支持
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' || e.code === 'Enter') {
+                    if (!this.screens.game.classList.contains('hidden') && 
+                         this.layers.choices.classList.contains('hidden')) {
+                        this.next();
+                    }
+                }
+            });
+        }
+
+        checkEmbeddedData() {
+            try {
+                const scriptTag = document.getElementById('game-data');
+                if (scriptTag && scriptTag.textContent.trim() !== 'null') {
+                    console.log('Found embedded game data');
+                    const project = JSON.parse(scriptTag.textContent);
+                    this.loadProject(project);
+                }
+            } catch (e) {
+                console.error('Failed to parse embedded game data:', e);
+            }
         }
 
         async handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
+            this.screens.loading.classList.remove('hidden');
             try {
                 const text = await file.text();
                 const project = JSON.parse(text);
@@ -307,6 +376,8 @@
             } catch (err) {
                 alert('无法解析项目文件: ' + err.message);
                 console.error(err);
+            } finally {
+                this.screens.loading.classList.add('hidden');
             }
         }
 
@@ -446,8 +517,6 @@
             // 更新内容
             this.dialogueBox.nameTag.textContent = name;
             this.dialogueBox.text.textContent = text;
-            
-            // TODO: 可以添加打字机效果
         }
 
         handleNodeEnd() {
@@ -505,4 +574,3 @@
 </script>
 </body>
 </html>
-

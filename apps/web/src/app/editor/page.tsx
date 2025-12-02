@@ -9,7 +9,7 @@ import { Button, Card, useToast } from '@vng/ui';
 import { GameProject } from '@vng/core';
 import { FlowEditor } from '@vng/editor';
 import { saveProject, saveDraft, clearDraft } from '@/lib/projectStorage';
-import { exportProjectAsJson } from '@/lib/projectExport';
+import { exportProjectAsJson, exportProjectAsPlayableHtml, exportProjectAsPlayableHtmlWithImages } from '@/lib/projectExport';
 
 // Mock Project for testing (fallback)
 const MOCK_PROJECT: GameProject = {
@@ -121,6 +121,12 @@ function EditorPageContent() {
     const [showSaveNoteDialog, setShowSaveNoteDialog] = useState(false);  // ✅ 显示保存备注对话框
     const [saveNote, setSaveNote] = useState('');  // ✅ 保存备注
     const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);  // ✅ 自动保存定时器
+    const [exportProgress, setExportProgress] = useState<{ show: boolean; current: number; total: number; message: string }>({
+        show: false,
+        current: 0,
+        total: 100,
+        message: ''
+    });
 
     useEffect(() => {
         const loadProject = async () => {
@@ -389,17 +395,75 @@ function EditorPageContent() {
                         )}
                     </div>
                     
-                    <Button 
-                        variant="ghost"
-                        className="text-white hover:bg-white/10 border border-white/30 font-medium"
-                        onClick={() => {
-                            if (project) {
-                                exportProjectAsJson(project);
-                            }
-                        }}
-                    >
-                        📦 导出
-                    </Button>
+                    <div className="relative export-menu-container group">
+                        <Button 
+                            variant="ghost"
+                            className="text-white hover:bg-white/10 border border-white/30 font-medium"
+                        >
+                            📦 导出 ▼
+                        </Button>
+                        <div className="absolute top-full right-0 mt-1 hidden group-hover:block bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[200px]">
+                            <button
+                                onClick={() => {
+                                    if (project) {
+                                        exportProjectAsJson(project);
+                                        toast.success('导出成功', '项目 JSON 文件已下载');
+                                    }
+                                }}
+                                className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 flex items-center gap-3"
+                            >
+                                <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-xl">📄</div>
+                                <div>
+                                    <div className="font-semibold text-slate-800">导出 JSON</div>
+                                    <div className="text-xs text-slate-500">项目源文件，用于备份或导入</div>
+                                    </div>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (project) {
+                                        toast.info('正在打包', '正在生成独立可玩 HTML 文件...');
+                                        exportProjectAsPlayableHtml(project)
+                                            .then(() => toast.success('导出成功', '独立游戏文件已下载'))
+                                            .catch(() => toast.error('导出失败', '请重试'));
+                                    }
+                                }}
+                                className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 flex items-center gap-3"
+                            >
+                                <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-xl">🎮</div>
+                                <div>
+                                    <div className="font-semibold text-slate-800">导出 HTML 游戏</div>
+                                    <div className="text-xs text-slate-500">单文件播放器，图片需联网加载</div>
+                                </div>
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (project) {
+                                        setExportProgress({ show: true, current: 0, total: 100, message: '准备导出...' });
+                                        try {
+                                            await exportProjectAsPlayableHtmlWithImages(
+                                                project,
+                                                (current, total, message) => {
+                                                    setExportProgress({ show: true, current, total, message });
+                                                }
+                                            );
+                                            toast.success('导出成功', '完全离线的游戏文件已下载');
+                                        } catch (error) {
+                                            toast.error('导出失败', '请重试');
+                                        } finally {
+                                            setTimeout(() => setExportProgress({ show: false, current: 0, total: 100, message: '' }), 1000);
+                                        }
+                                    }
+                                }}
+                                className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors flex items-center gap-3"
+                            >
+                                <div className="w-8 h-8 rounded bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-sm">📦</div>
+                                <div>
+                                    <div className="font-semibold text-slate-800">导出 HTML 游戏 (含图片)</div>
+                                    <div className="text-xs text-slate-500">内嵌所有资源，完全离线可玩</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -715,6 +779,33 @@ function EditorPageContent() {
                                 {isSaving ? '保存中...' : '确定保存'}
                             </Button>
                         </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* ✅ 导出进度对话框 */}
+            {exportProgress.show && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+                        <h3 className="text-xl font-bold text-slate-800 mb-4">📦 正在导出</h3>
+                        
+                        {/* 进度条 */}
+                        <div className="mb-4">
+                            <div className="flex justify-between text-sm text-slate-600 mb-2">
+                                <span>{exportProgress.message}</span>
+                                <span>{exportProgress.current}%</span>
+                            </div>
+                            <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-300 ease-out"
+                                    style={{ width: `${exportProgress.current}%` }}
+                                />
+                            </div>
+                        </div>
+                        
+                        <p className="text-xs text-slate-500">
+                            正在将所有图片转换为 Base64 并内嵌到 HTML 中...
+                        </p>
                     </div>
                 </div>
             )}

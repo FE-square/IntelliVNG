@@ -374,7 +374,8 @@ const response = await this.openai.chat.completions.create({
 
 | 模块 | 功能 | 优先级 |
 |------|------|--------|
-| **导出功能** | 提供单 HTML 播放器 + DSL (允许用户用HTML+JSON离线运行) | 🔴 高 |
+| **导出功能** | 提供单 HTML 播放器 + DSL (允许用户用HTML+JSON离线运行) | ✅ 完成 |
+| **导出功能** | 内嵌图片资源的单 HTML 导出 (完全离线) | ✅ 完成 |
 | **导出功能** | 播放器 DSL 打包优化 | 🟡 中 |
 | **@vng/editor** | 变量系统与条件分支节点 | 🟡 中 |
 | **apps/web** | 用户账号系统 | 🟢 低 |
@@ -394,6 +395,7 @@ const response = await this.openai.chat.completions.create({
 
 ### Phase 2: 体验优化与工作流 (当前)
 
+- [x] 实现单 HTML 文件导出，支持独立部署 (已完成基础与内嵌图片模式)
 - [ ] 优化 Agent 协作工作流，提升长篇故事的一致性
 - [ ] 增强编辑器交互，支持更复杂的剧情分支逻辑
 - [ ] 完善项目导入导出功能，支持数据迁移
@@ -401,7 +403,6 @@ const response = await this.openai.chat.completions.create({
 
 ### Phase 3: 发布与生态
 
-- [ ] 实现单 HTML 导出，支持独立部署
 - [ ] 优化播放器性能与移动端适配
 - [ ] (可选) 用户账户与云端同步
 - [ ] (可选) 游戏作品分享社区
