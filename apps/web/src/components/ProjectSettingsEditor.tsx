@@ -966,10 +966,10 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                     <div className="flex gap-2 mt-4">
                         {[
                             { key: 'basic', label: '📝 基本信息', icon: Settings },
-                            { key: 'characters', label: '👥 角色', icon: Users },
                             { key: 'world', label: '🌍 世界观', icon: Globe },
-                            { key: 'scenes', label: '🎬 场景', icon: Image },
                             { key: 'theme', label: '🎨 主题', icon: Palette },
+                            { key: 'scenes', label: '🎬 场景', icon: Image },
+                            { key: 'characters', label: '👥 角色', icon: Users },
                         ].map(tab => (
                             <button
                                 key={tab.key}

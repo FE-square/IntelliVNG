@@ -29,7 +29,12 @@ export function getI18N(): Record<string, string> {
  */
 export function t(key: string, params?: Record<string, string | number>): string {
   const i18n = getI18N();
-  let text = i18n[key] || key;
+  let text = i18n[key];
+  
+  // 如果没有找到翻译，返回空字符串而不是key，避免水合错误
+  if (!text) {
+    return '';
+  }
 
   // 替换占位符
   if (params) {

@@ -978,9 +978,9 @@ export default function CharactersPage() {
                     </Button>
                     <Button
                         className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
-                        onClick={() => router.push('/setup/backgrounds')}
+                        onClick={() => router.push('/setup/summary')}
                     >
-                        下一步:定义背景 →
+                        下一步:查看汇总 →
                     </Button>
                 </div>
             </div>

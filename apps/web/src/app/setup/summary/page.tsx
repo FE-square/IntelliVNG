@@ -118,54 +118,6 @@ export default function SummaryPage() {
                     </Button>
                 </div>
 
-                {/* 角色汇总 */}
-                <Card className="mb-6 shadow-lg border-2 border-slate-200">
-                    <CardHeader className="bg-gradient-to-br from-indigo-50 to-purple-50">
-                        <CardTitle className="flex items-center gap-2 text-slate-800">
-                            <Users className="w-5 h-5" />
-                            角色列表 ({characters.length})
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {characters.length === 0 ? (
-                            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded">
-                                <AlertCircle className="w-5 h-5" />
-                                <span>还没有定义角色，请先创建至少一个角色</span>
-                            </div>
-                        ) : (
-                            <div className="grid md:grid-cols-2 gap-4">
-                                {characters.map((char) => (
-                                    <div key={char.id} className="border rounded-lg p-4 bg-gray-50">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <h3 className="font-semibold text-lg text-gray-900">{char.displayName}</h3>
-                                            <span className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded">
-                                                {char.gender === 'male' || char.gender === '男' ? '男' : char.gender === 'female' || char.gender === '女' ? '女' : '其他'}
-                                            </span>
-                                        </div>
-                                        <p className="text-sm text-gray-600 mb-2">{char.description || '无描述'}</p>
-                                        <div className="text-xs text-gray-500 space-y-1">
-                                            {char.identity && <div>身份：{char.identity}</div>}
-                                            {char.age && <div>年龄：{char.age}</div>}
-                                            {char.personality?.traits && char.personality.traits.length > 0 && (
-                                                <div>性格：{char.personality.traits.join('、')}</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        <div className="mt-4 text-center">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => router.push('/setup/characters')}
-                            >
-                                + 添加/编辑角色
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-
                 {/* 世界观汇总 */}
                 <Card className="mb-6 shadow-lg border-2 border-slate-200">
                     <CardHeader className="bg-gradient-to-br from-purple-50 to-blue-50">
@@ -214,48 +166,6 @@ export default function SummaryPage() {
                                 onClick={() => router.push('/setup/world')}
                             >
                                 {worldSetting ? '编辑世界观' : '+ 设定世界观'}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* 场景汇总 */}
-                <Card className="mb-6 shadow-lg border-2 border-slate-200">
-                    <CardHeader className="bg-gradient-to-br from-green-50 to-teal-50">
-                        <CardTitle className="flex items-center gap-2 text-slate-800">
-                            <Image className="w-5 h-5" />
-                            场景列表 ({scenes.length})
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {scenes.length === 0 ? (
-                            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded">
-                                <AlertCircle className="w-5 h-5" />
-                                <span>还没有定义场景，请先创建至少一个场景</span>
-                            </div>
-                        ) : (
-                            <div className="grid md:grid-cols-2 gap-4">
-                                {scenes.map((scene) => (
-                                    <div key={scene.id} className="border rounded-lg p-4 bg-gray-50">
-                                        <h3 className="font-semibold text-lg text-gray-900 mb-2">{scene.name}</h3>
-                                        <div className="text-sm text-gray-600 space-y-1">
-                                            <div><span className="font-medium">类型：</span>{scene.type}</div>
-                                            <div><span className="font-medium">氛围：</span>{scene.atmosphere}</div>
-                                            {scene.details && (
-                                                <div className="text-xs"><span className="font-medium">细节：</span>{scene.details}</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        <div className="mt-4 text-center">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => router.push('/setup/scenes')}
-                            >
-                                + 添加/编辑场景
                             </Button>
                         </div>
                     </CardContent>
@@ -319,6 +229,96 @@ export default function SummaryPage() {
                     </CardContent>
                 </Card>
 
+                {/* 场景汇总 */}
+                <Card className="mb-6 shadow-lg border-2 border-slate-200">
+                    <CardHeader className="bg-gradient-to-br from-green-50 to-teal-50">
+                        <CardTitle className="flex items-center gap-2 text-slate-800">
+                            <Image className="w-5 h-5" />
+                            场景列表 ({scenes.length})
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {scenes.length === 0 ? (
+                            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded">
+                                <AlertCircle className="w-5 h-5" />
+                                <span>还没有定义场景，请先创建至少一个场景</span>
+                            </div>
+                        ) : (
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {scenes.map((scene) => (
+                                    <div key={scene.id} className="border rounded-lg p-4 bg-gray-50">
+                                        <h3 className="font-semibold text-lg text-gray-900 mb-2">{scene.name}</h3>
+                                        <div className="text-sm text-gray-600 space-y-1">
+                                            <div><span className="font-medium">类型：</span>{scene.type}</div>
+                                            <div><span className="font-medium">氛围：</span>{scene.atmosphere}</div>
+                                            {scene.details && (
+                                                <div className="text-xs"><span className="font-medium">细节：</span>{scene.details}</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="mt-4 text-center">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.push('/setup/scenes')}
+                            >
+                                + 添加/编辑场景
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* 角色汇总 */}
+                <Card className="mb-6 shadow-lg border-2 border-slate-200">
+                    <CardHeader className="bg-gradient-to-br from-indigo-50 to-purple-50">
+                        <CardTitle className="flex items-center gap-2 text-slate-800">
+                            <Users className="w-5 h-5" />
+                            角色列表 ({characters.length})
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {characters.length === 0 ? (
+                            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded">
+                                <AlertCircle className="w-5 h-5" />
+                                <span>还没有定义角色，请先创建至少一个角色</span>
+                            </div>
+                        ) : (
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {characters.map((char) => (
+                                    <div key={char.id} className="border rounded-lg p-4 bg-gray-50">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <h3 className="font-semibold text-lg text-gray-900">{char.displayName}</h3>
+                                            <span className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded">
+                                                {char.gender === 'male' || char.gender === '男' ? '男' : char.gender === 'female' || char.gender === '女' ? '女' : '其他'}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-600 mb-2">{char.description || '无描述'}</p>
+                                        <div className="text-xs text-gray-500 space-y-1">
+                                            {char.identity && <div>身份：{char.identity}</div>}
+                                            {char.age && <div>年龄：{char.age}</div>}
+                                            {char.personality?.traits && char.personality.traits.length > 0 && (
+                                                <div>性格：{char.personality.traits.join('、')}</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="mt-4 text-center">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.push('/setup/characters')}
+                            >
+                                + 添加/编辑角色
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* 生成按钮 */}
                 <Card className="mb-6 shadow-lg border-2 border-green-300">
                     <CardHeader className="bg-gradient-to-br from-green-50 to-teal-50">
@@ -355,17 +355,6 @@ export default function SummaryPage() {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* 底部导航 */}
-                <div className="mt-8 flex justify-between">
-                    <Button
-                        variant="outline"
-                        className="border-slate-300 hover:bg-slate-100"
-                        onClick={() => router.push('/setup/theme')}
-                    >
-                        ← 返回主题风格
-                    </Button>
-                </div>
             </div>
         </main>
     );

@@ -221,9 +221,9 @@ export default function WorldSetupPage() {
                     </Button>
                     <Button
                         className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 shadow-lg"
-                        onClick={() => router.push('/setup/scenes')}
+                        onClick={() => router.push('/setup/theme')}
                     >
-                        下一步:定义场景 →
+                        下一步:主题风格 →
                     </Button>
                 </div>
             </div>

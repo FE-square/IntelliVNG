@@ -374,9 +374,9 @@ export default function ThemeSetupPage() {
                     </Button>
                     <Button
                         className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg"
-                        onClick={() => router.push('/setup/summary')}
+                        onClick={() => router.push('/setup/scenes')}
                     >
-                        下一步:查看汇总 →
+                        下一步:定义场景 →
                     </Button>
                 </div>
             </div>

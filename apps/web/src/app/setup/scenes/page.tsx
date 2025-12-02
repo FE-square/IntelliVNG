@@ -398,9 +398,9 @@ export default function ScenesPage() {
                     </Button>
                     <Button
                         className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 shadow-lg"
-                        onClick={() => router.push('/setup/theme')}
+                        onClick={() => router.push('/setup/characters')}
                     >
-                        下一步:主题风格 →
+                        下一步:定义角色 →
                     </Button>
                 </div>
             </div>
