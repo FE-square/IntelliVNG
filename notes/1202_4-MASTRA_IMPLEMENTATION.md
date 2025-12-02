@@ -826,21 +826,7 @@ apps/intelli-services/src/
 
 ---
 
-## 九、与原设计对比
-
-| 方面 | 原 MASTRA_IMPLEMENTATION (旧) | 更新后 (新) |
-|-----|------------------------------|------------|
-| Agent 创建 | `new Agent({ model: { provider, name } })` | `new Agent({ model: "openai/gpt-4-turbo" })` |
-| 结构化输出 | 在 Agent 定义时设置 `structuredOutput` | 在 `.generate()` 调用时传入 |
-| Workflow 创建 | `new Workflow()` | `createWorkflow()` |
-| Step 创建 | `new Step()` | `createStep()` |
-| Step execute 参数 | `{ context }` | `{ inputData, mastra, state, setState }` |
-| 获取 Agent | 直接 import | `mastra.getAgent("name")` |
-| 运行 Workflow | `workflow.execute()` | `workflow.createRunAsync().start()` |
-
----
-
-## 十、Hackathon 演示话术
+## 九、Hackathon 演示话术
 
 > "我们的剧本工坊基于 **[Mastra 框架](https://github.com/mastra-ai/mastra)**——一个 18.6k star 的开源 TypeScript Agent 框架。
 > 
@@ -860,3 +846,59 @@ apps/intelli-services/src/
 - [Mastra Agents 文档](https://mastra.ai/docs/agents/overview)
 - [Mastra Workflows 文档](https://mastra.ai/docs/workflows/overview)
 - [Mastra Tools 文档](https://mastra.ai/docs/agents/using-tools)
+
+---
+## Story Planner
+
+### Tree-of-Thoughts 实现 
+Round 1: 生成候选方向 (Generate)
+    │
+    ▼
+    ┌─────────────────┬─────────────────┬─────────────────┐
+    │   Path A        │   Path B        │   Path C        │
+    │   冲突型         │   成长型         │   悬疑型         │
+    └────────┬────────┴────────┬────────┴────────┬────────┘
+             │                 │                 │
+             ▼                 ▼                 ▼
+Round 2: 评估每个方向 (Evaluate)
+    │   戏剧性: 4         戏剧性: 3         戏剧性: 5
+    │   角色契合: 5       角色契合: 4       角色契合: 3
+    │   分支潜力: 4       分支潜力: 3       分支潜力: 4
+    │   总分: 13          总分: 10          总分: 12
+    │
+    ▼   选择 Path A (得分最高)
+    
+Round 3: 展开节点骨架 (Expand)
+    │
+    ▼
+    完整的 NarrativePlan（10-15 个节点）
+
+## Story Reviewer
+
+### 阶段 1: ReAct 循环（自由工具调用）
+┌─────────────────────────────────────────────────────────┐
+│  Thought: "让我先检查结构..."                             │
+│      ↓                                                  │
+│  Action: validate-structure(nodes)                      │
+│      ↓                                                  │
+│  Observation: { orphans: [], deadEnds: ["scene-3"] }   │
+│      ↓                                                  │
+│  Thought: "发现死胡同，让我检查路径..."                    │
+│      ↓                                                  │
+│  Action: analyze-paths(nodes)                           │
+│      ↓                                                  │
+│  Observation: { totalPaths: 3, diversityScore: 0.7 }   │
+│      ↓                                                  │
+│  ... (继续直到 maxSteps 或模型认为完成)                   │
+│      ↓                                                  │
+│  Final: "综合分析：有一个死胡同问题..."                    │
+└─────────────────────────────────────────────────────────┘
+
+### 阶段 2: 格式化输出
+┌─────────────────────────────────────────────────────────┐
+│  Input: ReAct 循环的分析文本 + 工具结果                   │
+│      ↓                                                  │
+│  structuredOutput: CriticReportSchema                   │
+│      ↓                                                  │
+│  Output: { scores: {...}, issues: [...], ... }         │
+└─────────────────────────────────────────────────────────┘
