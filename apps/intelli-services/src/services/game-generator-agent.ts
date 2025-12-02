@@ -15,6 +15,7 @@ import { generateNarrativePlanWithToT, storyPlannerAgent } from "../agents/story
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { ProgressEmitter, createProgressEmitter } from "./progress-emitter";
 import { promptManager } from '../prompts';
+import { generateStructuredOutput } from '../utils/structured-output-helper';
 
 // ============ 类型定义（与 game-generator.ts 保持一致）============
 
@@ -641,12 +642,13 @@ export class GameGeneratorAgent {
               styleGuide: JSON.stringify(workflowInput.styleGuide || {}, null, 2),
             }, locale);
 
-            const response = await writerAgent.generate(writePrompt, {
-              structuredOutput: {
-                schema: NodeDraftSchema,
-              },
-            });
-            return { nodeId: node.id, draft: response.object as NodeDraft };
+            const draft = await generateStructuredOutput(
+              writerAgent,
+              writePrompt,
+              NodeDraftSchema,
+              { temperature: 1 }
+            );
+            return { nodeId: node.id, draft };
           })
         );
 
@@ -687,13 +689,12 @@ export class GameGeneratorAgent {
         nodesForValidation: JSON.stringify(nodesForValidation, null, 2),
       }, locale);
 
-      const reviewResponse = await reviewerAgent.generate(reviewPrompt, {
-        structuredOutput: {
-          schema: CriticReportSchema,
-        },
-        maxSteps: 5,
-      });
-      report = reviewResponse.object as CriticReport;
+      report = await generateStructuredOutput(
+        reviewerAgent,
+        reviewPrompt,
+        CriticReportSchema,
+        { maxSteps: 5, temperature: 1 }
+      );
 
       progressEmitter.stageComplete("reviewing", "审阅完成", 
         `综合评分: ${report.overallScore}，发现 ${report.issues.length} 个问题`, {
@@ -734,13 +735,14 @@ export class GameGeneratorAgent {
               styleGuide: JSON.stringify(workflowInput.styleGuide || {}, null, 2),
             }, locale);
 
-            const response = await writerAgent.generate(rewritePrompt, {
-              structuredOutput: {
-                schema: NodeDraftSchema,
-              },
-            });
+            const rewrittenDraft = await generateStructuredOutput(
+              writerAgent,
+              rewritePrompt,
+              NodeDraftSchema,
+              { temperature: 1 }
+            );
 
-            drafts[nodeId] = response.object as NodeDraft;
+            drafts[nodeId] = rewrittenDraft;
             rewritten.push(nodeId);
           })
         );
@@ -881,81 +883,6 @@ export class GameGeneratorAgent {
     return undefined;
   }
 
-  /**
-   * 构建 Story Planner 的提示词
-   * 详细说明 Tree-of-Thoughts (ToT) 方法的执行步骤
-   */
-  private buildPlannerPrompt(inputData: WorkflowInput): string {
-    return `## 你的任务
-设计一个非线性视觉小说的**故事结构骨架**（只规划结构，不写对话）。
-
-## 世界观设定
-${JSON.stringify(inputData.worldBible, null, 2)}
-
-## 角色档案
-${JSON.stringify(inputData.characterDB, null, 2)}
-
-## 风格指南
-${JSON.stringify(inputData.styleGuide || {}, null, 2)}
-
-## 约束条件
-- 目标节点数: ${inputData.constraints?.targetNodeCount || 12}
-- 目标结局数: ${inputData.constraints?.targetEndingCount || 3}
-
----
-
-## 🌳 请使用 Tree-of-Thoughts (ToT) 方法进行设计
-
-ToT 是一种结构化思维方法，你需要像下棋一样"向前看几步"，探索多种可能性后选择最优解。
-
-### Step 1: 生成故事前提 (Premise)
-首先，用一句话描述故事核心：
-> "一个关于 [主角名字] 在 [世界背景] 中 [面对什么核心冲突] 的故事"
-
-### Step 2: 分支思考 - 探索 2-3 条叙事路径
-针对这个前提，思考 2-3 种不同的叙事方向。对每条路径进行评估：
-
-| 路径 | 描述 | 戏剧性(1-5) | 角色契合度(1-5) | 分支潜力(1-5) | 总分 |
-|------|------|------------|----------------|--------------|------|
-| A    | ...  | ?          | ?              | ?            | ?    |
-| B    | ...  | ?          | ?              | ?            | ?    |
-| C    | ...  | ?          | ?              | ?            | ?    |
-
-### Step 3: 选择最优路径
-选择总分最高的路径，并简要说明选择理由。
-
-### Step 4: 展开节点骨架
-基于选定的路径，设计具体的节点结构：
-
-1. **START 节点** (唯一，isStart: true)
-   - functionTag: "setup"
-   - 介绍主角和世界观
-
-2. **发展节点** (SCENE 类型)
-   - functionTag: "rising" → "conflict"
-   - 矛盾逐渐升温
-
-3. **分支节点** (BRANCH 类型，2-3 个)
-   - functionTag: 通常是 "conflict" 或 "climax"
-   - 每个选项必须有：
-     * emotionalWeight: "轻松" | "沉重" | "痛苦抉择"
-     * consequenceHint: 暗示后果（不剧透）
-     * pathType: "通向好结局" | "通向坏结局" | "中立路线"
-
-4. **结局节点** (ENDING 类型，2-3 个，isEnding: true)
-   - functionTag: "resolution"
-   - 不同选择导向不同结局
-
-### Step 5: 验证连通性
-- ✅ 每个节点都能从 START 到达
-- ✅ 每条路径最终都能到达某个 ENDING
-- ✅ 非 ENDING 节点必须有 nextNodeId 或 choicesMeta
-- ✅ sceneName 都来自用户定义的场景列表
-
----
-
-请按照上述步骤思考，然后输出符合 NarrativePlan 格式的 JSON。`;
-  }
 }
 
 // 导出单例

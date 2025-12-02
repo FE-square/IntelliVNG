@@ -12,29 +12,52 @@ export const PlanNodeSchema = z.object({
   isStart: z.boolean().optional().describe("是否为起始节点"),
   isEnding: z.boolean().optional().describe("是否为结局节点"),
   title: z.string().describe("节点标题"),
-  brief: z.string().describe("节点一句话摘要"),
+  brief: z.string().optional().describe("节点一句话摘要"), // 设为可选
+  description: z.string().optional(), // 某些模型可能使用 description
+  summary: z.string().optional(), // 某些模型可能使用 summary
   functionTag: z.enum([
-    "setup",      // 开端
-    "rising",     // 递进
-    "conflict",   // 冲突
-    "twist",      // 转折
-    "climax",     // 高潮
-    "falling",    // 下落
-    "resolution"  // 解决
-  ]).describe("叙事功能标签"),
-  sceneName: z.string().describe("绑定的场景名称"),
-  nextNodeId: z.string().optional().describe("下一个节点ID（线性连接）"),
+    "setup", "rising", "conflict", "twist", "climax", "falling", "resolution"
+  ]).optional().describe("叙事功能标签"), // 设为可选
+  sceneName: z.string().optional().describe("绑定的场景名称"), // 设为可选
+  scene: z.string().optional(), // 某些模型可能使用 scene
+  location: z.string().optional(), // 某些模型可能使用 location
+  nextNodeId: z.string().optional().describe("下一个节点ID"),
+  next: z.string().optional(), // 某些模型可能使用 next
   choicesMeta: z.array(z.object({
-    id: z.string(),
-    leadsTo: z.string().describe("目标节点ID"),
-    emotionalWeight: z.string().describe("情感重量：轻松/沉重/痛苦抉择"),
-    consequenceHint: z.string().describe("后果暗示（不剧透）"),
-    pathType: z.string().describe("路线类型：通向好结局/坏结局/中立"),
-  })).optional().describe("分支选项元信息"),
+    id: z.string().optional(),
+    leadsTo: z.string().optional(),
+    targetNodeId: z.string().optional(), // 某些模型可能使用 targetNodeId
+    text: z.string().optional(),
+    emotionalWeight: z.string().optional(),
+    consequenceHint: z.string().optional(),
+    pathType: z.string().optional(),
+  }).passthrough()).optional().describe("分支选项元信息"),
+  choices: z.array(z.any()).optional(), // 某些模型可能使用 choices
   position: z.object({ 
     x: z.number(), 
     y: z.number() 
-  }).describe("节点在画布上的位置"),
+  }).optional().describe("节点位置"),
+}).passthrough().transform((data) => {
+  // 标准化字段名
+  return {
+    id: data.id,
+    type: data.type,
+    isStart: data.isStart,
+    isEnding: data.isEnding,
+    title: data.title,
+    brief: data.brief || data.description || data.summary || data.title,
+    functionTag: data.functionTag || 'setup',
+    sceneName: data.sceneName || data.scene || data.location || '未知场景',
+    nextNodeId: data.nextNodeId || data.next,
+    choicesMeta: data.choicesMeta || data.choices?.map((c: any) => ({
+      id: c.id || Math.random().toString(36).substring(2, 8),
+      leadsTo: c.leadsTo || c.targetNodeId || c.target || '',
+      emotionalWeight: c.emotionalWeight || '中等',
+      consequenceHint: c.consequenceHint || c.text || '',
+      pathType: c.pathType || '中立',
+    })),
+    position: data.position || { x: 0, y: 0 },
+  };
 });
 
 export const NarrativePlanSchema = z.object({
@@ -71,13 +94,25 @@ export const NodeDraftSchema = z.object({
   id: z.string().describe("与 PlanNode.id 对齐"),
   type: z.enum(["scene", "branch", "ending"]),
   title: z.string(),
-  sceneName: z.string(),
-  narration: z.string().optional().describe("旁白/场景描述"),
-  dialogues: z.array(DialogueDraftSchema).describe("对话列表，3-6段"),
-  choices: z.array(ChoiceDraftSchema).optional().describe("分支选项（仅branch类型）"),
-  nextNodeId: z.string().optional().describe("下一个节点（仅scene类型）"),
-  summary: z.string().describe("一句话摘要，供后续节点参考"),
-});
+  sceneName: z.string().optional(), // 设为可选
+  scene: z.string().optional(), // 某些模型可能使用 scene
+  narration: z.string().optional().nullable().describe("旁白/场景描述"),
+  dialogues: z.array(DialogueDraftSchema).describe("对话列表"),
+  choices: z.array(ChoiceDraftSchema).optional().nullable().describe("分支选项"),
+  nextNodeId: z.string().optional().nullable().describe("下一个节点"), // 允许 null
+  next: z.string().optional().nullable(), // 某些模型可能使用 next
+  summary: z.string().optional().describe("一句话摘要"),
+}).passthrough().transform((data) => ({
+  id: data.id,
+  type: data.type,
+  title: data.title,
+  sceneName: data.sceneName || data.scene || '未知场景',
+  narration: data.narration || undefined,
+  dialogues: data.dialogues,
+  choices: data.choices || undefined,
+  nextNodeId: data.nextNodeId || data.next || undefined,
+  summary: data.summary || data.title,
+}));
 
 export type NodeDraft = z.infer<typeof NodeDraftSchema>;
 export type DialogueDraft = z.infer<typeof DialogueDraftSchema>;

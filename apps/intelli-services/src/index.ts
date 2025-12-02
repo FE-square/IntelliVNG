@@ -1,11 +1,11 @@
+// Load environment variables FIRST before any other imports
+import 'dotenv/config';
+
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { gameRoutes } from './routes/game';
-
-// Load environment variables
-import 'dotenv/config';
 
 const app = new Hono();
 

@@ -12,6 +12,7 @@ import { z } from "zod";
 import { NarrativePlanSchema, type NarrativePlan, type WorkflowInput } from "./schemas";
 import { promptManager } from '../prompts';
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
+import { generateStructuredOutput } from '../utils/structured-output-helper';
 
 // ============ ToT 中间步骤的 Schema ============
 
@@ -30,24 +31,42 @@ const CandidatePathsSchema = z.object({
   paths: z.array(CandidatePathSchema),
 });
 
-/** 方向评估结果 */
+/** 方向评估结果 - 使用更宽松的类型以适应不同模型 */
 const PathEvaluationSchema = z.object({
-  pathId: z.string(),
+  pathId: z.string().optional(),
+  id: z.string().optional(), // 某些模型可能使用 id 而不是 pathId
   scores: z.object({
-    dramatic: z.number().min(1).max(5),      // 戏剧性
-    characterFit: z.number().min(1).max(5),  // 角色契合度
-    branchPotential: z.number().min(1).max(5), // 分支潜力
-    thematicDepth: z.number().min(1).max(5), // 主题深度
-  }),
-  totalScore: z.number(),
-  reasoning: z.string(),
+    dramatic: z.number().min(1).max(5),
+    characterFit: z.number().min(1).max(5),
+    branchPotential: z.number().min(1).max(5),
+    thematicDepth: z.number().min(1).max(5),
+  }).optional(),
+  totalScore: z.number().optional(),
+  score: z.number().optional(), // 某些模型可能使用 score 而不是 totalScore
+  reasoning: z.union([z.string(), z.object({}).passthrough()]).optional(), // 接受字符串或对象
+}).passthrough().transform((data) => {
+  // 标准化字段名
+  return {
+    pathId: data.pathId || data.id || '',
+    scores: data.scores || { dramatic: 3, characterFit: 3, branchPotential: 3, thematicDepth: 3 },
+    totalScore: data.totalScore || data.score || 12,
+    reasoning: typeof data.reasoning === 'string' ? data.reasoning : JSON.stringify(data.reasoning || ''),
+  };
 });
 
 /** 所有方向的评估 */
 const AllEvaluationsSchema = z.object({
   evaluations: z.array(PathEvaluationSchema),
-  selectedPathId: z.string(),
-  selectionReasoning: z.string(),
+  selectedPathId: z.string().optional(),
+  selected: z.string().optional(), // 某些模型可能使用 selected
+  selectionReasoning: z.string().optional(),
+  reason: z.string().optional(), // 某些模型可能使用 reason
+}).passthrough().transform((data) => {
+  return {
+    evaluations: data.evaluations,
+    selectedPathId: data.selectedPathId || data.selected || data.evaluations[0]?.pathId || '',
+    selectionReasoning: data.selectionReasoning || data.reason || '选择了最佳方向',
+  };
 });
 
 // ============ 基础 Agent（用于各轮调用） ============
@@ -60,6 +79,13 @@ export const storyPlannerAgent = new Agent({
     id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo'}` as `${string}/${string}`,
     url: process.env.OPENAI_BASE_URL,
     apiKey: process.env.OPENAI_API_KEY,
+  },
+  
+  // 某些模型（如 o1 系列）不支持 temperature=0，必须设为 1
+  defaultGenerateOptions: {
+    modelSettings: {
+      temperature: 1,
+    },
   },
 });
 
@@ -89,12 +115,12 @@ export async function generateNarrativePlanWithToT(
     styleGuide: JSON.stringify(input.styleGuide || {}, null, 2),
   }, locale);
 
-  const candidatesResponse = await agent.generate(generatePrompt, {
-    structuredOutput: {
-      schema: CandidatePathsSchema,
-    },
-  });
-  const candidates = candidatesResponse.object as z.infer<typeof CandidatePathsSchema>;
+  const candidates = await generateStructuredOutput(
+    agent,
+    generatePrompt,
+    CandidatePathsSchema,
+    { temperature: 1 }
+  );
   
   console.log(`[ToT] Round 1 完成: 生成了 ${candidates.paths.length} 个候选方向`);
   candidates.paths.forEach((p, i) => {
@@ -113,12 +139,12 @@ export async function generateNarrativePlanWithToT(
     tone: input.styleGuide?.tone || '无',
   }, locale);
 
-  const evaluationResponse = await agent.generate(evaluatePrompt, {
-    structuredOutput: {
-      schema: AllEvaluationsSchema,
-    },
-  });
-  const evaluation = evaluationResponse.object as z.infer<typeof AllEvaluationsSchema>;
+  const evaluation = await generateStructuredOutput(
+    agent,
+    evaluatePrompt,
+    AllEvaluationsSchema,
+    { temperature: 1 }
+  );
   
   console.log(`[ToT] Round 2 完成: 选择了 ${evaluation.selectedPathId}`);
   console.log(`  选择理由: ${evaluation.selectionReasoning.slice(0, 100)}...`);
@@ -147,12 +173,12 @@ export async function generateNarrativePlanWithToT(
     targetEndingCount: String(input.constraints?.targetEndingCount || 3),
   }, locale);
 
-  const planResponse = await agent.generate(expandPrompt, {
-    structuredOutput: {
-      schema: NarrativePlanSchema,
-    },
-  });
-  const plan = planResponse.object as NarrativePlan;
+  const plan = await generateStructuredOutput(
+    agent,
+    expandPrompt,
+    NarrativePlanSchema,
+    { temperature: 1 }
+  );
   
   console.log(`[ToT] Round 3 完成: 生成了 ${plan.nodes.length} 个节点`);
   console.log(`[ToT] 🌳 ToT 规划完成!`);
