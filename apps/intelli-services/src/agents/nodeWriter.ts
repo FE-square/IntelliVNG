@@ -81,11 +81,7 @@ export const nodeWriterAgent = new Agent({
   "summary": "主角在误会升级后面临选择：追上去道歉，还是选择沉默。"
 }`,
 
-  model: {
-    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo'}` as `${string}/${string}`,
-    url: process.env.OPENAI_BASE_URL,
-    apiKey: process.env.OPENAI_API_KEY,
-  },
+  model: "openai/gpt-4-turbo",
 });
 
 /**
@@ -137,5 +133,4 @@ ${JSON.stringify(input.styleGuide || {}, null, 2)}
 
   return response.object;
 }
-
 
