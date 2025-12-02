@@ -120,27 +120,120 @@ export type ChoiceDraft = z.infer<typeof ChoiceDraftSchema>;
 
 // ============ Story Reviewer 输出 ============
 
-export const IssueSchema = z.object({
-  type: z.enum(["structure", "logic", "character", "dialogue", "branch"]),
-  severity: z.enum(["minor", "major", "critical"]),
-  nodeIds: z.array(z.string()).describe("相关节点ID"),
-  description: z.string().describe("问题描述"),
-  suggestion: z.string().describe("修改建议"),
+// 原始 Issue schema（宽松版本，允许字段缺失）
+const IssueSchemaRaw = z.object({
+  type: z.enum(["structure", "logic", "character", "dialogue", "branch"]).optional(),
+  category: z.string().optional(), // 某些模型可能使用 category 代替 type
+  severity: z.enum(["minor", "major", "critical"]).optional(),
+  level: z.string().optional(), // 某些模型可能使用 level 代替 severity
+  nodeIds: z.array(z.string()).optional(),
+  nodes: z.array(z.string()).optional(), // 某些模型可能使用 nodes
+  description: z.string().optional(),
+  message: z.string().optional(), // 某些模型可能使用 message
+  suggestion: z.string().optional(),
+  fix: z.string().optional(), // 某些模型可能使用 fix
+  recommendation: z.string().optional(), // 某些模型可能使用 recommendation
+}).passthrough();
+
+// 转换后的标准化 Issue schema
+export const IssueSchema = IssueSchemaRaw.transform((data) => {
+  // 推断 type
+  const typeMap: Record<string, "structure" | "logic" | "character" | "dialogue" | "branch"> = {
+    'structure': 'structure',
+    'logic': 'logic',
+    'character': 'character',
+    'dialogue': 'dialogue',
+    'branch': 'branch',
+    'plot': 'logic',
+    'story': 'logic',
+    'consistency': 'character',
+    'flow': 'structure',
+  };
+  
+  let type = data.type;
+  if (!type && data.category) {
+    const categoryLower = data.category.toLowerCase();
+    type = typeMap[categoryLower] || 'logic';
+  }
+  if (!type) {
+    type = 'logic'; // 默认类型
+  }
+  
+  // 推断 severity
+  let severity = data.severity;
+  if (!severity && data.level) {
+    const levelLower = data.level.toLowerCase();
+    if (levelLower.includes('critical') || levelLower.includes('high')) {
+      severity = 'critical';
+    } else if (levelLower.includes('major') || levelLower.includes('medium')) {
+      severity = 'major';
+    } else {
+      severity = 'minor';
+    }
+  }
+  if (!severity) {
+    severity = 'minor'; // 默认严重程度
+  }
+  
+  return {
+    type,
+    severity,
+    nodeIds: data.nodeIds || data.nodes || [],
+    description: data.description || data.message || '未知问题',
+    suggestion: data.suggestion || data.fix || data.recommendation || '无建议',
+  };
 });
 
-export const CriticReportSchema = z.object({
+// 原始 CriticReport schema（宽松版本）
+const CriticReportSchemaRaw = z.object({
   scores: z.object({
-    plotCoherence: z.number().min(0).max(100).describe("情节连贯性"),
-    characterConsistency: z.number().min(0).max(100).describe("角色一致性"),
-    dialogueQuality: z.number().min(0).max(100).describe("对话质量"),
-    branchMeaningfulness: z.number().min(0).max(100).describe("分支有意义程度"),
-    pacing: z.number().min(0).max(100).describe("节奏"),
-  }),
-  overallScore: z.number().min(0).max(100).describe("综合评分"),
-  issues: z.array(IssueSchema).describe("问题列表"),
-  shouldRegenerate: z.boolean().describe("是否需要重新生成"),
-  regenerateTarget: z.enum(["none", "specific_nodes", "all"]),
+    plotCoherence: z.number().optional().describe("情节连贯性"),
+    characterConsistency: z.number().optional().describe("角色一致性"),
+    dialogueQuality: z.number().optional().describe("对话质量"),
+    branchMeaningfulness: z.number().optional().describe("分支有意义程度"),
+    pacing: z.number().optional().describe("节奏"),
+  }).passthrough().optional(),
+  overallScore: z.number().optional().describe("综合评分"),
+  totalScore: z.number().optional(), // 某些模型可能使用 totalScore
+  score: z.number().optional(), // 某些模型可能使用 score
+  issues: z.array(IssueSchema).optional(),
+  problems: z.array(IssueSchema).optional(), // 某些模型可能使用 problems
+  shouldRegenerate: z.boolean().optional().describe("是否需要重新生成"),
+  needsRegeneration: z.boolean().optional(), // 某些模型可能使用 needsRegeneration
+  regenerateTarget: z.enum(["none", "specific_nodes", "all"]).optional(),
   targetNodeIds: z.array(z.string()).optional().describe("需要重写的节点ID"),
+  nodesToFix: z.array(z.string()).optional(), // 某些模型可能使用 nodesToFix
+}).passthrough();
+
+// 转换后的标准化 CriticReport schema
+export const CriticReportSchema = CriticReportSchemaRaw.transform((data) => {
+  const scores = data.scores || {};
+  const overallScore = data.overallScore || data.totalScore || data.score || 70;
+  const issues = data.issues || data.problems || [];
+  
+  // 根据分数决定是否需要重新生成
+  const shouldRegenerate = data.shouldRegenerate ?? data.needsRegeneration ?? (overallScore < 60);
+  
+  // 确定重生成目标
+  let regenerateTarget = data.regenerateTarget || 'none';
+  if (shouldRegenerate && regenerateTarget === 'none') {
+    regenerateTarget = issues.length > 0 ? 'specific_nodes' : 'none';
+  }
+  
+  return {
+    scores: {
+      plotCoherence: scores.plotCoherence ?? 70,
+      characterConsistency: scores.characterConsistency ?? 70,
+      dialogueQuality: scores.dialogueQuality ?? 70,
+      branchMeaningfulness: scores.branchMeaningfulness ?? 70,
+      pacing: scores.pacing ?? 70,
+    },
+    overallScore,
+    issues,
+    shouldRegenerate,
+    regenerateTarget: regenerateTarget as "none" | "specific_nodes" | "all",
+    targetNodeIds: data.targetNodeIds || data.nodesToFix || [],
+  };
 });
 
 export type CriticReport = z.infer<typeof CriticReportSchema>;
