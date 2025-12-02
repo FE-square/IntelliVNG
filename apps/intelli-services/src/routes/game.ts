@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { GameGenerator } from '../services/game-generator';
+import { GameGeneratorAgent } from '../services/game-generator-agent';
+import { createProgressEmitter, removeProgressEmitter, type ProgressEvent } from '../services/progress-emitter';
 import { ImageGenerator, ImageType } from '../services/image-generator';
 import { FormAutocomplete, FormType } from '../services/form-autocomplete';
 import { getCacheKey, getFromCache, saveToCache, saveProject, getProject, listProjects } from '../services/cache';
@@ -103,6 +105,136 @@ gameRoutes.post(
                 error: message,
             }, 500);
         }
+    }
+);
+
+// =====================================================
+// 多智能体剧本生成 API（带实时进度）
+// =====================================================
+
+const generateByAgentsSchema = z.object({
+    // 角色 + 世界观 + 场景 + 主题风格
+    characters: z.array(z.any()),
+    worldSetting: z.any(),
+    scenes: z.array(z.any()).optional(),
+    themeSetting: z.any().optional(),
+    
+    // 模式选择
+    mode: z.enum(['agent', 'fast']).default('agent'),
+});
+
+// POST /api/game/generate-by-agents - 多智能体剧本生成（SSE 实时进度）
+gameRoutes.post(
+    '/generate-by-agents',
+    zValidator('json', generateByAgentsSchema),
+    async (c) => {
+        const { characters, worldSetting, scenes, themeSetting, mode } = c.req.valid('json');
+        
+        console.log(`[GameRoute] 开始生成剧本: mode=${mode}, ${characters.length} 角色, ${scenes?.length || 0} 场景`);
+        
+        // Fast 模式：使用旧的单次 LLM 调用（非 SSE）
+        if (mode === 'fast') {
+            try {
+                const generator = new GameGenerator();
+                const result = await generator.generateFromSetup(characters, worldSetting, scenes, themeSetting);
+                
+                saveProject(result);
+                
+                return c.json({
+                    success: true,
+                    mode: 'fast',
+                    data: result,
+                });
+            } catch (error) {
+                const message = error instanceof Error ? error.message : '未知错误';
+                return c.json({
+                    success: false,
+                    error: message,
+                }, 500);
+            }
+        }
+        
+        // Agent 模式：使用多智能体系统（SSE 实时进度）
+        return new Response(
+            new ReadableStream({
+                async start(controller) {
+                    const encoder = new TextEncoder();
+                    const progressEmitter = createProgressEmitter();
+                    const sessionId = progressEmitter.getSessionId();
+                    
+                    const sendEvent = (event: string, data: any) => {
+                        const payload = JSON.stringify({ event, ...data });
+                        controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+                    };
+                    
+                    // 监听进度事件
+                    progressEmitter.on('progress', (progressEvent: ProgressEvent) => {
+                        sendEvent('progress', progressEvent);
+                    });
+                    
+                    try {
+                        // 发送会话开始事件
+                        sendEvent('session', { 
+                            sessionId, 
+                            status: 'started',
+                            message: '多智能体剧本生成系统已启动',
+                        });
+                        
+                        const agent = new GameGeneratorAgent({
+                            maxRetries: 2,
+                            minAcceptableScore: 60,
+                        });
+                        
+                        const result = await agent.generateFromSetupWithProgress(
+                            characters,
+                            worldSetting,
+                            scenes,
+                            themeSetting,
+                            progressEmitter
+                        );
+                        
+                        // 保存项目
+                        saveProject(result);
+                        
+                        // 发送最终结果
+                        sendEvent('result', {
+                            success: true,
+                            mode: 'agent',
+                            data: result,
+                        });
+                        
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : '未知错误';
+                        console.error('[GameRoute] Agent 模式生成失败:', message);
+                        
+                        sendEvent('error', {
+                            success: false,
+                            error: message,
+                        });
+                    } finally {
+                        // 清理
+                        removeProgressEmitter(sessionId);
+                        
+                        // 发送结束事件
+                        sendEvent('session', { 
+                            sessionId, 
+                            status: 'ended',
+                            elapsedTime: progressEmitter.getElapsedTime(),
+                        });
+                        
+                        controller.close();
+                    }
+                },
+            }),
+            {
+                headers: {
+                    'Content-Type': 'text/event-stream',
+                    'Cache-Control': 'no-cache',
+                    'Connection': 'keep-alive',
+                    'X-Accel-Buffering': 'no', // 禁用 Nginx 缓冲
+                },
+            }
+        );
     }
 );
 
