@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliVNG Standalone Player</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --text-color: #1f2937;
+            --bg-color: #f3f4f6;
+            --box-bg: rgba(0, 0, 0, 0.8);
+            --name-bg: #4f46e5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #app {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background-color: #000;
+        }
+
+        /* 上传界面 */
+        #upload-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            z-index: 100;
+        }
+
+        .upload-box {
+            padding: 2rem;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            text-align: center;
+            background: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .upload-box:hover {
+            border-color: var(--primary-color);
+            background: #f9fafb;
+        }
+
+        .upload-btn {
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* 游戏界面 */
+        #game-screen {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.5s ease-in-out;
+        }
+
+        #background-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            z-index: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #characters-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .character-sprite {
+            position: absolute;
+            bottom: 0;
+            max-height: 90%;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.3));
+        }
+
+        /* 对话框 */
+        #ui-layer {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 1000px;
+            z-index: 10;
+        }
+
+        .dialogue-box {
+            background: var(--box-bg);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            color: white;
+            min-height: 160px;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .name-tag {
+            position: absolute;
+            top: -1.2rem;
+            left: 2rem;
+            background: var(--name-bg);
+            padding: 0.4rem 1.2rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .text-content {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-top: 0.5rem;
+            white-space: pre-wrap;
+        }
+
+        .next-indicator {
+            position: absolute;
+            bottom: 1rem;
+            right: 1.5rem;
+            animation: bounce 1s infinite;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        /* 选项 */
+        #choices-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .choice-btn {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 1rem 2rem;
+            min-width: 300px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .choice-btn:hover {
+            transform: translateY(-2px);
+            background: white;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            color: var(--primary-color);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(5px); }
+        }
+        
+        /* 旁白样式 */
+        .narration-mode .dialogue-box {
+            background: rgba(0, 0, 0, 0.6);
+            text-align: center;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .narration-mode .name-tag {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- 上传界面 -->
+    <div id="upload-screen">
+        <div class="upload-box">
+            <h2>IntelliVNG 播放器</h2>
+            <p style="margin: 1rem 0; color: #666;">请上传 .vng.json 游戏文件</p>
+            <input type="file" id="file-input" accept=".json" style="display: none">
+            <button class="upload-btn" onclick="document.getElementById('file-input').click()">选择文件</button>
+        </div>
+    </div>
+
+    <!-- 游戏界面 -->
+    <div id="game-screen" class="hidden">
+        <div id="background-layer"></div>
+        <div id="characters-layer"></div>
+        
+        <div id="ui-layer">
+            <div id="dialogue-box" class="dialogue-box" onclick="game.next()">
+                <div id="name-tag" class="name-tag"></div>
+                <div id="text-content" class="text-content"></div>
+                <div class="next-indicator">▼ 点击继续</div>
+            </div>
+        </div>
+
+        <div id="choices-overlay" class="hidden">
+            <!-- 选项按钮将动态生成在这里 -->
+        </div>
+    </div>
+</div>
+
+<script>
+    class GamePlayer {
+        constructor() {
+            this.project = null;
+            this.currentNode = null;
+            this.currentDialogueIndex = -1;
+            this.characterMap = new Map(); // id -> Character
+            
+            // DOM Elements
+            this.screens = {
+                upload: document.getElementById('upload-screen'),
+                game: document.getElementById('game-screen')
+            };
+            this.layers = {
+                background: document.getElementById('background-layer'),
+                characters: document.getElementById('characters-layer'),
+                ui: document.getElementById('ui-layer'),
+                choices: document.getElementById('choices-overlay')
+            };
+            this.dialogueBox = {
+                container: document.getElementById('dialogue-box'),
+                nameTag: document.getElementById('name-tag'),
+                text: document.getElementById('text-content')
+            };
+
+            this.initEventListeners();
+        }
+
+        initEventListeners() {
+            const fileInput = document.getElementById('file-input');
+            fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+        }
+
+        async handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const project = JSON.parse(text);
+                this.loadProject(project);
+            } catch (err) {
+                alert('无法解析项目文件: ' + err.message);
+                console.error(err);
+            }
+        }
+
+        loadProject(project) {
+            console.log('Loading project:', project);
+            this.project = project;
+            
+            // 构建角色映射
+            this.characterMap.clear();
+            project.characters.forEach(char => {
+                this.characterMap.set(char.id, char);
+            });
+
+            // 切换界面
+            this.screens.upload.classList.add('hidden');
+            this.screens.game.classList.remove('hidden');
+
+            // 查找开始节点
+            const startNode = project.script.find(n => n.isStart) || project.script[0];
+            if (startNode) {
+                this.playNode(startNode.id);
+            } else {
+                alert('未找到开始节点');
+            }
+        }
+
+        playNode(nodeId) {
+            const node = this.project.script.find(n => n.id === nodeId);
+            if (!node) {
+                console.error('Node not found:', nodeId);
+                return;
+            }
+
+            console.log('Playing node:', node);
+            this.currentNode = node;
+            this.currentDialogueIndex = -1;
+
+            // 1. 更新场景背景
+            this.updateBackground(node);
+            
+            // 2. 更新角色立绘
+            this.updateCharacters(node);
+
+            // 3. 开始对话或显示旁白
+            this.layers.choices.classList.add('hidden');
+            
+            // 如果有旁白且作为独立内容，先显示旁白
+            // 这里简化处理：如果有 dialogues，先播放 dialogues。
+            // 可以在对话前或后处理 choices。
+            
+            this.next();
+        }
+
+        updateBackground(node) {
+            let bgUrl = '';
+            
+            // 优先使用节点定义的背景
+            if (node.visualAssets?.backgroundImageUrl) {
+                bgUrl = node.visualAssets.backgroundImageUrl;
+            } 
+            // 其次查找 ID
+            else if (node.backgroundId) {
+                const bg = this.project.backgrounds.find(b => b.id === node.backgroundId);
+                if (bg) bgUrl = bg.url;
+            }
+
+            if (bgUrl) {
+                this.layers.background.style.backgroundImage = `url('${bgUrl}')`;
+            } else {
+                this.layers.background.style.backgroundColor = '#333'; // 默认背景
+            }
+        }
+
+        updateCharacters(node) {
+            this.layers.characters.innerHTML = '';
+            
+            if (node.visualAssets?.characters) {
+                node.visualAssets.characters.forEach(charConfig => {
+                    const char = this.characterMap.get(charConfig.characterId);
+                    if (!char) return;
+
+                    // 尝试获取立绘 URL
+                    let spriteUrl = charConfig.spriteUrl;
+                    if (!spriteUrl && char.defaultSpriteId) {
+                        const sprite = char.sprites?.find(s => s.id === char.defaultSpriteId);
+                        if (sprite) spriteUrl = sprite.imageUrl;
+                    }
+
+                    if (spriteUrl) {
+                        const img = document.createElement('img');
+                        img.src = spriteUrl;
+                        img.className = 'character-sprite';
+                        
+                        // 简单的位置处理
+                        // x 0-100, y 0-100
+                        const left = charConfig.position?.x || 50;
+                        const scale = charConfig.scale || 1;
+                        
+                        img.style.left = `${left}%`;
+                        img.style.transform = `translateX(-50%) scale(${scale})`;
+                        
+                        this.layers.characters.appendChild(img);
+                    }
+                });
+            }
+        }
+
+        next() {
+            // 检查是否有选项显示中
+            if (!this.layers.choices.classList.contains('hidden')) return;
+
+            const dialogues = this.currentNode.dialogues || [];
+            
+            // 增加索引
+            this.currentDialogueIndex++;
+
+            // 检查是否还有对话
+            if (this.currentDialogueIndex < dialogues.length) {
+                const dialogue = dialogues[this.currentDialogueIndex];
+                this.renderDialogue(dialogue);
+            } else {
+                // 对话结束，检查分支或跳转
+                this.handleNodeEnd();
+            }
+        }
+
+        renderDialogue(dialogue) {
+            const char = this.characterMap.get(dialogue.characterId);
+            const name = char ? (char.displayName || char.name) : '???';
+            const text = dialogue.text;
+
+            // 显示 UI
+            this.layers.ui.classList.remove('hidden');
+            this.dialogueBox.container.classList.remove('narration-mode');
+            this.dialogueBox.nameTag.style.display = 'block';
+            
+            // 更新内容
+            this.dialogueBox.nameTag.textContent = name;
+            this.dialogueBox.text.textContent = text;
+            
+            // TODO: 可以添加打字机效果
+        }
+
+        handleNodeEnd() {
+            const node = this.currentNode;
+
+            // 1. 检查是否有分支选项 (branch 类型且有 choices)
+            if (node.type === 'branch' && node.choices && node.choices.length > 0) {
+                this.showChoices(node.choices);
+                return;
+            }
+            
+            // 2. 检查是否有 nextNodeId (scene 类型通常有)
+            if (node.nextNodeId) {
+                this.playNode(node.nextNodeId);
+                return;
+            }
+            
+            // 3. 检查是否是结局
+            if (node.type === 'ending' || node.isEnding) {
+                alert('游戏结束');
+                // 可以选择重置或留在当前画面
+                return;
+            }
+
+            // 如果都没有，尝试根据 choices 显示（有些旧数据可能混用）
+            if (node.choices && node.choices.length > 0) {
+                this.showChoices(node.choices);
+                return;
+            }
+
+            console.warn('No next node or choices found. End of script?');
+        }
+
+        showChoices(choices) {
+            this.layers.choices.innerHTML = '';
+            this.layers.choices.classList.remove('hidden');
+            
+            // 隐藏对话框
+            this.layers.ui.classList.add('hidden');
+
+            choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.textContent = choice.text;
+                btn.onclick = () => {
+                    this.playNode(choice.targetNodeId);
+                };
+                this.layers.choices.appendChild(btn);
+            });
+        }
+    }
+
+    // 初始化游戏
+    const game = new GamePlayer();
+</script>
+</body>
+</html>
+
