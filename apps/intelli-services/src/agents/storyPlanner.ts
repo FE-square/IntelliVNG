@@ -57,9 +57,13 @@ export const storyPlannerAgent = new Agent({
 ## 关键原则
 - 故事骨架只包含结构和元信息，不包含具体对话
 - 所有节点必须相互连通，从 START 可达所有节点，所有路径最终到达 ENDING
-- 分支选择必须有"剧情重量"，让玩家感受到选择对故事走向的影响å`,
+- 分支选择必须有"剧情重量"，让玩家感受到选择对故事走向的影响`,
 
-  model: "openai/gpt-4-turbo",
+  model: {
+    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo'}` as `${string}/${string}`,
+    url: process.env.OPENAI_BASE_URL,
+    apiKey: process.env.OPENAI_API_KEY,
+  },
 });
 
 // ============ ToT 多轮调用实现 ============

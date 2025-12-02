@@ -286,7 +286,11 @@ export const storyReviewerAgent = new Agent({
 - 每个问题都要给出具体的 nodeIds 和修改建议
 - targetNodeIds 只在 regenerateTarget = "specific_nodes" 时填写`,
 
-  model: "openai/gpt-4-turbo",
+  model: {
+    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo'}` as `${string}/${string}`,
+    url: process.env.OPENAI_BASE_URL,
+    apiKey: process.env.OPENAI_API_KEY,
+  },
   tools: {
     validateStructure: validateStructureTool,
     analyzePaths: analyzePathsTool,
