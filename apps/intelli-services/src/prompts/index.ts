@@ -128,7 +128,7 @@ export function registerAllPrompts() {
   promptManager.registerBatch(workflowPrompts);
   promptManager.registerBatch(formAutocompletePrompts);
   
-  console.log('[PromptManager] ✅ 已注册所有prompt模板');
+  console.log('[PromptManager] 已注册所有prompt模板');
 }
 
 // 自动注册所有prompt

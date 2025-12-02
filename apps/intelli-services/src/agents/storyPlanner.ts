@@ -54,15 +54,10 @@ const AllEvaluationsSchema = z.object({
 
 export const storyPlannerAgent = new Agent({
   name: "story-planner",
-  instructions: `你是一位专业的非线性叙事设计师。你善于设计复杂的、有分支的故事结构。
-
-## 关键原则
-- 故事骨架只包含结构和元信息，不包含具体对话
-- 所有节点必须相互连通，从 START 可达所有节点，所有路径最终到达 ENDING
-- 分支选择必须有"剧情重量"，让玩家感受到选择对故事走向的影响`,
+  instructions: promptManager.build('story-planner.instructions').user,
 
   model: {
-    id: (process.env.OPENAI_MODEL_NAME || `openai/${'gpt-4-turbo'}`) as `${string}/${string}`,
+    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo'}` as `${string}/${string}`,
     url: process.env.OPENAI_BASE_URL,
     apiKey: process.env.OPENAI_API_KEY,
   },
