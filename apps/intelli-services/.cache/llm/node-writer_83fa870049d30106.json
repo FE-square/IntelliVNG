@@ -1,0 +1,50 @@
+{
+  "cacheKey": "node-writer_83fa870049d30106",
+  "timestamp": "2025-12-02T14:00:38.754Z",
+  "metadata": {
+    "agentName": "node-writer",
+    "schemaName": "ZodEffects",
+    "mode": "fallback-retry"
+  },
+  "data": {
+    "id": "node_start",
+    "type": "scene",
+    "title": "书香之下的异常",
+    "sceneName": "图书馆阅览室",
+    "narration": "百年图书馆的木质地板轻轻作响，旧钟的指针在静默中行进。暖黄灯光下，纸页的味道与陈旧书架的木香交织。近来关于“偷书”“误入门禁”“深夜电力异常”的传闻在走廊里悄悄流动：有人说锁着的古籍室被试图刷卡，有人说夜里应急灯忽明忽暗，像在呼吸。阅览室很安静，却不知为何让人不自觉屏住呼吸。",
+    "dialogues": [
+      {
+        "characterName": "晓晨",
+        "text": "古籍室的门禁换了新读卡器，门框这几道划痕不旧——像是有人试过不该试的卡。我来不是凑热闹，想看看传闻到底有几分真。",
+        "emotion": "curious"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "偷书案我已经听到三个版本了，还有人说误入门禁被困在玻璃门里，差点叫保安来救。这个题材不写太对不起我的记者证。你要不要跟我一起挖？",
+        "emotion": "excited"
+      },
+      {
+        "characterName": "修远",
+        "text": "借书请按规矩。传闻往往比事实热闹，也更容易让人迷路。今晚别在馆里逗留太久，电闸最近脾气不太好。",
+        "emotion": "calm"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "你说的是那几次深夜应急灯乱闪？这种异常不会无缘无故。线索得从借阅记录和门禁日志找起。",
+        "emotion": "serious"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "他这语气像是知道什么又不肯说。行吧，先回宿舍整理线索，我把采访提纲写好，明天再试探他。",
+        "emotion": "determined"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "同意。今天先不冒进，回去把看到的细节都记下，明天再回来对证。",
+        "emotion": "resolved"
+      }
+    ],
+    "nextNodeId": "node_dorm_intro",
+    "summary": "在阅览室中，晓晨与雨萱各自表明要调查传闻，修远冷静提醒夜间电力异常不宜久留，两人决定回宿舍整理线索。"
+  }
+}

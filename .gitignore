@@ -32,7 +32,6 @@ Thumbs.db
 .turbo
 
 # Cache
-.cache
 
 # Debug logs
 npm-debug.log*

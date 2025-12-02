@@ -1,0 +1,358 @@
+{
+  "savedAt": "2025-11-29T19:57:35.603Z",
+  "project": {
+    "id": "g1mufldw1r",
+    "title": "The Case of the Missing Teacup",
+    "description": "Young detective Aoi takes on her first solo case: a valuable antique teacup stolen from a quiet apartment. She must interview quirky witnesses and piece together clues to uncover the truth.",
+    "createdAt": "2025-11-29T19:57:35.600Z",
+    "updatedAt": "2025-11-29T19:57:35.600Z",
+    "meta": {
+      "author": "IntelliVNG",
+      "version": "1.0.0",
+      "genre": "mystery",
+      "artStyle": "anime"
+    },
+    "characters": [
+      {
+        "id": "p0lz63epfh",
+        "name": "Aoi",
+        "displayName": "Aoi",
+        "description": "A sharp but slightly inexperienced private detective. Wears a trench coat too big for her.",
+        "sprites": [],
+        "defaultSpriteId": ""
+      },
+      {
+        "id": "tw2gc5o13j",
+        "name": "Ren",
+        "displayName": "Ren",
+        "description": "Owner of a local antique shop, client who reported the theft. Always impeccably dressed.",
+        "sprites": [],
+        "defaultSpriteId": ""
+      },
+      {
+        "id": "x0910fxr5",
+        "name": "Sakura",
+        "displayName": "Sakura",
+        "description": "The victim's younger sister, lives in the same apartment building. Fidgety and anxious.",
+        "sprites": [],
+        "defaultSpriteId": ""
+      },
+      {
+        "id": "2afpqhz4sm",
+        "name": "Inspector Tanaka",
+        "displayName": "Inspector Tanaka",
+        "description": "A grizzled but fair police inspector, often working with Aoi. Has a tired but kind face.",
+        "sprites": [],
+        "defaultSpriteId": ""
+      }
+    ],
+    "backgrounds": [
+      {
+        "id": "ttunbd0l0v",
+        "name": "Aoi's Office",
+        "description": "Small, cluttered office with a messy desk, overflowing bookshelves, and a corkboard full of notes.",
+        "imageUrl": ""
+      },
+      {
+        "id": "psbi8odsdg",
+        "name": "Victim's Apartment",
+        "description": "Elegant but slightly disheveled living room, featuring a display cabinet with a conspicuous empty space.",
+        "imageUrl": ""
+      },
+      {
+        "id": "oq9mw0mfj8",
+        "name": "The Gilded Spoon Cafe",
+        "description": "Cozy, old-fashioned cafe with warm lighting, antique decor, and the scent of freshly brewed coffee.",
+        "imageUrl": ""
+      },
+      {
+        "id": "0w4psh1cv9",
+        "name": "Police Station Interview Room",
+        "description": "Stark, functional room with a metal table, two chairs, and bare walls, feeling slightly cold.",
+        "imageUrl": ""
+      }
+    ],
+    "script": [
+      {
+        "id": "mhb8fq88sz",
+        "type": "dialogue",
+        "position": {
+          "x": 100,
+          "y": 100
+        },
+        "characterId": "",
+        "text": "The faint scent of old paper and lukewarm coffee hung in Aoi's small office.",
+        "nextNodeId": "6zvnb64wkl"
+      },
+      {
+        "id": "6zvnb64wkl",
+        "type": "dialogue",
+        "position": {
+          "x": 350,
+          "y": 100
+        },
+        "characterId": "p0lz63epfh",
+        "text": "(Stretching) Another quiet morning... too quiet.",
+        "nextNodeId": "vxzo18ojla"
+      },
+      {
+        "id": "vxzo18ojla",
+        "type": "dialogue",
+        "position": {
+          "x": 600,
+          "y": 100
+        },
+        "characterId": "tw2gc5o13j",
+        "text": "(Entering, holding a case file) Detective Aoi? I have a peculiar situation.",
+        "nextNodeId": "463xdpcxba"
+      },
+      {
+        "id": "463xdpcxba",
+        "type": "dialogue",
+        "position": {
+          "x": 850,
+          "y": 100
+        },
+        "characterId": "p0lz63epfh",
+        "text": "Mr. Ren! Please, have a seat. What seems to be the trouble?",
+        "nextNodeId": "ogfyu1hix2"
+      },
+      {
+        "id": "ogfyu1hix2",
+        "type": "dialogue",
+        "position": {
+          "x": 1100,
+          "y": 100
+        },
+        "characterId": "tw2gc5o13j",
+        "text": "A rare, antique teacup has vanished from my client's apartment. No signs of forced entry.",
+        "nextNodeId": "kuw4889nbe"
+      },
+      {
+        "id": "kuw4889nbe",
+        "type": "dialogue",
+        "position": {
+          "x": 100,
+          "y": 250
+        },
+        "characterId": "",
+        "text": "The apartment was tidy, almost too tidy, save for the empty space in the display cabinet.",
+        "nextNodeId": "pq8xu2qjjp"
+      },
+      {
+        "id": "pq8xu2qjjp",
+        "type": "dialogue",
+        "position": {
+          "x": 350,
+          "y": 250
+        },
+        "characterId": "p0lz63epfh",
+        "text": "So, the famous 'Moon Petal' teacup was displayed right here?",
+        "nextNodeId": "s9lftysrf9"
+      },
+      {
+        "id": "s9lftysrf9",
+        "type": "dialogue",
+        "position": {
+          "x": 600,
+          "y": 250
+        },
+        "characterId": "tw2gc5o13j",
+        "text": "Indeed. My client, Mrs. Shimizu, cherished it above all else. She's currently out of town.",
+        "nextNodeId": "7dfi8vr0tt"
+      },
+      {
+        "id": "7dfi8vr0tt",
+        "type": "dialogue",
+        "position": {
+          "x": 850,
+          "y": 250
+        },
+        "characterId": "p0lz63epfh",
+        "text": "And her sister, Sakura, lives in the same building, correct?",
+        "nextNodeId": "175rvpne39"
+      },
+      {
+        "id": "175rvpne39",
+        "type": "dialogue",
+        "position": {
+          "x": 1100,
+          "y": 250
+        },
+        "characterId": "tw2gc5o13j",
+        "text": "Yes, she was the last person to visit the apartment before the discovery.",
+        "nextNodeId": "bj2gsw9694"
+      },
+      {
+        "id": "bj2gsw9694",
+        "type": "dialogue",
+        "position": {
+          "x": 100,
+          "y": 400
+        },
+        "characterId": "",
+        "text": "Sakura fidgeted with her napkin, avoiding Aoi's gaze as the aroma of pastries filled the air.",
+        "nextNodeId": "6rwo0b9cgp"
+      },
+      {
+        "id": "6rwo0b9cgp",
+        "type": "dialogue",
+        "position": {
+          "x": 350,
+          "y": 400
+        },
+        "characterId": "p0lz63epfh",
+        "text": "Ms. Sakura, you mentioned you locked up after visiting your sister last week?",
+        "nextNodeId": "wt679ck2i5"
+      },
+      {
+        "id": "wt679ck2i5",
+        "type": "dialogue",
+        "position": {
+          "x": 600,
+          "y": 400
+        },
+        "characterId": "x0910fxr5",
+        "text": "Yes! I'm absolutely sure I did. I just... I left in a bit of a hurry.",
+        "nextNodeId": "mr0kh0yrce"
+      },
+      {
+        "id": "mr0kh0yrce",
+        "type": "dialogue",
+        "position": {
+          "x": 850,
+          "y": 400
+        },
+        "characterId": "p0lz63epfh",
+        "text": "Did you notice anything unusual? Anyone else in the hallway or around the building?",
+        "nextNodeId": "accdnzrbir"
+      },
+      {
+        "id": "accdnzrbir",
+        "type": "dialogue",
+        "position": {
+          "x": 1100,
+          "y": 400
+        },
+        "characterId": "x0910fxr5",
+        "text": "No, no one at all. I was just... very preoccupied.",
+        "nextNodeId": "eemplwq0pe"
+      },
+      {
+        "id": "eemplwq0pe",
+        "type": "dialogue",
+        "position": {
+          "x": 100,
+          "y": 550
+        },
+        "characterId": "",
+        "text": "Inspector Tanaka leaned back in his chair, eyes narrowed thoughtfully.",
+        "nextNodeId": "dhd7d16jxj"
+      },
+      {
+        "id": "dhd7d16jxj",
+        "type": "dialogue",
+        "position": {
+          "x": 350,
+          "y": 550
+        },
+        "characterId": "2afpqhz4sm",
+        "text": "No forced entry, no alarms tripped... Sounds like an inside job, Aoi. Or a very clever one.",
+        "nextNodeId": "b1i5jb54i3"
+      },
+      {
+        "id": "b1i5jb54i3",
+        "type": "dialogue",
+        "position": {
+          "x": 600,
+          "y": 550
+        },
+        "characterId": "p0lz63epfh",
+        "text": "But Sakura seemed genuinely distressed. And Mr. Ren is a reputable antique dealer.",
+        "nextNodeId": "w36eqxtj1i"
+      },
+      {
+        "id": "w36eqxtj1i",
+        "type": "dialogue",
+        "position": {
+          "x": 850,
+          "y": 550
+        },
+        "characterId": "2afpqhz4sm",
+        "text": "Reputable people can be desperate. Or careless. Think about who had access, and who could benefit.",
+        "nextNodeId": "33zhfuc26i"
+      },
+      {
+        "id": "33zhfuc26i",
+        "type": "dialogue",
+        "position": {
+          "x": 1100,
+          "y": 550
+        },
+        "characterId": "p0lz63epfh",
+        "text": "Access... and a hidden motive. Perhaps not a theft, but something else entirely.",
+        "nextNodeId": "r47ulsmgo5"
+      },
+      {
+        "id": "r47ulsmgo5",
+        "type": "dialogue",
+        "position": {
+          "x": 100,
+          "y": 700
+        },
+        "characterId": "",
+        "text": "Aoi returned to the apartment, a new theory solidified in her mind as she scanned the room.",
+        "nextNodeId": "ek0lb3g86e"
+      },
+      {
+        "id": "ek0lb3g86e",
+        "type": "dialogue",
+        "position": {
+          "x": 350,
+          "y": 700
+        },
+        "characterId": "p0lz63epfh",
+        "text": "Sakura... you didn't steal the teacup, did you? You simply... moved it.",
+        "nextNodeId": "o52nykm5oi"
+      },
+      {
+        "id": "o52nykm5oi",
+        "type": "dialogue",
+        "position": {
+          "x": 600,
+          "y": 700
+        },
+        "characterId": "x0910fxr5",
+        "text": "(Gasp, covering her mouth) How did you...?",
+        "nextNodeId": "16gyu20r11"
+      },
+      {
+        "id": "16gyu20r11",
+        "type": "dialogue",
+        "position": {
+          "x": 850,
+          "y": 700
+        },
+        "characterId": "p0lz63epfh",
+        "text": "Your sister mentioned the display cabinet was due for repairs. You panicked, thinking the precious teacup might get damaged, so you hid it in the old cookie jar in the pantry.",
+        "nextNodeId": "phkmuziirz"
+      },
+      {
+        "id": "phkmuziirz",
+        "type": "dialogue",
+        "position": {
+          "x": 1100,
+          "y": 700
+        },
+        "characterId": "x0910fxr5",
+        "text": "I just wanted to keep it safe! I was going to tell her as soon as she got back from her trip, I swear!",
+        "nextNodeId": null
+      }
+    ],
+    "settings": {
+      "textSpeed": 50,
+      "autoPlayDelay": 3000,
+      "defaultTransition": "fade"
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "cacheKey": "node-writer_2135e2824e622e37",
+  "timestamp": "2025-12-02T14:04:32.924Z",
+  "metadata": {
+    "agentName": "node-writer",
+    "schemaName": "ZodEffects",
+    "mode": "fallback-retry"
+  },
+  "data": {
+    "id": "node_branch_final",
+    "type": "branch",
+    "title": "最终抉择：真相、秘密与外力",
+    "sceneName": "图书馆地下室",
+    "narration": "昏黄的日光灯在地下室顶上轻轻闪烁，潮气和旧纸的味道混在一起。匿名线人已经离开，只留下一只牛皮纸袋、几张被涂黑的复印件和一段被剪得支离的录音。走廊尽头传来若有若无的脚步声，仿佛提醒他们——时间正在被抹去。",
+    "dialogues": [
+      {
+        "characterName": "雨萱",
+        "text": "录音只剩中段，关键名字都被处理掉了。要是现在发出去，很可能有人反咬我们不完整、不负责。",
+        "emotion": "纠结"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "不完整也是真相的一部分。拖下去只会让更多人受伤——我们公开，逼制度正面回应。",
+        "emotion": "坚定"
+      },
+      {
+        "characterName": "修远",
+        "text": "公开意味着受害者可能被牵连，守秘者的名誉也会被撕碎。阶段性隐瞒，先保人，再换可验证的改革承诺，是更稳的路。",
+        "emotion": "冷静"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "还有一种——联系外部媒体或更大的力量。他们能把事放大，但我们可能被拿去做政治工具，真相会被改写成别人的版本。",
+        "emotion": "紧张"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "不想被操控，可我们也不能装作不知道。选哪条都会有人付出代价……只看我们愿意承担哪一种。",
+        "emotion": "沉重"
+      },
+      {
+        "characterName": "修远",
+        "text": "线人说午夜前会有人来翻这里。现在决定，否则证据和人都可能没了。",
+        "emotion": "迫切"
+      }
+    ],
+    "choices": [
+      {
+        "id": "choice_public",
+        "text": "立刻公开已核实的材料，接受风暴与制度对峙",
+        "targetNodeId": "node_ending_public",
+        "meta": {
+          "emotionalWeight": "痛苦抉择",
+          "consequenceHint": "可能牵动受害者与守秘者名誉，引发制度震荡与个人代价。"
+        }
+      },
+      {
+        "id": "choice_secret",
+        "text": "暂时隐去敏感身份与细节，以保护受害者并换取校方书面改革承诺",
+        "targetNodeId": "node_ending_secret",
+        "meta": {
+          "emotionalWeight": "沉重",
+          "consequenceHint": "阶段性隐瞒以换取改革与保护，需承担长期道德压力。"
+        }
+      },
+      {
+        "id": "choice_mislead",
+        "text": "借助外部媒体或权力迅速放大事件，接受被操控与失真风险",
+        "targetNodeId": "node_ending_mislead",
+        "meta": {
+          "emotionalWeight": "痛苦抉择",
+          "consequenceHint": "借助外部媒体或权力介入，风险不可控，可能被利用为政治工具。"
+        }
+      }
+    ],
+    "summary": "三人在图书馆地下室拿到部分证据后，迫于时间决定在公开真相、阶段性隐瞒或求助外力三条道路中作出最终选择。"
+  }
+}

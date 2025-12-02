@@ -1,0 +1,50 @@
+{
+  "cacheKey": "node-writer_07ee500df32a4a43",
+  "timestamp": "2025-12-02T14:03:01.105Z",
+  "metadata": {
+    "agentName": "node-writer",
+    "schemaName": "ZodEffects",
+    "mode": "fallback-retry"
+  },
+  "data": {
+    "id": "node_power_probe",
+    "type": "scene",
+    "title": "电力异常与隐门的指向",
+    "sceneName": "图书馆地下室",
+    "narration": "夜色压在地下室的低矮天花板上，配电柜的金属味夹着潮气与旧纸霉香。手电光扫过凌乱标号的断路器，几颗螺丝上亮着新鲜的划痕；一条新包胶的备用线悄然偏离图纸，沿着墙缝钻向档案排后面，那里的灰尘被擦出一条细窄的路径。电表日志里异常平滑的曲线像被人有意抹平，压住了真正的峰值。墙面回声空洞，藏着一道只有熟人会碰的窄门；远处隐约传来纸箱摩擦的细响，像有人刚刚经过。",
+    "dialogues": [
+      {
+        "characterName": "晓晨",
+        "text": "这颗螺丝有新划痕，断路器也被手动推过；备用线被绕过去了……有人在借电。",
+        "emotion": "alert"
+      },
+      {
+        "characterName": "修远",
+        "text": "你看得很准。新包胶的电缆不在图纸上，走向直指那排档案后面。夜探风险不小，别忘了。",
+        "emotion": "calm"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "档案箱的灰被擦出一道手印，标签还被重新贴过——这不是自然位移，明显有人翻过。",
+        "emotion": "anxious"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "电表日志被做了平滑处理，峰值被掩掉——典型的技术遮蔽。把人证藏起来，把电力藏得更深……这墙后面肯定有门。",
+        "emotion": "determined"
+      },
+      {
+        "characterName": "修远",
+        "text": "别急着撬。锁芯有热痕，说明刚用过；人也许还在里头。先留证据，再选退路。",
+        "emotion": "cautious"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "我拍照、标时间和走线。要是现在不进去，他们可能马上转移——我们准备好就跟上。",
+        "emotion": "hesitant"
+      }
+    ],
+    "nextNodeId": "node_confront",
+    "summary": "三人夜探地下室配电柜，晓晨确认备用线被人为改接并指向隐蔽通道、旧档案被近期移动，决定沿线追踪准备对质。"
+  }
+}

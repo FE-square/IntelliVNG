@@ -1,0 +1,246 @@
+{
+  "key": "a3679835b862f83b4e8b71002c4bbc81",
+  "timestamp": "2025-11-29T19:36:48.357Z",
+  "data": {
+    "id": "lu67d9cfta",
+    "title": "The Cedarwood Secret",
+    "description": "A renowned detective is hired to uncover the mystery of a missing family heirloom, a rare stamp. He must navigate a grand estate and its inhabitants, uncovering subtle clues to reveal the truth behind the disappearance.",
+    "createdAt": "2025-11-29T19:36:48.357Z",
+    "updatedAt": "2025-11-29T19:36:48.357Z",
+    "meta": {
+      "author": "IntelliVNG",
+      "version": "1.0.0",
+      "genre": "mystery",
+      "artStyle": "anime"
+    },
+    "characters": [
+      {
+        "id": "upa9k4z1fi",
+        "name": "Kaito Ishikawa",
+        "displayName": "Kaito",
+        "description": "Sharp, observant, with a calm demeanor. Wears a classic trench coat and glasses.",
+        "sprites": [],
+        "defaultSpriteId": ""
+      },
+      {
+        "id": "4ld4ztidhg",
+        "name": "Anya Petrova",
+        "displayName": "Anya",
+        "description": "Elegant and refined, with long dark hair and piercing blue eyes. Dressed in sophisticated attire.",
+        "sprites": [],
+        "defaultSpriteId": ""
+      },
+      {
+        "id": "n59q36hr5z",
+        "name": "Mr. Caldwell",
+        "displayName": "Caldwell",
+        "description": "The family's elderly butler, always impeccably dressed in a dark uniform. Stoic expression.",
+        "sprites": [],
+        "defaultSpriteId": ""
+      }
+    ],
+    "backgrounds": [
+      {
+        "id": "kf5ies3wiq",
+        "name": "Kaito's Office",
+        "description": "A cozy, slightly cluttered room filled with case files, antique maps, and a worn leather armchair.",
+        "imageUrl": ""
+      },
+      {
+        "id": "tsvvui6e0g",
+        "name": "Petrova Estate - Grand Hall",
+        "description": "An opulent hall with high ceilings, marble floors, and large portraits. A prominent, empty display case stands in the center.",
+        "imageUrl": ""
+      },
+      {
+        "id": "4jbglqxx7v",
+        "name": "Petrova Estate - Butler's Quarters",
+        "description": "A small, tidy room with a simple bed, a desk, and a hidden workbench covered in woodworking tools.",
+        "imageUrl": ""
+      }
+    ],
+    "script": [
+      {
+        "id": "45jirxznlm",
+        "type": "dialogue",
+        "position": {
+          "x": 100,
+          "y": 100
+        },
+        "characterId": "",
+        "text": "Detective Ishikawa, thank you for seeing me on such short notice.",
+        "nextNodeId": "og6qb1o6vb"
+      },
+      {
+        "id": "og6qb1o6vb",
+        "type": "dialogue",
+        "position": {
+          "x": 350,
+          "y": 100
+        },
+        "characterId": "",
+        "text": "Of course, Ms. Petrova. Please, have a seat. What seems to be the trouble?",
+        "nextNodeId": "vkjgz6hlsk"
+      },
+      {
+        "id": "vkjgz6hlsk",
+        "type": "dialogue",
+        "position": {
+          "x": 600,
+          "y": 100
+        },
+        "characterId": "",
+        "text": "It's my grandfather's 'Blue Dragon' stamp. It's vanished from its display case at the estate.",
+        "nextNodeId": "ocojn9bi9x"
+      },
+      {
+        "id": "ocojn9bi9x",
+        "type": "dialogue",
+        "position": {
+          "x": 850,
+          "y": 100
+        },
+        "characterId": "",
+        "text": "A 'Blue Dragon'? That's quite a valuable piece. When was it last seen?",
+        "nextNodeId": "dmv9ya638i"
+      },
+      {
+        "id": "dmv9ya638i",
+        "type": "dialogue",
+        "position": {
+          "x": 1100,
+          "y": 100
+        },
+        "characterId": "",
+        "text": "Yesterday evening, after a family gathering. Only a few trusted people were present.",
+        "nextNodeId": "4jworw1dtm"
+      },
+      {
+        "id": "4jworw1dtm",
+        "type": "dialogue",
+        "position": {
+          "x": 100,
+          "y": 250
+        },
+        "characterId": "",
+        "text": "Kaito examines the empty display case in the grand hall. The glass is untouched.",
+        "nextNodeId": "z05d5143vn"
+      },
+      {
+        "id": "z05d5143vn",
+        "type": "dialogue",
+        "position": {
+          "x": 350,
+          "y": 250
+        },
+        "characterId": "",
+        "text": "No signs of forced entry. It seems whoever took it had access, or was very careful.",
+        "nextNodeId": "raf51wdgja"
+      },
+      {
+        "id": "raf51wdgja",
+        "type": "dialogue",
+        "position": {
+          "x": 600,
+          "y": 250
+        },
+        "characterId": "",
+        "text": "It's so unsettling. I just want it back, Detective.",
+        "nextNodeId": "r127qwx26f"
+      },
+      {
+        "id": "r127qwx26f",
+        "type": "dialogue",
+        "position": {
+          "x": 850,
+          "y": 250
+        },
+        "characterId": "",
+        "text": "Patience, Ms. Petrova. There's a faint, distinct scent here... almost like cedarwood. And this tiny speck of dust.",
+        "nextNodeId": "i6cbkn40dq"
+      },
+      {
+        "id": "i6cbkn40dq",
+        "type": "dialogue",
+        "position": {
+          "x": 1100,
+          "y": 250
+        },
+        "characterId": "",
+        "text": "Kaito carefully collects the minute wood speck with tweezers, a thoughtful expression on his face.",
+        "nextNodeId": "87wef6cq5c"
+      },
+      {
+        "id": "87wef6cq5c",
+        "type": "dialogue",
+        "position": {
+          "x": 100,
+          "y": 400
+        },
+        "characterId": "",
+        "text": "Mr. Caldwell, I understand you were the last to lock up the hall yesterday?",
+        "nextNodeId": "fnaiqv59mp"
+      },
+      {
+        "id": "fnaiqv59mp",
+        "type": "dialogue",
+        "position": {
+          "x": 350,
+          "y": 400
+        },
+        "characterId": "",
+        "text": "That is correct, sir. Everything was in order when I retired.",
+        "nextNodeId": "txex6sqr90"
+      },
+      {
+        "id": "txex6sqr90",
+        "type": "dialogue",
+        "position": {
+          "x": 600,
+          "y": 400
+        },
+        "characterId": "",
+        "text": "I see. And what about this, Mr. Caldwell?",
+        "nextNodeId": "b2a7dghqts"
+      },
+      {
+        "id": "b2a7dghqts",
+        "type": "dialogue",
+        "position": {
+          "x": 850,
+          "y": 400
+        },
+        "characterId": "",
+        "text": "Kaito points to a small, intricately carved cedarwood box on Caldwell's hidden workbench.",
+        "nextNodeId": "d7kdaxxz3y"
+      },
+      {
+        "id": "d7kdaxxz3y",
+        "type": "dialogue",
+        "position": {
+          "x": 1100,
+          "y": 400
+        },
+        "characterId": "",
+        "text": "(Stiffens) That... that is my personal project, sir. A gift for Ms. Anya.",
+        "nextNodeId": "v4ybag0vg6"
+      },
+      {
+        "id": "v4ybag0vg6",
+        "type": "dialogue",
+        "position": {
+          "x": 100,
+          "y": 550
+        },
+        "characterId": "",
+        "text": "Interesting. The same cedarwood scent, the same fine dust... it seems the 'Blue Dragon' found a temporary new home, didn't it?",
+        "nextNodeId": null
+      }
+    ],
+    "settings": {
+      "textSpeed": 50,
+      "autoPlayDelay": 3000,
+      "defaultTransition": "fade"
+    }
+  }
+}

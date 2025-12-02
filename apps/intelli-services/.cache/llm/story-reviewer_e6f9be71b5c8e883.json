@@ -1,0 +1,84 @@
+{
+  "cacheKey": "story-reviewer_e6f9be71b5c8e883",
+  "timestamp": "2025-12-02T14:11:39.613Z",
+  "metadata": {
+    "agentName": "story-reviewer",
+    "schemaName": "ZodEffects",
+    "mode": "fallback-retry"
+  },
+  "data": {
+    "scores": {
+      "plotCoherence": 87,
+      "characterConsistency": 82,
+      "dialogueQuality": 90,
+      "branchMeaningfulness": 65,
+      "pacing": 85
+    },
+    "overallScore": 70,
+    "issues": [
+      {
+        "type": "logic",
+        "severity": "major",
+        "nodeIds": [
+          "node_branch_first",
+          "node_power_probe",
+          "node_access_probe",
+          "node_confront",
+          "node_branch_final",
+          "node_ending_public",
+          "node_ending_secret",
+          "node_ending_mislead"
+        ],
+        "description": "第一道选择的分支回流过早，缺乏持续性差异，导致前期选择的意义感较弱。",
+        "suggestion": "无建议"
+      },
+      {
+        "type": "logic",
+        "severity": "major",
+        "nodeIds": [
+          "node_path_meet",
+          "node_power_probe",
+          "node_access_probe",
+          "node_confront"
+        ],
+        "description": "修远的人设“守秘者、误导与阻挠”在多处表现为“协助与提示”，削弱对立张力与戏剧冲突。",
+        "suggestion": "无建议"
+      },
+      {
+        "type": "logic",
+        "severity": "minor",
+        "nodeIds": [
+          "node_pressure",
+          "node_branch_final"
+        ],
+        "description": "线人会面到最终抉择的衔接略显跳跃：在宿舍达成约定（去老教学楼）后，叙述直接落到地下室处理证据，线人会面成果多为“离场后遗留”。",
+        "suggestion": "无建议"
+      },
+      {
+        "type": "logic",
+        "severity": "minor",
+        "nodeIds": [
+          "node_branch_first",
+          "node_confront",
+          "node_branch_final"
+        ],
+        "description": "对白信息密度高、风格有一致的“文气”，但三人声线可进一步拉开以增强角色辨识与情绪波动。",
+        "suggestion": "无建议"
+      },
+      {
+        "type": "logic",
+        "severity": "minor",
+        "nodeIds": [
+          "node_ending_public",
+          "node_ending_secret",
+          "node_ending_mislead"
+        ],
+        "description": "结局已呈现不同伦理代价，但与前序选择的具体回响还可更紧密，增强闭环感。",
+        "suggestion": "无建议"
+      }
+    ],
+    "shouldRegenerate": false,
+    "regenerateTarget": "none",
+    "targetNodeIds": []
+  }
+}

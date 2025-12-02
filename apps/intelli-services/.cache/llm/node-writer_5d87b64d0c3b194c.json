@@ -1,0 +1,50 @@
+{
+  "cacheKey": "node-writer_5d87b64d0c3b194c",
+  "timestamp": "2025-12-02T14:01:56.036Z",
+  "metadata": {
+    "agentName": "node-writer",
+    "schemaName": "ZodEffects",
+    "mode": "fallback-retry"
+  },
+  "data": {
+    "id": "node_path_meet",
+    "type": "scene",
+    "title": "林荫道的隐喻与盲区",
+    "sceneName": "校园林荫道",
+    "narration": "傍晚的风穿过梧桐叶，斑驳的光影在石板路上浮动。图书馆的玻璃映出一层晃动的银光，电柜里传来低低的嗡鸣。路口公告牌上贴着“电力维护”的通知，日期被涂改得模糊；墙角的摄像头却偏着角度，对准树冠，留出一道刻意的阴影。修远提着书从光影里走来，镜片亮了一下，像把话提前收住。",
+    "dialogues": [
+      {
+        "characterName": "雨萱",
+        "text": "你看那个摄像头，居然拍树冠，拍叶子也能打卡吗？",
+        "emotion": "playful"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "不对，北侧这段路刚好是监控盲区，从门廊到地下通风口都看不到；而且维护记录被涂改了，同一天做了两次巡检，太怪。",
+        "emotion": "alert"
+      },
+      {
+        "characterName": "修远",
+        "text": "风能翻书，但有些章节最好别在夜里读。地下室的空气湿冷，年轻人去了容易着凉——别为了一张索引卡，把自己丢进书堆下面。",
+        "emotion": "mysterious"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "修远，你这是给我们下文学禁令吗？我们只是查资料，不是去探险。",
+        "emotion": "defensive"
+      },
+      {
+        "characterName": "修远",
+        "text": "资料在架上，封存的索引不对外借。今晚图书馆会停电维护，黑暗里容易把影子当人。少走楼梯，多看目录，懂的人自然看得见。",
+        "emotion": "serious"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "维护记录对不上，盲区像是故意留的……谢谢提醒，我们会在阳光下找答案。",
+        "emotion": "determined"
+      }
+    ],
+    "nextNodeId": "node_branch_first",
+    "summary": "两人与修远在林荫道偶遇，他用隐喻劝他们别碰地下室并提到今晚停电维护；晓晨同时发现图书馆周边有监控盲区与被涂改的维护记录。"
+  }
+}

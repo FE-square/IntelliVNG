@@ -1,0 +1,50 @@
+{
+  "cacheKey": "node-writer_a1c11af853fe65fd",
+  "timestamp": "2025-12-02T14:04:05.440Z",
+  "metadata": {
+    "agentName": "node-writer",
+    "schemaName": "ZodEffects",
+    "mode": "fallback-retry"
+  },
+  "data": {
+    "id": "node_pressure",
+    "type": "scene",
+    "title": "匿名线人与道德压力",
+    "sceneName": "学生宿舍",
+    "narration": "夜里，宿舍走廊的灯影在风里轻轻摇动，校论坛的热帖一条接一条地弹出提醒。窗外有同学压低嗓子谈论“地下室”和“密档”，潮湿的空气像把弦拧得更紧。屋里，三人围着雨萱的手机屏幕，每一次呼吸都透着克制——友情的线被拉得发涩，却还没断。",
+    "dialogues": [
+      {
+        "characterName": "雨萱",
+        "text": "匿名线人刚给我发了语音，他说密档不只是借阅记录，牵涉校史黑幕，还有受害者隐私……让我们别轻易曝光。",
+        "emotion": "anxious"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "这更说明地下室被动过，藏的东西不干净。真相要是不挖，它就永远烂在那儿。",
+        "emotion": "determined"
+      },
+      {
+        "characterName": "修远",
+        "text": "“黑幕”这种词很会吸引眼球。线人没被证实前，别把人当素材。隐私不是挡箭牌，但也是底线。",
+        "emotion": "calm"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "我知道采访伦理。我可以约他见面，所有姓名遮盖，只核年份和事件。可你别再绕话了，好吗？",
+        "emotion": "assertive"
+      },
+      {
+        "characterName": "修远",
+        "text": "我不会破规。但我可以验证线人的出处，和你们一起去老教学楼。条件是：涉及个人的部分一律不记录。你们守得住吗？",
+        "emotion": "firm"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "守。只要能迈出这一步。今晚就约——修远，我们信你，也需要你信我们。",
+        "emotion": "decisive"
+      }
+    ],
+    "nextNodeId": "node_branch_final",
+    "summary": "雨萱收到匿名线人指向校史黑幕与隐私，三人在宿舍顶着内外压力讨论伦理与制度，虽有裂痕但同意当晚约线人见面、遮名核实关键信息。"
+  }
+}

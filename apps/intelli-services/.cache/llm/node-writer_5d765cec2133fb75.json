@@ -1,0 +1,50 @@
+{
+  "cacheKey": "node-writer_5d765cec2133fb75",
+  "timestamp": "2025-12-02T14:01:16.713Z",
+  "metadata": {
+    "agentName": "node-writer",
+    "schemaName": "ZodEffects",
+    "mode": "fallback-retry"
+  },
+  "data": {
+    "id": "node_dorm_intro",
+    "type": "scene",
+    "title": "宿舍里的调查计划",
+    "sceneName": "学生宿舍",
+    "narration": "宿舍里昏白的灯光忽明忽暗，插线板的电源指示灯时不时跳一下，像在呼吸。窗外走廊有风掠过，远处传来短促的测试音。桌面摊满了笔记、借书卡与录音笔，旧纸页透出潮味。在一堆资料旁，一本不合群的《校史年鉴·1999》露出书脊，夹缝里探出一角泛黄的索引卡。",
+    "dialogues": [
+      {
+        "characterName": "雨萱",
+        "text": "我把线索先整理一下：停电时的‘临时广播’，图书馆B区的可疑人影，还有老校史上被撕掉的索引页。",
+        "emotion": "focused"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "我有两个假设——有人借电力异常改动档案；那段广播其实是在引导。还有，修远像是知道更多，但没说完。",
+        "emotion": "analytical"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "别把修远神化，他要真知道，也不至于只提醒我们快走。先验证能摸到的。",
+        "emotion": "calm"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "等等，这本《校史年鉴·1999》不该出现在我们理工书架上……里面夹着一张旧索引卡。",
+        "emotion": "surprised"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "卡上写的是‘旧藏/B-17——地下档案室’，这不是巧合，可能是传闻的源头。",
+        "emotion": "alert"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "分工吧：你去广播站打探值班和插播流程，我去查B-17对应的平面图、准备手电和备用电池；明天白天各自行动，晚上在宿舍楼下会合。",
+        "emotion": "determined"
+      }
+    ],
+    "nextNodeId": "node_path_meet",
+    "summary": "两人在宿舍汇总线索与假设，意外发现夹有旧索引卡的错架《校史年鉴》，决定分头准备并约定夜晚会合。"
+  }
+}

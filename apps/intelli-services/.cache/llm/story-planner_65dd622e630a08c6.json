@@ -1,0 +1,48 @@
+{
+  "cacheKey": "story-planner_65dd622e630a08c6",
+  "timestamp": "2025-12-02T13:58:28.768Z",
+  "metadata": {
+    "agentName": "story-planner",
+    "schemaName": "ZodEffects",
+    "mode": "fallback-retry"
+  },
+  "data": {
+    "evaluations": [
+      {
+        "pathId": "path-1",
+        "scores": {
+          "dramatic": 5,
+          "characterFit": 4,
+          "branchPotential": 4,
+          "thematicDepth": 5
+        },
+        "totalScore": 18,
+        "reasoning": "\"\""
+      },
+      {
+        "pathId": "path-2",
+        "scores": {
+          "dramatic": 4,
+          "characterFit": 5,
+          "branchPotential": 4,
+          "thematicDepth": 4
+        },
+        "totalScore": 17,
+        "reasoning": "\"\""
+      },
+      {
+        "pathId": "path-3",
+        "scores": {
+          "dramatic": 4,
+          "characterFit": 5,
+          "branchPotential": 5,
+          "thematicDepth": 5
+        },
+        "totalScore": 19,
+        "reasoning": "\"\""
+      }
+    ],
+    "selectedPathId": "path-1",
+    "selectionReasoning": "选择了最佳方向"
+  }
+}

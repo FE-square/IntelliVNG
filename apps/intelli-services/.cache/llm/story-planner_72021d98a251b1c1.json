@@ -1,0 +1,212 @@
+{
+  "cacheKey": "story-planner_72021d98a251b1c1",
+  "timestamp": "2025-12-02T14:00:15.718Z",
+  "metadata": {
+    "agentName": "story-planner",
+    "schemaName": "ZodObject",
+    "mode": "fallback-retry"
+  },
+  "data": {
+    "outline": {
+      "premise": "在青云大学，业余侦探晓晨与校报记者雨萱注意到百年图书馆内接连发生的“偷书”“误入门禁”“深夜电力异常”等事件，怀疑与地下室密档有关。神秘管理员修远作为守秘者刻意误导与阻挠调查，三人围绕是否揭露校史黑幕展开对峙。",
+      "centralConflict": "修远为了守护不愿示人的校史与受害者名誉，持续误导调查；晓晨与雨萱致力于查清真相与制度问题，立场与信任不断碰撞。最终，三人必须在公开真相的社会代价与继续隐瞒的道德压力之间做出选择。",
+      "thematicArc": "从校园日常走入隐秘史的深处，故事围绕“真相与代价”“守护与揭露”“友情与信任”展开。角色在对抗制度与自我道德的拉扯中成长，理解真相不仅是事实，更是承担与选择的重量。"
+    },
+    "nodes": [
+      {
+        "id": "node_start",
+        "type": "scene",
+        "isStart": true,
+        "title": "书香之下的异常",
+        "brief": "建立青云大学与百年图书馆的氛围；引出近期“偷书”“误入门禁”“深夜电力异常”的传闻。晓晨与雨萱在阅览室各自动机显露，修远的冷静与神秘被点到为止。",
+        "functionTag": "setup",
+        "sceneName": "图书馆阅览室",
+        "nextNodeId": "node_dorm_intro",
+        "position": {
+          "x": 400,
+          "y": 50
+        }
+      },
+      {
+        "id": "node_dorm_intro",
+        "type": "scene",
+        "title": "宿舍里的调查计划",
+        "brief": "雨萱以校报记者身份汇总线索，晓晨提出调查假设与路径；两人发现一本错架书籍夹着旧索引纸条，决定分头准备。",
+        "functionTag": "rising",
+        "sceneName": "学生宿舍",
+        "nextNodeId": "node_path_meet",
+        "position": {
+          "x": 400,
+          "y": 200
+        }
+      },
+      {
+        "id": "node_path_meet",
+        "type": "scene",
+        "title": "林荫道的隐喻与盲区",
+        "brief": "两人与修远偶遇，他委婉劝阻并以隐喻暗示“别碰地下室”。晓晨注意到图书馆周边的监控盲区与电力维护记录的异常。",
+        "functionTag": "rising",
+        "sceneName": "校园林荫道",
+        "nextNodeId": "node_branch_first",
+        "position": {
+          "x": 400,
+          "y": 350
+        }
+      },
+      {
+        "id": "node_branch_first",
+        "type": "branch",
+        "title": "第一道选择：从技术切入还是从人证入手",
+        "brief": "在掌握基础线索后，两人必须决定调查优先级：追查深夜电力异常的技术线索，或跟进“误入门禁”相关的人员与证词线索。",
+        "functionTag": "conflict",
+        "sceneName": "图书馆阅览室",
+        "choicesMeta": [
+          {
+            "id": "choice_power",
+            "leadsTo": "node_power_probe",
+            "emotionalWeight": "沉重",
+            "consequenceHint": "需要夜探并触碰安全红线，可能激怒修远与引发风险。",
+            "pathType": "中立路线"
+          },
+          {
+            "id": "choice_access",
+            "leadsTo": "node_access_probe",
+            "emotionalWeight": "轻松",
+            "consequenceHint": "从人情与证词切入，较易推进但可能被话术与流程带偏。",
+            "pathType": "中立路线"
+          }
+        ],
+        "position": {
+          "x": 400,
+          "y": 500
+        }
+      },
+      {
+        "id": "node_power_probe",
+        "type": "scene",
+        "title": "电力异常与隐门的指向",
+        "brief": "晓晨夜查配电柜，发现备用线路与人为跳闸痕迹，指向地下室的隐蔽通道；证实近期有人在移动旧档案，技术遮蔽背后别有用心。",
+        "functionTag": "conflict",
+        "sceneName": "图书馆地下室",
+        "nextNodeId": "node_confront",
+        "position": {
+          "x": 150,
+          "y": 650
+        }
+      },
+      {
+        "id": "node_access_probe",
+        "type": "scene",
+        "title": "门禁误入者与旧索引",
+        "brief": "雨萱走访“误入门禁”学生，拼接时间线与权限变更；找到写有“旧索引C-12”的纸条，指向密档分类与阅览室的异常调档流程。",
+        "functionTag": "conflict",
+        "sceneName": "校园林荫道",
+        "nextNodeId": "node_confront",
+        "position": {
+          "x": 650,
+          "y": 650
+        }
+      },
+      {
+        "id": "node_confront",
+        "type": "scene",
+        "title": "阅览室的第一次正面交锋",
+        "brief": "晓晨与雨萱在阅览室与修远对峙。修远称维护与隐私保护是正当理由，试图误导；二人却在馆藏目录与实际缺失之间捕捉到矛盾，确认地下室密档的存在与被动过手脚。",
+        "functionTag": "twist",
+        "sceneName": "图书馆阅览室",
+        "nextNodeId": "node_pressure",
+        "position": {
+          "x": 400,
+          "y": 800
+        }
+      },
+      {
+        "id": "node_pressure",
+        "type": "scene",
+        "title": "匿名线人与道德压力",
+        "brief": "雨萱通过记者渠道收到匿名线人，暗示密档涉及校史黑幕与受害者隐私。三人（含修远的立场）在宿舍内外的压力下衡量真相、名誉与制度代价，友情与信任出现裂痕但仍决定推进关键一步。",
+        "functionTag": "rising",
+        "sceneName": "学生宿舍",
+        "nextNodeId": "node_branch_final",
+        "position": {
+          "x": 400,
+          "y": 950
+        }
+      },
+      {
+        "id": "node_branch_final",
+        "type": "branch",
+        "title": "最终抉择：真相、秘密与外力",
+        "brief": "在掌握部分证据与脉络后，三人面临终极选择：公开真相以促制度改革；阶段性隐瞒以保护受害者并换取承诺；或借外部力量放大事件，冒着被操控与失真风险。",
+        "functionTag": "climax",
+        "sceneName": "图书馆地下室",
+        "choicesMeta": [
+          {
+            "id": "choice_public",
+            "leadsTo": "node_ending_public",
+            "emotionalWeight": "痛苦抉择",
+            "consequenceHint": "可能牵动受害者与守秘者名誉，引发制度震荡与个人代价。",
+            "pathType": "中立路线"
+          },
+          {
+            "id": "choice_secret",
+            "leadsTo": "node_ending_secret",
+            "emotionalWeight": "沉重",
+            "consequenceHint": "阶段性隐瞒以换取改革与保护，需承担长期道德压力。",
+            "pathType": "通向好结局"
+          },
+          {
+            "id": "choice_mislead",
+            "leadsTo": "node_ending_mislead",
+            "emotionalWeight": "痛苦抉择",
+            "consequenceHint": "借助外部媒体或权力介入，风险不可控，可能被利用为政治工具。",
+            "pathType": "通向坏结局"
+          }
+        ],
+        "position": {
+          "x": 400,
+          "y": 1100
+        }
+      },
+      {
+        "id": "node_ending_public",
+        "type": "ending",
+        "isEnding": true,
+        "title": "真相公开：改革与代价",
+        "brief": "密档与校史黑幕被揭露，校方启动整改与独立审查。修远作为守秘者承受处分与舆论攻击；雨萱面对职业与人际压力；晓晨与父亲的期待与选择产生摩擦。三人关系复杂但仍坚守原则与事实。",
+        "functionTag": "resolution",
+        "sceneName": "校园林荫道",
+        "position": {
+          "x": 150,
+          "y": 1250
+        }
+      },
+      {
+        "id": "node_ending_secret",
+        "type": "ending",
+        "isEnding": true,
+        "title": "秘密延续：保护与承诺",
+        "brief": "三人选择阶段性隐瞒，与修远达成以改革承诺与保护受害者为条件的协定；他们暗中留下追责线索与时间表监督。受害者得到有限保护，三人之间的信任暂时修复，但长期道德压力如影随形。",
+        "functionTag": "resolution",
+        "sceneName": "学生宿舍",
+        "position": {
+          "x": 400,
+          "y": 1250
+        }
+      },
+      {
+        "id": "node_ending_mislead",
+        "type": "ending",
+        "isEnding": true,
+        "title": "误导反噬：舆论风暴与理想坍塌",
+        "brief": "外部力量介入后，调查被操控为政治工具，新闻被剪辑失真引发舆论风暴。修远与雨萱互相指责，晓晨的理想受重创，线索被封存或没收，三人关系与信念遭到破坏，留下难以弥合的裂痕。",
+        "functionTag": "resolution",
+        "sceneName": "图书馆阅览室",
+        "position": {
+          "x": 650,
+          "y": 1250
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "cacheKey": "node-writer_4124ae494b95cf1a",
+  "timestamp": "2025-12-02T14:02:24.341Z",
+  "metadata": {
+    "agentName": "node-writer",
+    "schemaName": "ZodEffects",
+    "mode": "fallback-retry"
+  },
+  "data": {
+    "id": "node_branch_first",
+    "type": "branch",
+    "title": "第一道选择：从技术切入还是从人证入手",
+    "sceneName": "图书馆阅览室",
+    "narration": "傍晚的阅览室泛着纸墨的清凉气息，窗外的光线被云层压低。告示板上的“停电维护”字样被人用深色笔改过一笔，角落的监控在书架阴影里留出一块看不见的空白。空气仿佛被按下了静音键，只剩翻页声与远处细微的电流嗡鸣。选择，逼近了。",
+    "dialogues": [
+      {
+        "characterName": "雨萱",
+        "text": "你看这维护记录被动过手脚，肯定有故事。先找那个误刷门禁的人，我有校媒的通讯录，打两通电话也许就能套出来。",
+        "emotion": "excited"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "监控盲区配合今晚停电，技术线更直接。去地下配电间附近蹲一下，能看到真实的操作流程。",
+        "emotion": "determined"
+      },
+      {
+        "characterName": "修远",
+        "text": "停电的时候，楼下不适合好奇心过盛的人。有些门，推开了就很难再关上。",
+        "emotion": "calm"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "我不怕探，但也不想把你惹毛。人证线安全、信息密度高，先跑一圈总不会错吧？",
+        "emotion": "conflicted"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "时间卡在今晚。要么夜里盯电力异常，要么现在就去找那个人聊清楚。我们得选一个。",
+        "emotion": "serious"
+      }
+    ],
+    "choices": [
+      {
+        "id": "choice_power",
+        "text": "追查电力异常：夜探地下配电间边界",
+        "targetNodeId": "node_power_probe",
+        "meta": {
+          "emotionalWeight": "沉重",
+          "consequenceHint": "需要夜探并触碰安全红线，可能激怒修远与引发风险。"
+        }
+      },
+      {
+        "id": "choice_access",
+        "text": "从人证入手：锁定“误入门禁”相关人员与证词",
+        "targetNodeId": "node_access_probe",
+        "meta": {
+          "emotionalWeight": "轻松",
+          "consequenceHint": "从人情与证词切入，较易推进但可能被话术与流程带偏。"
+        }
+      }
+    ],
+    "summary": "在阅览室里，晓晨与雨萱权衡技术线与人证线，修远含蓄提醒夜探风险，玩家需要决定先夜查电力异常还是先追查误入门禁的证词。"
+  }
+}

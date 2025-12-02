@@ -1,0 +1,50 @@
+{
+  "cacheKey": "node-writer_bcf9b9049d69cd72",
+  "timestamp": "2025-12-02T14:03:33.737Z",
+  "metadata": {
+    "agentName": "node-writer",
+    "schemaName": "ZodEffects",
+    "mode": "fallback-retry"
+  },
+  "data": {
+    "id": "node_confront",
+    "type": "scene",
+    "title": "阅览室的第一次正面交锋",
+    "sceneName": "图书馆阅览室",
+    "narration": "深夜的阅览室只亮着几盏台灯，冷白的光把桌面切成清晰的岛屿。窗外风拂过树梢，纸页轻微作响。修远坐在靠窗的位置翻页，晓晨与雨萱推门而入，空气里混合着纸墨味与未说出口的紧张。",
+    "dialogues": [
+      {
+        "characterName": "修远",
+        "text": "这么晚来阅览室做什么？地下室刚做过维护，线路调整是为了安全和隐私保护。馆藏目录显示的都是公开条目，你们别多想。",
+        "emotion": "calm"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "隐私保护也会把备用线改接到密门？还有《校史口述集》目录写着“在册”，书架却空，借阅记录是零。说说，这算哪种维护？",
+        "emotion": "skeptical"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "我们在配电柜看到新换的胶带和指向地下室的标记。旧档案最近被挪动过，你的“维护”动了不该动的密档。",
+        "emotion": "determined"
+      },
+      {
+        "characterName": "修远",
+        "text": "密档不对外，本来就不在公开书架。目录里的条目是占位符，避免引起注意。你们这样质问，会给我带来麻烦。",
+        "emotion": "defensive"
+      },
+      {
+        "characterName": "雨萱",
+        "text": "占位符也会写保管人缩写吗？卡片上有你的字母。有人让你改目录、动线，你在隐瞒。",
+        "emotion": "pressing"
+      },
+      {
+        "characterName": "晓晨",
+        "text": "我们不是来闹，是来对质。地下室密档被动过这件事，今晚就要说明白。",
+        "emotion": "firm"
+      }
+    ],
+    "nextNodeId": "node_pressure",
+    "summary": "在阅览室，修远以维护与隐私搪塞，晓晨与雨萱用目录与实际缺失的矛盾逼问，确认地下室密档被动过并准备进一步施压。"
+  }
+}

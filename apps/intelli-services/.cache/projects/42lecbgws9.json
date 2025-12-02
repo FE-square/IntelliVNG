@@ -1,0 +1,758 @@
+{
+  "savedAt": "2025-12-02T11:59:52.374Z",
+  "project": {
+    "id": "42lecbgws9",
+    "title": "青云秘语：图书馆之谜",
+    "description": "在历史悠久的青云大学，一系列怪事打破了校园的宁静。好奇心强的大学生晓晨，在神秘图书管理员修远和八卦记者雨萱的帮助下，决心揭开百年图书馆深藏的秘密。",
+    "createdAt": "2025-12-02T11:59:52.369Z",
+    "updatedAt": "2025-12-02T11:59:52.369Z",
+    "meta": {
+      "author": "IntelliVNG",
+      "version": "1.0.0",
+      "genre": "mystery",
+      "artStyle": "anime"
+    },
+    "characters": [
+      {
+        "id": "char_001",
+        "name": "林晓晨",
+        "displayName": "晓晨",
+        "gender": "female",
+        "identity": "大学生 / 业余侦探",
+        "description": "性格开朗但细心，有着敏锐的观察力。父亲是退休刑警，从小耳濡目染学会了推理技巧。",
+        "personality": {
+          "traits": [
+            "好奇心强",
+            "正义感",
+            "有点冒失"
+          ],
+          "speakingStyle": "语气活泼，偶尔会说一些推理术语"
+        },
+        "coreTraits": {
+          "motivation": "想要证明自己的推理能力",
+          "fear": "害怕辜负父亲的期望"
+        },
+        "sprites": [],
+        "defaultSpriteId": ""
+      },
+      {
+        "id": "char_002",
+        "name": "陆修远",
+        "displayName": "修远",
+        "gender": "male",
+        "identity": "图书馆管理员 / 神秘的知情者",
+        "description": "沉默寡言，总是戴着眼镜读书。似乎知道很多不为人知的秘密，但从不主动透露。",
+        "personality": {
+          "traits": [
+            "冷静",
+            "博学",
+            "神秘"
+          ],
+          "speakingStyle": "说话简洁，常用隐喻和典故"
+        },
+        "coreTraits": {
+          "motivation": "守护某个重要的秘密",
+          "fear": "真相被揭露后的后果"
+        },
+        "sprites": [],
+        "defaultSpriteId": ""
+      },
+      {
+        "id": "char_003",
+        "name": "方雨萱",
+        "displayName": "雨萱",
+        "gender": "female",
+        "identity": "校报记者 / 晓晨的室友",
+        "description": "热情开朗的新闻系学生，嗅觉灵敏，总能挖到第一手消息。",
+        "personality": {
+          "traits": [
+            "热情",
+            "八卦",
+            "讲义气"
+          ],
+          "speakingStyle": "语速快，喜欢用夸张的表情"
+        },
+        "coreTraits": {
+          "motivation": "追求真相和新闻自由",
+          "fear": "失去朋友的信任"
+        },
+        "sprites": [],
+        "defaultSpriteId": ""
+      }
+    ],
+    "backgrounds": [
+      {
+        "id": "scene_001",
+        "name": "图书馆阅览室",
+        "description": "",
+        "imageUrl": "",
+        "worldSetting": "现代（2024年） · 中国某沿海城市的著名综合大学",
+        "sceneDetails": "indoor · 安静、神秘、略带压抑 · 百年历史的老式建筑，高耸的书架，昏黄的灯光，空气中弥漫着书香和灰尘的味道。"
+      },
+      {
+        "id": "scene_002",
+        "name": "校园林荫道",
+        "description": "",
+        "imageUrl": "",
+        "worldSetting": "现代（2024年） · 中国某沿海城市的著名综合大学",
+        "sceneDetails": "outdoor · 清新、活泼 · 两旁种满了梧桐树的小路，阳光透过树叶洒下斑驳的光影。"
+      },
+      {
+        "id": "scene_003",
+        "name": "学生宿舍",
+        "description": "",
+        "imageUrl": "",
+        "worldSetting": "现代（2024年） · 中国某沿海城市的著名综合大学",
+        "sceneDetails": "indoor · 温馨、日常 · 四人间的女生宿舍，贴满了海报和照片，桌上散落着书本和零食。"
+      },
+      {
+        "id": "scene_004",
+        "name": "图书馆地下室",
+        "description": "",
+        "imageUrl": "",
+        "worldSetting": "现代（2024年） · 中国某沿海城市的著名综合大学",
+        "sceneDetails": "indoor · 阴暗、紧张、危险 · 被遗忘的档案室，布满灰尘的旧文件，隐藏着学校不愿公开的历史。"
+      }
+    ],
+    "script": [
+      {
+        "id": "start",
+        "type": "scene",
+        "isStart": true,
+        "isEnding": false,
+        "position": {
+          "x": 400,
+          "y": 50
+        },
+        "title": "怪事开端",
+        "sceneName": "学生宿舍",
+        "backgroundId": "scene_003",
+        "narration": "青云大学的夜幕降临，宿舍里，晓晨和雨萱正热烈讨论着最近校园里流传的怪谈。",
+        "dialogues": [
+          {
+            "id": "m8odp8a4rv",
+            "characterId": "char_003",
+            "text": "晓晨，你听说了吗？最近图书馆三楼又有人说听到了奇怪的低语声，还有书本自己掉下来！"
+          },
+          {
+            "id": "6crsjfuaca",
+            "characterId": "char_001",
+            "text": "嗯，我也听说了。前几天我还看到有人在林荫道上神神秘秘地拍照，说是拍到了图书馆里的‘鬼影’。"
+          },
+          {
+            "id": "w2qol3elr3",
+            "characterId": "char_003",
+            "text": "鬼影？这可是大新闻啊！我得赶紧去挖点料，说不定能搞个独家报道！"
+          },
+          {
+            "id": "x470owxpbl",
+            "characterId": "char_001",
+            "text": "别急，雨萱。这些传闻都太离奇了，我觉得背后肯定有别的什么。我的直觉告诉我，这不简单。"
+          },
+          {
+            "id": "0w26gyf1qz",
+            "characterId": "char_003",
+            "text": "你的‘侦探直觉’又来了？好吧，那我们怎么查？从哪里入手？"
+          },
+          {
+            "id": "5y2uvqnrun",
+            "characterId": "char_001",
+            "text": "图书馆，一切的源头。我觉得，得先从那里开始。"
+          },
+          {
+            "id": "ah55ylw8g0",
+            "characterId": "char_003",
+            "text": "去图书馆？晚上去会不会更刺激？"
+          },
+          {
+            "id": "3hxrzcl0rl",
+            "characterId": "char_001",
+            "text": "不，白天更方便我们观察。今晚先好好睡一觉，明天去图书馆看看。"
+          }
+        ],
+        "nextNodeId": "node-2"
+      },
+      {
+        "id": "node-2",
+        "type": "scene",
+        "isStart": false,
+        "isEnding": false,
+        "position": {
+          "x": 400,
+          "y": 250
+        },
+        "title": "初现端倪",
+        "sceneName": "校园林荫道",
+        "backgroundId": "scene_002",
+        "narration": "第二天，晓晨独自走在校园林荫道上，思考着昨晚的谈话。她决定先独自前往图书馆一探究竟。",
+        "dialogues": [
+          {
+            "id": "x21d99h6sq",
+            "characterId": "char_001",
+            "text": "（图书馆的传闻越来越多，难道真的有超自然力量？还是有人在故弄玄虚？）"
+          },
+          {
+            "id": "jzvjrfic93",
+            "characterId": "narrator",
+            "text": "突然，一阵微风吹过，不远处的树下，一片泛黄的书页从空中飘落，正好落在晓晨脚边。"
+          },
+          {
+            "id": "umg1f8wgos",
+            "characterId": "char_001",
+            "text": "这是什么？（她捡起书页，上面用古老的文字写着一些看不懂的符号，边缘还有烧焦的痕迹。）"
+          },
+          {
+            "id": "biswc0gl4r",
+            "characterId": "char_001",
+            "text": "这种字体……好像在图书馆的古籍里见过。这绝不是巧合。"
+          },
+          {
+            "id": "yyjc4l95m9",
+            "characterId": "narrator",
+            "text": "晓晨的心跳加速，她感到自己正一步步接近某个不为人知的秘密。"
+          },
+          {
+            "id": "6x2kldirza",
+            "characterId": "char_001",
+            "text": "看来，图书馆之行势在必行了。"
+          }
+        ],
+        "nextNodeId": "node-3"
+      },
+      {
+        "id": "node-3",
+        "type": "branch",
+        "isStart": false,
+        "isEnding": false,
+        "position": {
+          "x": 400,
+          "y": 450
+        },
+        "title": "调查方向",
+        "sceneName": "图书馆阅览室",
+        "backgroundId": "scene_001",
+        "narration": "晓晨来到图书馆，阅览室里一如既往地安静，只有书页翻动的沙沙声。修远正坐在他的位置上，戴着眼镜，专注地阅读。",
+        "dialogues": [
+          {
+            "id": "dy3kgrms2z",
+            "characterId": "char_001",
+            "text": "（修远学长好像对图书馆的一切都了如指掌。也许他知道些什么，又或者，我应该先自己找找线索？）"
+          },
+          {
+            "id": "iwiwb3xb7r",
+            "characterId": "narrator",
+            "text": "晓晨看着手中的书页残片，以及眼前这位神秘的图书管理员，陷入了沉思。"
+          },
+          {
+            "id": "992r71zhy6",
+            "characterId": "char_001",
+            "text": "我该怎么做呢？"
+          }
+        ],
+        "choices": [
+          {
+            "id": "a0dtomf9zp",
+            "text": "直接询问修远学长",
+            "targetNodeId": "node-4",
+            "condition": "大胆探寻"
+          },
+          {
+            "id": "n136figgy4",
+            "text": "先自己查阅资料",
+            "targetNodeId": "node-5",
+            "condition": "谨慎求证"
+          }
+        ]
+      },
+      {
+        "id": "node-4",
+        "type": "scene",
+        "isStart": false,
+        "isEnding": false,
+        "position": {
+          "x": 200,
+          "y": 650
+        },
+        "title": "修远的暗示",
+        "sceneName": "图书馆阅览室",
+        "backgroundId": "scene_001",
+        "narration": "晓晨鼓起勇气，拿着书页残片走向修远。",
+        "dialogues": [
+          {
+            "id": "03whhdayp4",
+            "characterId": "char_001",
+            "text": "修远学长，请问你见过这种文字吗？它好像和最近图书馆的怪事有关。"
+          },
+          {
+            "id": "vlxmlq73aq",
+            "characterId": "char_002",
+            "text": "（他推了推眼镜，眼神深邃地看了晓晨一眼，接过书页残片。）嗯……这是古籍中的符文。很多年前，也曾有人对它充满好奇。"
+          },
+          {
+            "id": "qz8hcvegmk",
+            "characterId": "char_001",
+            "text": "很多年前？你的意思是，这些怪事以前也发生过？"
+          },
+          {
+            "id": "8w8p6jcyls",
+            "characterId": "char_002",
+            "text": "历史总是在重复，尤其是那些被遗忘的角落。有些事，最好让它沉睡。"
+          },
+          {
+            "id": "fq2zuhiq4y",
+            "characterId": "char_001",
+            "text": "可是，如果它正在醒来呢？"
+          },
+          {
+            "id": "5x5zvy1kw2",
+            "characterId": "char_002",
+            "text": "（修远没有直接回答，只是指了指阅览室角落里的一排旧书。）如果你想知道更多，也许可以从那些‘被遗忘’的故事里寻找答案。但请记住，好奇心有时会付出代价。"
+          },
+          {
+            "id": "65az69i3it",
+            "characterId": "char_001",
+            "text": "（被遗忘的故事……他是在暗示什么？）谢谢学长。"
+          }
+        ],
+        "nextNodeId": "node-6"
+      },
+      {
+        "id": "node-5",
+        "type": "scene",
+        "isStart": false,
+        "isEnding": false,
+        "position": {
+          "x": 600,
+          "y": 650
+        },
+        "title": "旧校史记录",
+        "sceneName": "图书馆阅览室",
+        "backgroundId": "scene_001",
+        "narration": "晓晨决定先不打扰修远，自己去寻找线索。她根据书页残片的线索，在图书馆的旧书区里仔细翻找。",
+        "dialogues": [
+          {
+            "id": "d8iz87fv48",
+            "characterId": "narrator",
+            "text": "经过一番努力，晓晨终于在尘封的角落里，找到了一本泛黄的《青云大学百年校史补遗》。"
+          },
+          {
+            "id": "s1dg644obi",
+            "characterId": "char_001",
+            "text": "（这本校史补遗，居然没有被编入图书馆的正式目录？怪不得修远学长说‘被遗忘’。）"
+          },
+          {
+            "id": "y2p3kxzjhc",
+            "characterId": "narrator",
+            "text": "她翻开书页，里面赫然记载着关于“图书馆守护者”的传说，以及一个地下室的秘密。据说，地下室封存着一股能够影响人心智的“低语之力”。"
+          },
+          {
+            "id": "ly1dcps7pm",
+            "characterId": "char_001",
+            "text": "低语之力……这和那些怪事对得上！难道那些传闻是真的？"
+          },
+          {
+            "id": "nqov2wmc8i",
+            "characterId": "narrator",
+            "text": "书中还提到，只有特定的“守护者”家族成员才能进入地下室，并定期进行“净化仪式”。"
+          },
+          {
+            "id": "8ym8l6l82f",
+            "characterId": "char_001",
+            "text": "守护者家族？难道修远学长就是……"
+          }
+        ],
+        "nextNodeId": "node-6"
+      },
+      {
+        "id": "node-6",
+        "type": "branch",
+        "isStart": false,
+        "isEnding": false,
+        "position": {
+          "x": 400,
+          "y": 850
+        },
+        "title": "下一步行动",
+        "sceneName": "学生宿舍",
+        "backgroundId": "scene_003",
+        "narration": "回到宿舍，晓晨立刻将自己的发现告诉了雨萱。雨萱听得目瞪口呆。",
+        "dialogues": [
+          {
+            "id": "zjc84q5smd",
+            "characterId": "char_003",
+            "text": "我的天！守护者家族、低语之力、净化仪式……晓晨，这简直比我编的故事还精彩！"
+          },
+          {
+            "id": "8awzxfjoal",
+            "characterId": "char_001",
+            "text": "所以，那些怪事很可能就是因为仪式没有正常进行，或者封印出了问题。我们必须去地下室看看。"
+          },
+          {
+            "id": "31e2nwkvje",
+            "characterId": "char_003",
+            "text": "地下室？那可是学校的禁区啊！而且听起来超危险的！"
+          },
+          {
+            "id": "trva6g3h5u",
+            "characterId": "char_001",
+            "text": "但如果放任不管，谁知道会发生什么。我们现在有两个选择。"
+          },
+          {
+            "id": "ha8dpd7avr",
+            "characterId": "char_003",
+            "text": "什么选择？"
+          },
+          {
+            "id": "93b341qrx7",
+            "characterId": "char_001",
+            "text": "是立刻闯进去直面危险，还是再去问问修远学长，看他能不能提供更多帮助？"
+          }
+        ],
+        "choices": [
+          {
+            "id": "thvnrhbub6",
+            "text": "立刻前往图书馆地下室",
+            "targetNodeId": "node-7",
+            "condition": "直面危险"
+          },
+          {
+            "id": "nuudn2hats",
+            "text": "再找修远学长确认线索",
+            "targetNodeId": "node-8",
+            "condition": "寻求支援"
+          }
+        ]
+      },
+      {
+        "id": "node-7",
+        "type": "scene",
+        "isStart": false,
+        "isEnding": false,
+        "position": {
+          "x": 200,
+          "y": 1050
+        },
+        "title": "鲁莽的闯入",
+        "sceneName": "图书馆地下室",
+        "backgroundId": "scene_004",
+        "narration": "晓晨和雨萱决定铤而走险，趁夜色潜入图书馆，找到了地下室的入口。",
+        "dialogues": [
+          {
+            "id": "o47bn4pz98",
+            "characterId": "char_003",
+            "text": "这里好阴森啊……感觉空气都凝固了。"
+          },
+          {
+            "id": "6i42ufatkf",
+            "characterId": "char_001",
+            "text": "小心点，雨萱。我们离真相很近了。"
+          },
+          {
+            "id": "733vn35jpb",
+            "characterId": "narrator",
+            "text": "两人在昏暗的地下室里摸索，发现了一个布满古老符文的石台，上面摆放着一些奇怪的器皿和泛黄的旧照片。照片上的人影，竟与修远有几分相似。"
+          },
+          {
+            "id": "35jl6fiuq3",
+            "characterId": "char_003",
+            "text": "晓晨，你看！这石台上的东西……还有这些照片！"
+          },
+          {
+            "id": "fd9962rrzx",
+            "characterId": "narrator",
+            "text": "就在她们靠近时，石台上的符文突然发出微弱的红光，一阵刺骨的寒意袭来，伴随着无数低语声在耳边回荡。"
+          },
+          {
+            "id": "qy3yl9sz4y",
+            "characterId": "char_001",
+            "text": "糟糕！我们触发了什么！快退！"
+          },
+          {
+            "id": "i5el5zvceb",
+            "characterId": "char_003",
+            "text": "头好疼……好多声音……它们在说什么？"
+          },
+          {
+            "id": "o19k3ke3e4",
+            "characterId": "narrator",
+            "text": "两人被无形的力量困住，动弹不得，低语声越来越清晰，似乎要将她们的心智吞噬。"
+          }
+        ],
+        "nextNodeId": "node-10"
+      },
+      {
+        "id": "node-8",
+        "type": "scene",
+        "isStart": false,
+        "isEnding": false,
+        "position": {
+          "x": 600,
+          "y": 1050
+        },
+        "title": "修远坦白",
+        "sceneName": "图书馆阅览室",
+        "backgroundId": "scene_001",
+        "narration": "晓晨和雨萱再次找到修远，将所有线索和猜测全盘托出。",
+        "dialogues": [
+          {
+            "id": "cghh95gu1c",
+            "characterId": "char_001",
+            "text": "修远学长，你就是图书馆守护者家族的一员，对吗？地下室里是不是有什么东西？"
+          },
+          {
+            "id": "54vdllmks7",
+            "characterId": "char_002",
+            "text": "（修远沉默了片刻，轻轻摘下眼镜，眼神中带着一丝疲惫。）看来，你们已经知道得不少了。是的，我就是这一代的守护者。地下室里封印着一股古老的“低语之力”，它能勾起人心底的负面情绪，并逐渐实体化。"
+          },
+          {
+            "id": "d73jw3k2zh",
+            "characterId": "char_003",
+            "text": "那……那些怪事就是它搞的鬼？"
+          },
+          {
+            "id": "yb9cxatknh",
+            "characterId": "char_002",
+            "text": "近来封印松动，我一直在尝试加固，但力量不足。这是我爷爷留下的钥匙，它能暂时压制那股力量，并指引你们找到核心封印。"
+          },
+          {
+            "id": "v71p2we10p",
+            "characterId": "char_001",
+            "text": "谢谢你，学长！"
+          },
+          {
+            "id": "uc067o8x6q",
+            "characterId": "char_002",
+            "text": "记住，进入后，你们必须尽快做出选择。它的力量正在扩散，如果完全失控，整个学校都会陷入混乱。"
+          },
+          {
+            "id": "wdr0zu5uuq",
+            "characterId": "narrator",
+            "text": "修远郑重地将一把刻有古老符文的黄铜钥匙交给了晓晨。"
+          }
+        ],
+        "nextNodeId": "node-9"
+      },
+      {
+        "id": "node-9",
+        "type": "scene",
+        "isStart": false,
+        "isEnding": false,
+        "position": {
+          "x": 600,
+          "y": 1250
+        },
+        "title": "核心封印",
+        "sceneName": "图书馆地下室",
+        "backgroundId": "scene_004",
+        "narration": "带着修远的钥匙和提示，晓晨和雨萱再次进入图书馆地下室。这次，钥匙散发出的微光让那些低语声变得微弱。",
+        "dialogues": [
+          {
+            "id": "fid5uqdcdn",
+            "characterId": "char_003",
+            "text": "这钥匙真有用！那些声音没那么清晰了。"
+          },
+          {
+            "id": "japyp0ae11",
+            "characterId": "char_001",
+            "text": "我们快走，修远学长说，这只能暂时压制。"
+          },
+          {
+            "id": "lcmh0a6w3y",
+            "characterId": "narrator",
+            "text": "她们穿过扭曲的走廊，最终来到一个更深处的密室。密室中央，一个由符文和铁链缠绕的巨大石球静静悬浮着，散发着微弱的黑气。"
+          },
+          {
+            "id": "qxgn0llvfm",
+            "characterId": "char_001",
+            "text": "这就是核心封印吗？看起来好强大……"
+          },
+          {
+            "id": "m1w4zvk6yx",
+            "characterId": "char_003",
+            "text": "（她看着石球，似乎被某种力量吸引。）它里面，好像有什么东西……在召唤我。"
+          },
+          {
+            "id": "aelcfpaei7",
+            "characterId": "char_001",
+            "text": "雨萱，清醒点！那是“低语之力”在影响你！我们要怎么处理它？"
+          }
+        ],
+        "nextNodeId": "node-10"
+      },
+      {
+        "id": "node-10",
+        "type": "branch",
+        "isStart": false,
+        "isEnding": false,
+        "position": {
+          "x": 400,
+          "y": 1450
+        },
+        "title": "真相的抉择",
+        "sceneName": "图书馆地下室",
+        "backgroundId": "scene_004",
+        "narration": "面对图书馆深处的“低语之力”核心封印，晓晨明白，她的选择将决定青云大学的命运，也决定了她和朋友们的未来。",
+        "dialogues": [
+          {
+            "id": "ntntkcy9w5",
+            "characterId": "char_001",
+            "text": "（是彻底揭露这个秘密，让所有人知道真相？还是为了学校的稳定，选择和修远学长一起守护它？又或者……）"
+          },
+          {
+            "id": "9hmwwoksej",
+            "characterId": "char_003",
+            "text": "晓晨，我们该怎么办？这东西太危险了！"
+          },
+          {
+            "id": "9889kaeasd",
+            "characterId": "narrator",
+            "text": "晓晨紧握着拳头，她知道，没有简单的答案。"
+          },
+          {
+            "id": "3ku8r12a48",
+            "characterId": "char_001",
+            "text": "我们必须做出一个选择。"
+          }
+        ],
+        "choices": [
+          {
+            "id": "ppa3p0opwk",
+            "text": "彻底揭露真相，公之于众",
+            "targetNodeId": "ending-1",
+            "condition": "追求正义"
+          },
+          {
+            "id": "4pvzn46rtl",
+            "text": "与修远合作，继续封存秘密",
+            "targetNodeId": "ending-2",
+            "condition": "维护平衡"
+          },
+          {
+            "id": "vz2oukp68e",
+            "text": "部分揭露，但保留核心秘密",
+            "targetNodeId": "ending-3",
+            "condition": "折中方案"
+          }
+        ]
+      },
+      {
+        "id": "ending-1",
+        "type": "ending",
+        "isStart": false,
+        "isEnding": true,
+        "position": {
+          "x": 100,
+          "y": 1650
+        },
+        "title": "真相大白",
+        "sceneName": "校园林荫道",
+        "backgroundId": "scene_002",
+        "narration": "晓晨和雨萱最终决定将图书馆的秘密彻底公之于众。雨萱的报道震动了整个青云大学，甚至引起了社会关注。",
+        "dialogues": [
+          {
+            "id": "pa5novgbv0",
+            "characterId": "narrator",
+            "text": "真相被揭露，学校因此陷入了巨大的风波。修远学长也因此辞去了图书馆管理员的职务，不知所踪。"
+          },
+          {
+            "id": "x4544umilm",
+            "characterId": "char_003",
+            "text": "虽然学校受到了影响，但至少那些怪事彻底消失了，大家也知道了真相。"
+          },
+          {
+            "id": "bvt8crez8u",
+            "characterId": "char_001",
+            "text": "是啊，虽然付出了代价，但正义得到了伸张。这是我们能做的最好的选择。"
+          },
+          {
+            "id": "wr9wujcph",
+            "characterId": "narrator",
+            "text": "阳光透过林荫道的树叶，洒下斑驳的光影。晓晨看着远方，心中既有释然，也有对未来的迷茫。"
+          }
+        ]
+      },
+      {
+        "id": "ending-2",
+        "type": "ending",
+        "isStart": false,
+        "isEnding": true,
+        "position": {
+          "x": 400,
+          "y": 1650
+        },
+        "title": "秘密守护者",
+        "sceneName": "图书馆阅览室",
+        "backgroundId": "scene_001",
+        "narration": "晓晨最终选择与修远学长合作，共同守护图书馆的秘密。他们找到了加固封印的方法，使“低语之力”再次沉睡。",
+        "dialogues": [
+          {
+            "id": "68vsfhydyv",
+            "characterId": "narrator",
+            "text": "校园恢复了往日的平静，怪事不再发生。晓晨和修远之间多了一层心照不宣的联系，她偶尔会去图书馆帮助修远。"
+          },
+          {
+            "id": "5jharir3li",
+            "characterId": "char_002",
+            "text": "谢谢你，晓晨。有些秘密，注定只能由少数人来守护。"
+          },
+          {
+            "id": "iriiq9y4ay",
+            "characterId": "char_001",
+            "text": "（她看着修远，心中明白，虽然真相被掩盖，但这份守护也同样重要。）这也许是最好的结局。"
+          },
+          {
+            "id": "855h8ax7c3",
+            "characterId": "narrator",
+            "text": "图书馆阅览室里，书香依旧，只是在那些沉默的书籍背后，又多了一段不为人知的守护传说。晓晨也从一个普通的大学生，成长为一名真正的秘密守护者。"
+          }
+        ]
+      },
+      {
+        "id": "ending-3",
+        "type": "ending",
+        "isStart": false,
+        "isEnding": true,
+        "position": {
+          "x": 700,
+          "y": 1650
+        },
+        "title": "未完待续",
+        "sceneName": "学生宿舍",
+        "backgroundId": "scene_003",
+        "narration": "晓晨和雨萱选择了一个折中方案。她们向校报披露了部分真相，将“低语之力”归结为一种特殊的磁场现象，但隐瞒了核心封印和守护者家族的秘密。",
+        "dialogues": [
+          {
+            "id": "hj7gsxvt2i",
+            "characterId": "char_003",
+            "text": "这篇报道一发出去，肯定会引起轰动！既解释了怪事，又给学校留了面子。"
+          },
+          {
+            "id": "ym4bmnin9n",
+            "characterId": "char_001",
+            "text": "（她看着窗外，心中却有些复杂。）但真正的核心秘密，依然被掩盖着。"
+          },
+          {
+            "id": "0v3rryii8i",
+            "characterId": "narrator",
+            "text": "虽然校园里的怪事暂时平息，但晓晨总觉得，那股力量并没有完全消失，只是再次沉寂。修远学长也只是意味深长地看了她一眼，没有多说什么。"
+          },
+          {
+            "id": "lqq77vh8ko",
+            "characterId": "char_001",
+            "text": "（也许，这个故事还远没有结束……）"
+          },
+          {
+            "id": "vizdj7nmcu",
+            "characterId": "narrator",
+            "text": "宿舍的灯光下，晓晨翻看着那本《青云大学百年校史补遗》，新的谜团似乎正在酝酿。"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "textSpeed": 50,
+      "autoPlayDelay": 3000,
+      "defaultTransition": "fade"
+    }
+  }
+}
