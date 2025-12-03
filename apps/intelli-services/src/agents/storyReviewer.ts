@@ -9,6 +9,46 @@ import { z } from "zod";
 import { promptManager } from '../prompts';
 import { generateStructuredOutput } from '../utils/structured-output-helper';
 
+const STRICT_TOOL_MODELS = ['gpt', 'o1']; // 使用 function calling 机制时，GPT 的 API 要求 schema 必须给明确结构 不允许 any
+function shouldUseStrictToolSchema() {
+  const flag = process.env.REVIEWER_STRICT_TOOLS;
+  if (flag === 'true') return true;
+  if (flag === 'false') return false;
+  const model = (process.env.OPENAI_MODEL_NAME || '').toLowerCase();
+  return STRICT_TOOL_MODELS.some((kw) => model.includes(kw));
+}
+
+/** 严格 Schema 模式，用于 GPT 等模型，其他模型默认使用宽松模式 */
+const useStrictToolSchema = shouldUseStrictToolSchema();
+
+const strictStructureNode = z.object({
+  id: z.string(),
+  type: z.string().optional(),
+  isStart: z.boolean().optional(),
+  isEnding: z.boolean().optional(),
+  nextNodeId: z.string().optional(),
+  choices: z.array(z.object({
+    targetNodeId: z.string(),
+  })).optional(),
+});
+
+const strictDialogueNode = strictStructureNode.extend({
+  dialogues: z.array(z.object({
+    characterId: z.string().optional(),
+    text: z.string(),
+    emotion: z.string().optional(),
+  })).optional(),
+  narration: z.string().optional(),
+});
+
+const structureNodesSchema = useStrictToolSchema
+  ? z.array(strictStructureNode)
+  : z.array(z.any()).describe("节点列表，包含id, nextNodeId, choices等连接信息");
+
+const dialogueNodesSchema = useStrictToolSchema
+  ? z.array(strictDialogueNode)
+  : z.array(z.any()).describe("节点列表，包含id, dialogues, narration等内容信息");
+
 // ============ 工具定义 ============
 
 /**
@@ -19,7 +59,7 @@ export const validateStructureTool = createTool({
   id: "validate-structure",
   description: "检查节点连通性，找出孤立节点和死胡同。在审阅故事前必须先调用此工具。",
   inputSchema: z.object({
-    nodes: z.array(z.any()).describe("节点列表，包含id, nextNodeId, choices等连接信息"),
+    nodes: structureNodesSchema,
   }),
   execute: async ({ context }) => {
     // ... (代码保持不变，因为内部也是把它当 any 处理的)
@@ -107,7 +147,7 @@ export const analyzePathsTool = createTool({
   id: "analyze-paths",
   description: "分析所有可能的故事路径，评估分支的多样性和意义性。可以了解故事有多少条不同的路线。",
   inputSchema: z.object({
-    nodes: z.array(z.any()).describe("节点列表，包含id, nextNodeId, choices等连接信息"),
+    nodes: structureNodesSchema,
   }),
   execute: async ({ context }) => {
     const { nodes } = context;
@@ -184,7 +224,7 @@ export const analyzeDialogueQualityTool = createTool({
   id: "analyze-dialogue-quality",
   description: "分析每个节点的对话数量和质量，找出对话过少或过多的节点。",
   inputSchema: z.object({
-    nodes: z.array(z.any()).describe("节点列表，包含id, dialogues, narration等内容信息"),
+    nodes: dialogueNodesSchema,
   }),
   execute: async ({ context }) => {
     const { nodes } = context;
@@ -220,7 +260,7 @@ export const storyReviewerAgent = new Agent({
   instructions: promptManager.build('story-reviewer.instructions').user,
 
   model: {
-    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo'}` as `${string}/${string}`,
+    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-5'}` as `${string}/${string}`,
     url: process.env.OPENAI_BASE_URL,
     apiKey: process.env.OPENAI_API_KEY,
   },

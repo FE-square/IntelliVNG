@@ -30,7 +30,7 @@ const { system, user } = promptManager.build(
 
 // 调用LLM
 const response = await openai.chat.completions.create({
-  model: 'gpt-4-turbo',
+  model: 'gpt-5',
   messages: [
     ...(system ? [{ role: 'system', content: system }] : []),
     { role: 'user', content: user },

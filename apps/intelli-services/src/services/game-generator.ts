@@ -92,86 +92,6 @@ interface Choice {
 // Simple ID generator
 const createId = () => Math.random().toString(36).substring(2, 12);
 
-// System prompt for the Director Agent
-const DIRECTOR_SYSTEM_PROMPT = `You are a Visual Novel game designer. Create a branching story with multiple endings in a FLOWCHART structure.
-
-Output valid JSON with this structure:
-{
-  "title": "string",
-  "description": "2-3 sentence summary",
-  "genre": "romance|mystery|fantasy|horror|slice-of-life|sci-fi",
-  "artStyle": "anime|realistic|pixel|watercolor|comic",
-  "storyNodes": [
-    {
-      "id": "node-1",
-      "type": "scene|branch|ending",
-      "isStart": true/false,
-      "isEnding": true/false,
-      "title": "Scene title",
-      "sceneName": "Explicit scene name from user-defined scenes",
-      "narration": "Optional background narration",
-      "dialogues": [
-        {"characterName": "name", "text": "dialogue text"}
-      ],
-      "choices": [
-        {"text": "Choice text", "targetNodeId": "node-2", "condition": "Optional condition label"}
-      ],
-      "nextNodeId": "node-2 (for scene type only)",
-      "position": {"x": 100, "y": 100}
-    }
-  ]
-}
-
-CRITICAL Rules:
-- Create 10-15 story nodes total (NOT dialogue nodes, but STORY SCENE nodes)
-- START with EXACTLY 1 "scene" type node (id: "start", isStart: true)
-- Include 3-5 "branch" type nodes (decision points with choices array)
-- END with 2-3 "ending" type nodes (isEnding: true)
-- Each "scene" node:
-  * Contains 3-6 dialogues
-  * Has nextNodeId pointing to next node (could be scene, branch, or ending)
-  * Represents a complete story beat
-  * MUST set sceneName matching one of user-defined scenes
-- Each "branch" node:
-  * Contains 1-3 dialogues leading to the choice
-  * Has choices array (2-3 choices)
-  * Each choice has targetNodeId AND condition label
-  * MUST be connected FROM an upstream node via that node's nextNodeId
-  * MUST set sceneName matching one of user-defined scenes
-- Each "ending" node:
-  * Contains 2-4 dialogues
-  * No nextNodeId or choices
-  * MUST have isEnding: true
-  * MUST set sceneName matching one of user-defined scenes
-  * Represents different story conclusions
-
-🔴 CRITICAL CONNECTION RULES (MUST FOLLOW):
-1. START NODE → Must connect to next node via nextNodeId
-2. EVERY SCENE NODE → Must have nextNodeId pointing to another node
-3. EVERY BRANCH NODE:
-   - Must be connected FROM an upstream node's nextNodeId (not floating)
-   - EVERY choice MUST have valid targetNodeId
-   - ALL choices must lead to existing nodes
-4. EVERY PATH → Must lead to an ENDING node (no dead ends)
-5. EVERY ENDING NODE → Must be reachable from at least one path
-6. NO ORPHAN NODES → Every node (except start) must be reachable from start
-
-📋 STORY COMPLETENESS RULES:
-- Each branch path must form a COMPLETE story arc from START to ENDING
-- If you create a branch with 3 choices, ensure ALL 3 choices eventually lead to endings
-- Example valid structure:
-  * start → scene1 → branch1 → [choice A → scene2a → ending1, choice B → scene2b → ending2]
-  * Every path: start → ... → ending (complete)
-
-- Set position for visual layout:
-  * Start node: {"x": 400, "y": 50}
-  * Each level deeper: y += 200
-  * Branch out horizontally: x varies by branch
-- Make dialogues meaningful and character-driven
-- Ensure all character names match provided characters
-- MUST use user-defined scene names in sceneName field
-- Output ONLY JSON, no markdown`;
-
 interface GeneratedContent {
     title: string;
     description: string;
@@ -208,7 +128,7 @@ export class GameGenerator {
             apiKey: process.env.OPENAI_API_KEY,
             baseURL: process.env.OPENAI_BASE_URL,
         });
-        this.modelName = process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo';
+        this.modelName = process.env.OPENAI_MODEL_NAME || 'gpt-5';
     }
 
     async generate(idea: string, locale: Locale = DEFAULT_LOCALE): Promise<GameProject> {

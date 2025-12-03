@@ -11,7 +11,7 @@ export const nodeWriterAgent = new Agent({
   instructions: promptManager.build('node-writer.instructions').user,
 
   model: {
-    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-4-turbo'}` as `${string}/${string}`,
+    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-5'}` as `${string}/${string}`,
     url: process.env.OPENAI_BASE_URL,
     apiKey: process.env.OPENAI_API_KEY,
   },
@@ -32,7 +32,7 @@ export async function writeNodeContent(
   schema: any,
   locale: Locale = DEFAULT_LOCALE
 ): Promise<any> {
-  // 找出本节点涉及的角色（简化版：暂时传所有角色）
+  // 找出本节点涉及的角色
   const characters = input.characterDB.characters || [];
 
   const { user: prompt } = promptManager.build('node-writer.write', {
