@@ -103,11 +103,30 @@ export interface IdeaDraftResult {
 }
 
 export class IdeaDraftGenerator {
+  private readonly maxAttempts = Number(process.env.IDEA_DRAFT_MAX_ATTEMPTS || 2);
+
   async generateDraft(idea: string, locale: Locale = DEFAULT_LOCALE): Promise<IdeaDraftResult> {
     if (!idea?.trim()) {
       throw new Error('idea is required');
     }
-    return this.tryGenerateDraft(idea, locale, 'primary', true);
+
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= this.maxAttempts; attempt++) {
+      try {
+        if (attempt > 1) {
+          console.log(`[IdeaDraftGenerator] 第 ${attempt}/${this.maxAttempts} 次重试...`);
+        }
+        return await this.tryGenerateDraft(idea, locale, 'primary', true);
+      } catch (error) {
+        lastError = error;
+        console.warn(`[IdeaDraftGenerator] 生成草稿失败 (attempt ${attempt}/${this.maxAttempts}):`, error instanceof Error ? error.message : error);
+        if (attempt === this.maxAttempts) {
+          break;
+        }
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error('Idea draft generation failed');
   }
 
   private async tryGenerateDraft(
