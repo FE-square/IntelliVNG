@@ -8,6 +8,8 @@
         :root {
             --primary: #4f46e5; /* Indigo 600 */
             --primary-light: #e0e7ff;
+            --secondary: #46e5bd; /* Indigo 600 */
+            --secondary-light: #e0ffff;
             --text: #1e293b;
             --text-light: #64748b;
             --bg: #ffffff;
@@ -96,6 +98,16 @@
             color: #334155;
         }
 
+        /* Links */
+        .links {
+            background: linear-gradient(to right, var(--secondary-light), #fff);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+            color: #334155;
+        }
         /* Code Blocks */
         pre {
             background: var(--code-bg);
@@ -244,9 +256,26 @@
         <div style="text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 0.5rem;">Technical Architecture</div>
         <h1>IntelliVNG Studio 多智能体视觉小说创作编排系统</h1>
         <div style="color: var(--text-light); margin-bottom: 2rem;">
-            Design & Implementation of a Multi-Agent Visual Novel Creation System
+            Design & Implementation of a Multi-Agent Visual Novel Vibe Scripting System
         </div>
     </header>
+    
+    <div class="links">
+        <p>
+            由于 Monorepo + SSR + NodeJS 前后端分离项目，部署起来需要三个应用，暂无法使用单体的魔搭空间
+        </p>
+        <p>
+            <strong>
+                🚩 项目代码已完全开源至 <a href="https://github.com/FE-Square/IntelliVNG" target="_blank">GitHub</a> 及 <a href="https://modelscope.cn/studios/melxy1997/IntelliVNG_Studio_Beta/files" target="_blank">魔搭创空间 </a>，欢迎 Star 和 亲自体验、验证效果
+            </strong>
+        </p>
+        <p>
+            技术详解 及 真实运行流程 请阅读下方云文档：
+        </p>
+        <li>AI 技术设计 [推荐]：<a href="https://fe-square.feishu.cn/wiki/OEbVwhnZtiyI8pkhzEQcYPirnxi" target="_blank">IntelliVNG Studio 核心 Agents 设计与实现</a></li>
+
+        <li>全流程说明文档：<a href="https://fe-square.feishu.cn/wiki/Ki4hwhwOeieN9ykDk71cvGFznle" target="_blank">IntelliVNG Studio 流程说明与用户指南</a></li>
+    </div>
 
     <!-- Abstract -->
     <div class="abstract">
@@ -471,7 +500,7 @@ const NodeDraftSchema = z.object({
     </section>
 
     <footer>
-        <p><a href="https://github.com/FE-Square/IntelliVNG" target="_blank">项目已开源至 GitHub 仓库</a></p>
+        <p><p>项目已开源至 <a href="https://github.com/FE-Square/IntelliVNG" target="_blank">GitHub</a> 及 <a href="https://modelscope.cn/studios/melxy1997/IntelliVNG_Studio_Beta/files" target="_blank">魔搭创空间</a></p></p>
         <p>&copy; 2025 IntelliVNG Team: FE Square: { Rui Ma (Ponyray) & Xinyu Liu (Melxy97)}</p>
     </footer>
 </main>
