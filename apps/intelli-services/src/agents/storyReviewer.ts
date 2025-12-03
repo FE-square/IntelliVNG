@@ -8,6 +8,7 @@ import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import { promptManager } from '../prompts';
 import { generateStructuredOutput } from '../utils/structured-output-helper';
+import { buildMastraModelConfig, type LLMProfile } from '../utils/llm-config';
 
 const STRICT_TOOL_MODELS = ['gpt', 'o1']; // 使用 function calling 机制时，GPT 的 API 要求 schema 必须给明确结构 不允许 any
 function shouldUseStrictToolSchema() {
@@ -255,22 +256,20 @@ export const analyzeDialogueQualityTool = createTool({
 // ============ Reviewer Agent ============
 console.log("🔄 Loading storyReviewer module...");
 
-export const storyReviewerAgent = new Agent({
-  name: "story-reviewer",
-  instructions: promptManager.build('story-reviewer.instructions').user,
+export function createStoryReviewerAgent(profile: LLMProfile = 'primary') {
+  return new Agent({
+    name: "story-reviewer",
+    instructions: promptManager.build('story-reviewer.instructions').user,
+    model: buildMastraModelConfig(profile),
+    tools: {
+      validateStructure: validateStructureTool,
+      analyzePaths: analyzePathsTool,
+      analyzeDialogueQuality: analyzeDialogueQualityTool,
+    },
+  });
+}
 
-  model: {
-    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-5'}` as `${string}/${string}`,
-    url: process.env.OPENAI_BASE_URL,
-    apiKey: process.env.OPENAI_API_KEY,
-  },
-  
-  tools: {
-    validateStructure: validateStructureTool,
-    analyzePaths: analyzePathsTool,
-    analyzeDialogueQuality: analyzeDialogueQualityTool,
-  },
-});
+export const storyReviewerAgent = createStoryReviewerAgent();
 
 /**
  * Story Reviewer 的调用包装函数
@@ -298,7 +297,7 @@ export async function reviewStory(
 
   console.log("🚀 Entering reviewStory function...");
   if (disableReAct) {
-    console.log("[ReAct] ⚠️ 当前模型不支持工具调用，切换至简化审阅流程");
+    console.log("[ReAct] 非 Function Calling 模型，切换至单次审阅流程");
     return simpleReview(agent, input, schema, locale);
   }
 

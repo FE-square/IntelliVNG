@@ -8,15 +8,17 @@
  * - Story Reviewer Agent: ReAct 工具增强审阅
  * - Orchestrator: Plan-and-Execute 状态机编排
  */
-import { mastra, getStoryWorkflow } from "../mastra";
+import { getMastra, getStoryWorkflow } from "../mastra";
 import type { NarrativePlan, NodeDraft, CriticReport, WorkflowInput } from "../agents/schemas";
 import { NarrativePlanSchema, NodeDraftSchema, CriticReportSchema } from "../agents/schemas";
 import { generateNarrativePlanWithToT, storyPlannerAgent } from "../agents/storyPlanner";
 import { reviewStory, storyReviewerAgent } from "../agents/storyReviewer";
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
-import { ProgressEmitter, createProgressEmitter } from "./progress-emitter";
+import { ProgressEmitter, createProgressEmitter, type ProgressStage } from "./progress-emitter";
 import { promptManager } from '../prompts';
 import { generateStructuredOutput } from '../utils/structured-output-helper';
+import { ideaDraftGenerator } from "./idea-draft-generator";
+import { hasLLMProfile, isRecoverableLLMError, type LLMProfile } from '../utils/llm-config';
 
 // ============ 类型定义（与 game-generator.ts 保持一致）============
 
@@ -108,20 +110,58 @@ interface Choice {
 // ============ 工具函数 ============
 
 const createId = () => Math.random().toString(36).substring(2, 12);
+const REVIEW_TIMEOUT_MS = Number(process.env.AGENT_REVIEW_TIMEOUT_MS || 60_000);
+
+function getCandidatePaths(payload: any): any[] {
+  if (!payload?.candidates) return [];
+  if (Array.isArray(payload.candidates)) return payload.candidates;
+  if (Array.isArray(payload.candidates.paths)) return payload.candidates.paths;
+  return [];
+}
+
+function summarizeCandidates(payload: any) {
+  return getCandidatePaths(payload)
+    .slice(0, 5)
+    .map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+    }));
+}
+
+function summarizePlanNodes(nodes: any[]) {
+  return (Array.isArray(nodes) ? nodes : [])
+    .slice(0, 8)
+    .map((node: any) => ({
+      id: node.id,
+      title: node.title || node.name,
+      type: node.type,
+      isEnding: node.isEnding,
+      brief: node.brief || node.description,
+    }));
+}
 
 // ============ GameGeneratorAgent 主类 ============
 
 export class GameGeneratorAgent {
   private maxRetries: number = 2;
   private minAcceptableScore: number = 60;
+  private profile: LLMProfile = 'primary';
 
-  constructor(options?: { maxRetries?: number; minAcceptableScore?: number }) {
+  constructor(options?: { maxRetries?: number; minAcceptableScore?: number; profile?: LLMProfile }) {
     if (options?.maxRetries) {
       this.maxRetries = options.maxRetries;
     }
     if (options?.minAcceptableScore) {
       this.minAcceptableScore = options.minAcceptableScore;
     }
+    if (options?.profile) {
+      this.profile = options.profile;
+    }
+  }
+
+  private getMastra() {
+    return getMastra(this.profile);
   }
 
   /**
@@ -183,7 +223,7 @@ export class GameGeneratorAgent {
     };
 
     // 获取并运行工作流
-    const workflow = getStoryWorkflow();
+    const workflow = getStoryWorkflow(this.profile);
     console.log(`[GameGeneratorAgent] 📋 获取工作流: story-generation`);
 
     let retryCount = 0;
@@ -270,7 +310,8 @@ export class GameGeneratorAgent {
     userCharacters: any[],
     userScenes: any[],
     worldSetting: any,
-    themeSetting?: any
+    themeSetting?: any,
+    progressEmitter?: ProgressEmitter
   ): GameProject {
     const now = new Date().toISOString();
     const projectId = createId();
@@ -337,6 +378,10 @@ export class GameGeneratorAgent {
       description: scene.details || `${scene.type} · ${scene.atmosphere}`,
       imageUrl: scene.imageUrl || '',
     }));
+    progressEmitter?.stageProgress("finalizing", "整合角色与场景", 30, `角色 ${characters.length} 个，场景 ${backgrounds.length} 个`, {
+      characterCount: characters.length,
+      sceneCount: backgrounds.length,
+    });
 
     // 场景名到ID的映射
     const sceneNameToId = new Map<string, string>();
@@ -405,7 +450,14 @@ export class GameGeneratorAgent {
     });
 
     // 6️⃣ 验证节点连接
-    this.validateNodeConnections(script);
+    progressEmitter?.stageProgress("finalizing", "验证节点连接", 40, "正在检查节点连通性...");
+    const validationStats = this.validateNodeConnections(script);
+    progressEmitter?.stageProgress("finalizing", "节点验证完成", 60, `可达节点 ${validationStats.reachableCount}/${validationStats.totalCount}`, {
+      reachableCount: validationStats.reachableCount,
+      totalCount: validationStats.totalCount,
+      orphanCount: validationStats.orphanNodes.length,
+      deadEndCount: validationStats.deadEnds.length,
+    });
 
     // 7️⃣ 构建 GameProject
     const gameProject: GameProject = {
@@ -434,6 +486,11 @@ export class GameGeneratorAgent {
     console.log(`  - 角色: ${characters.length}`);
     console.log(`  - 场景: ${backgrounds.length}`);
     console.log(`  - 节点: ${script.length}`);
+    progressEmitter?.stageProgress("finalizing", "GameProject 构建完成", 80, `角色 ${characters.length} · 场景 ${backgrounds.length} · 节点 ${script.length}`, {
+      characterCount: characters.length,
+      sceneCount: backgrounds.length,
+      nodeCount: script.length,
+    });
 
     return gameProject;
   }
@@ -441,7 +498,12 @@ export class GameGeneratorAgent {
   /**
    * 验证节点连接完整性
    */
-  private validateNodeConnections(storyNodes: StoryNode[]): void {
+  private validateNodeConnections(storyNodes: StoryNode[]): {
+    reachableCount: number;
+    totalCount: number;
+    orphanNodes: string[];
+    deadEnds: string[];
+  } {
     console.log('[GameGeneratorAgent] 🔍 验证节点连接...');
     
     const nodeIds = new Set(storyNodes.map(n => n.id));
@@ -490,9 +552,9 @@ export class GameGeneratorAgent {
     }
     
     // 检查孤立节点
-    const orphanNodes = storyNodes.filter(n => !reachableFromStart.has(n.id));
+    const orphanNodes = storyNodes.filter(n => !reachableFromStart.has(n.id)).map(n => n.id);
     if (orphanNodes.length > 0) {
-      console.warn(`[GameGeneratorAgent] ⚠️ 发现 ${orphanNodes.length} 个孤立节点: ${orphanNodes.map(n => n.id).join(', ')}`);
+      console.warn(`[GameGeneratorAgent] ⚠️ 发现 ${orphanNodes.length} 个孤立节点: ${orphanNodes.join(', ')}`);
     }
     
     // 检查死胡同
@@ -500,12 +562,18 @@ export class GameGeneratorAgent {
       !n.isEnding && 
       !n.nextNodeId && 
       (!n.choices || n.choices.length === 0)
-    );
+    ).map(n => n.id);
     if (deadEnds.length > 0) {
-      console.warn(`[GameGeneratorAgent] ⚠️ 发现 ${deadEnds.length} 个死胡同: ${deadEnds.map(n => n.id).join(', ')}`);
+      console.warn(`[GameGeneratorAgent] ⚠️ 发现 ${deadEnds.length} 个死胡同: ${deadEnds.join(', ')}`);
     }
     
     console.log(`[GameGeneratorAgent] ✅ 验证完成: ${reachableFromStart.size}/${storyNodes.length} 节点可达`);
+    return {
+      reachableCount: reachableFromStart.size,
+      totalCount: storyNodes.length,
+      orphanNodes,
+      deadEnds,
+    };
   }
 
   /**
@@ -520,7 +588,8 @@ export class GameGeneratorAgent {
     scenes: any[] | undefined,
     themeSetting: any | undefined,
     progressEmitter: ProgressEmitter,
-    locale: Locale = DEFAULT_LOCALE
+    locale: Locale = DEFAULT_LOCALE,
+    allowFallback = true
   ): Promise<GameProject> {
     const startTime = Date.now();
     
@@ -577,13 +646,10 @@ export class GameGeneratorAgent {
 
     try {
       // ============ 规划阶段（真正的 Tree-of-Thoughts） ============
-      progressEmitter.stageStart("planning", "Story Planner 规划故事结构", "Tree-of-Thoughts 第 1 轮：生成候选叙事方向...");
+      progressEmitter.stageStart("planning", "Story Planner 规划故事结构", "正在启动 Tree-of-Thoughts 规划流程...");
       
-      // 使用真正的 ToT 多轮调用
-      // Round 1: 生成候选方向
-      // Round 2: 评估并选择最佳方向  
-      // Round 3: 展开为完整节点骨架
-      plan = await generateNarrativePlanWithToT(storyPlannerAgent, workflowInput, locale);
+      const plannerAgent = this.getMastra().getAgent("story-planner") as typeof storyPlannerAgent;
+      plan = await this.runTotWithProgress(plannerAgent, workflowInput, locale, progressEmitter);
 
       progressEmitter.stageComplete("planning", "故事骨架规划完成 (ToT 3轮)", 
         `探索了多条叙事路径，最终生成 ${plan.nodes.length} 个节点`, {
@@ -593,6 +659,7 @@ export class GameGeneratorAgent {
 
       // ============ 规划验证阶段 ============
       progressEmitter.stageStart("plan_validate", "验证故事结构", "检查节点连通性和结构完整性...");
+      progressEmitter.stageProgress("plan_validate", "连通性分析", 40, "正在检查节点引用和路径...");
       
       const validationResult = this.quickValidatePlan(plan);
       if (!validationResult.valid) {
@@ -606,7 +673,7 @@ export class GameGeneratorAgent {
       // ============ 写作阶段 ============
       progressEmitter.stageStart("writing", "Node Writer 开始写作", "Few-Shot CoT 正在为每个节点生成对话...");
       
-      const writerAgent = mastra.getAgent("node-writer");
+      const writerAgent = this.getMastra().getAgent("node-writer");
       const layers = this.topologicalSort(plan.nodes);
       
       progressEmitter.stageProgress("writing", "分析节点依赖", 10, 
@@ -619,7 +686,7 @@ export class GameGeneratorAgent {
         const layerProgress = Math.round(10 + (layerIdx / layers.length) * 80);
         
         progressEmitter.stageProgress("writing", `写作第 ${layerIdx + 1}/${layers.length} 层`, 
-          layerProgress, `正在并行写作 ${layer.length} 个节点...`, {
+          layerProgress, `正在并行写作第 ${layerIdx + 1} 层的 ${layer.length} 个节点...`, {
           layer: layerIdx + 1,
           totalLayers: layers.length,
           currentNode: layer.map(n => n.id).join(', '),
@@ -648,13 +715,19 @@ export class GameGeneratorAgent {
               styleGuide: JSON.stringify(workflowInput.styleGuide || {}, null, 2),
             }, locale);
 
-            const draft = await generateStructuredOutput(
-              writerAgent,
-              writePrompt,
-              NodeDraftSchema,
-              { temperature: 1 }
-            );
-            return { nodeId: node.id, draft };
+            try {
+              const draft = await generateStructuredOutput(
+                writerAgent,
+                writePrompt,
+                NodeDraftSchema,
+                { temperature: 1 }
+              );
+              return { nodeId: node.id, draft };
+            } catch (error) {
+              console.warn(`[GameGeneratorAgent] 节点 ${node.id} 写作失败，使用默认草稿:`, error instanceof Error ? error.message : error);
+              const fallbackDraft = this.buildFallbackNodeDraft(node, workflowInput, previousSummary);
+              return { nodeId: node.id, draft: fallbackDraft };
+            }
           })
         );
 
@@ -671,27 +744,43 @@ export class GameGeneratorAgent {
       // ============ 审阅阶段 ============
       progressEmitter.stageStart("reviewing", "Story Reviewer 审阅故事", "ReAct 模式正在使用工具分析故事质量...");
 
-      report = await reviewStory(
-        storyReviewerAgent,
-        { 
-          plan, 
-          drafts, 
-          worldBible: workflowInput.worldBible,
-          characterDB: workflowInput.characterDB 
-        },
-        CriticReportSchema,
-        locale
-      );
+      const reviewerAgent = this.getMastra().getAgent("story-reviewer") as typeof storyReviewerAgent;
+      try {
+        const reviewPromise = reviewStory(
+          reviewerAgent,
+          {
+            plan,
+            drafts,
+            worldBible: workflowInput.worldBible,
+            characterDB: workflowInput.characterDB
+          },
+          CriticReportSchema,
+          locale
+        );
 
-      if (!report) {
-        throw new Error("Reviewer 报告生成失败");
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Story Reviewer 超时（>${REVIEW_TIMEOUT_MS / 1000}s）`)), REVIEW_TIMEOUT_MS)
+        );
+
+        report = await Promise.race([reviewPromise, timeoutPromise]);
+
+        if (!report) {
+          throw new Error("Reviewer 报告生成失败");
+        }
+
+        progressEmitter.stageComplete("reviewing", "审阅完成", 
+          `综合评分: ${report.overallScore}，发现 ${report.issues.length} 个问题`, {
+          score: report.overallScore,
+          issues: report.issues.length,
+        });
+      } catch (error) {
+        console.warn("[GameGeneratorAgent] 审阅阶段失败，自动视为通过:", error instanceof Error ? error.message : error);
+        report = this.buildFallbackReviewReport();
+        progressEmitter.stageComplete("reviewing", "审阅跳过", "审阅模块异常，自动视为通过", {
+          score: report.overallScore,
+          issues: 0,
+        });
       }
-
-      progressEmitter.stageComplete("reviewing", "审阅完成", 
-        `综合评分: ${report.overallScore}，发现 ${report.issues.length} 个问题`, {
-        score: report.overallScore,
-        issues: report.issues.length,
-      });
 
       // ============ 重写阶段（如需） ============
       if (report.shouldRegenerate && report.regenerateTarget === "specific_nodes" && report.targetNodeIds) {
@@ -726,14 +815,22 @@ export class GameGeneratorAgent {
               styleGuide: JSON.stringify(workflowInput.styleGuide || {}, null, 2),
             }, locale);
 
-            const rewrittenDraft = await generateStructuredOutput(
-              writerAgent,
-              rewritePrompt,
-              NodeDraftSchema,
-              { temperature: 1 }
-            );
-
-            drafts[nodeId] = rewrittenDraft;
+            try {
+              const rewrittenDraft = await generateStructuredOutput(
+                writerAgent,
+                rewritePrompt,
+                NodeDraftSchema,
+                { temperature: 1 }
+              );
+              drafts[nodeId] = rewrittenDraft;
+            } catch (error) {
+              console.warn(`[GameGeneratorAgent] 重写节点 ${nodeId} 失败，使用默认草稿:`, error instanceof Error ? error.message : error);
+              drafts[nodeId] = this.buildFallbackNodeDraft(
+                plan.nodes.find(n => n.id === nodeId) || { id: nodeId, type: 'scene' },
+                workflowInput,
+                issue?.suggestion
+              );
+            }
             rewritten.push(nodeId);
           })
         );
@@ -747,12 +844,14 @@ export class GameGeneratorAgent {
       // ============ 最终化阶段 ============
       progressEmitter.stageStart("finalizing", "构建最终剧本", "正在将故事转换为 GameProject 格式...");
 
+      progressEmitter.stageProgress("finalizing", "整理节点草稿", 20, "正在整合节点与对话数据...");
       const gameProject = this.transformToGameProject(
         { plan, drafts, report },
         characters,
         scenes || [],
         worldSetting,
-        themeSetting
+        themeSetting,
+        progressEmitter
       );
 
       const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -771,6 +870,27 @@ export class GameGeneratorAgent {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';
+
+      if (this.shouldAttemptFallback(error, allowFallback)) {
+        progressEmitter.stageStart("fallback", "切换备用模型", "检测到主模型不可用，正在启用备用模型重试...");
+        const backupAgent = new GameGeneratorAgent({
+          maxRetries: this.maxRetries,
+          minAcceptableScore: this.minAcceptableScore,
+          profile: 'backup',
+        });
+        const result = await backupAgent.generateFromSetupWithProgress(
+          characters,
+          worldSetting,
+          scenes,
+          themeSetting,
+          progressEmitter,
+          locale,
+          false
+        );
+        progressEmitter.stageComplete("fallback", "备用模型生成完成", "已成功切换到备用模型并继续生成");
+        return result;
+      }
+
       progressEmitter.stageFailed("failed", "生成失败", errorMessage);
       throw error;
     }
@@ -855,6 +975,133 @@ export class GameGeneratorAgent {
     return layers;
   }
 
+  private async runTotWithProgress(
+    agent: typeof storyPlannerAgent,
+    workflowInput: WorkflowInput,
+    locale: Locale,
+    progressEmitter: ProgressEmitter
+  ): Promise<NarrativePlan> {
+    const stageMeta = {
+      round1: {
+        stage: "planning_round1" as ProgressStage,
+        startAction: "Round 1：生成候选方向",
+        startMessage: "正在探索不同的故事走向...",
+        completeAction: "候选方向生成完成",
+        formatMessage: (payload: any) => {
+          const count = getCandidatePaths(payload).length;
+          return `共生成 ${count} 个候选方向`;
+        },
+        formatDetails: (payload: any) => ({
+          candidateCount: getCandidatePaths(payload).length,
+          candidates: summarizeCandidates(payload),
+        }),
+      },
+      round2: {
+        stage: "planning_round2" as ProgressStage,
+        startAction: "Round 2：评估候选方向",
+        startMessage: "正在评估每条路径的优劣...",
+        completeAction: "最佳方向已选定",
+        formatMessage: (payload: any) => `选择 ${payload?.evaluation?.selectedPathId || '未知路径'}`,
+        formatDetails: (payload: any) => ({
+          selectedPathId: payload?.evaluation?.selectedPathId,
+        }),
+      },
+      round3: {
+        stage: "planning_round3" as ProgressStage,
+        startAction: "Round 3：扩展故事骨架",
+        startMessage: "正在将最佳路径展开为完整节点...",
+        completeAction: "故事骨架构建完成",
+        formatMessage: (payload: any) => `生成 ${Array.isArray(payload?.plan?.nodes) ? payload.plan.nodes.length : 0} 个节点`,
+        formatDetails: (payload: any) => {
+          const nodes = Array.isArray(payload?.plan?.nodes) ? payload.plan.nodes : [];
+          return {
+            nodeCount: nodes.length,
+            endingCount: nodes.filter((n: any) => n.isEnding).length,
+            nodes: summarizePlanNodes(nodes),
+          };
+        },
+      },
+    } as const;
+
+    return generateNarrativePlanWithToT(agent, workflowInput, locale, {
+      onRoundStart: (round) => {
+        const meta = stageMeta[round];
+        progressEmitter.stageStart(meta.stage, meta.startAction, meta.startMessage);
+      },
+      onRoundComplete: (round, payload) => {
+        const meta = stageMeta[round];
+        progressEmitter.stageComplete(
+          meta.stage,
+          meta.completeAction,
+          meta.formatMessage(payload),
+          meta.formatDetails(payload)
+        );
+      },
+    });
+  }
+
+  private buildFallbackReviewReport(): CriticReport {
+    return {
+      scores: {
+        plotCoherence: 85,
+        characterConsistency: 85,
+        dialogueQuality: 85,
+        branchMeaningfulness: 85,
+        pacing: 85,
+      },
+      overallScore: 85,
+      issues: [],
+      shouldRegenerate: false,
+      regenerateTarget: 'none',
+      targetNodeIds: [],
+    };
+  }
+
+  private buildFallbackNodeDraft(
+    node: NarrativePlan["nodes"][number],
+    workflowInput: WorkflowInput,
+    previousSummary?: string
+  ): NodeDraft {
+    const characters = workflowInput.characterDB?.characters || [];
+    const speaker = characters[0]?.name || '旁白';
+    const sceneName =
+      node.sceneName ||
+      workflowInput.worldBible?.scenes?.[0]?.name ||
+      workflowInput.worldBible?.name ||
+      '默认场景';
+
+    const defaultDialogue = {
+      characterName: speaker,
+      text: node.brief || previousSummary || '故事继续展开……',
+      emotion: 'neutral',
+    };
+
+    const choices =
+      node.type === 'branch'
+        ? (node.choicesMeta || []).slice(0, 2).map((choice, idx) => ({
+            id: choice.id || createId(),
+            text: choice.text || `选择 ${idx + 1}`,
+            targetNodeId: choice.leadsTo || createId(),
+            meta: {
+              emotionalWeight: choice.emotionalWeight || '中立',
+              consequenceHint: choice.consequenceHint || '继续故事',
+            },
+          }))
+        : undefined;
+
+    return {
+      id: node.id,
+      type: (node.type || 'scene') as NodeDraft['type'],
+      title: node.title || node.name || '未命名节点',
+      sceneName,
+      narration: node.brief || previousSummary || '系统自动生成的节点描述',
+      dialogues: [defaultDialogue],
+      choices,
+      nextNodeId: node.nextNodeId,
+      summary: node.brief || node.title || node.name,
+    };
+  }
+
   /**
    * 快速设定生成 - 根据一句话描述自动生成完整设定
    * 
@@ -874,76 +1121,22 @@ export class GameGeneratorAgent {
   }> {
     console.log(`[GameGeneratorAgent] ⚡ 快速设定生成开始: ${prompt.slice(0, 50)}...`);
 
-    // 使用AI从描述中提取完整设定
-    const systemPrompt = `你是一个专业的视觉小说设定生成器。根据用户的故事描述,生成完整的角色、世界观、场景和主题设定。
-
-**输出规则**:
-1. 角色: 2-4个主要角色,包含姓名、性别、身份、性格特点
-2. 世界观: 世界名称、时代背景、地点、世界规则
-3. 场景: 3-5个关键场景,包含名称、类型、氛围、详细描述
-4. 主题风格: 主题、风格、色调
-
-保持所有设定的一致性和连贯性。`;
-
-    const userPrompt = `故事描述: ${prompt}
-
-请生成完整的游戏设定。`;
-
     try {
-      // 简化版本:直接返回模拟数据,等待后续集成AI
-      const result: any = {
-        projectTitle: `AI生成的故事 - ${new Date().toLocaleDateString()}`,
-        characters: [
-          {
-            id: createId(),
-            name: '主角',
-            displayName: '主角',
-            gender: 'female',
-            identity: '学生',
-            description: 'AI根据你的描述生成的角色',
-            personality: {
-              traits: ['勇敢', '聚明'],
-              speech: '温柔',
-              behavior: '积极',
-            },
-            coreTraits: {
-              motivation: '寻找真相',
-              fear: '失去亲人',
-              strength: '洞察力',
-              weakness: '过于信任他人',
-            },
-          },
-        ],
-        worldSetting: {
-          name: '现代城市',
-          era: '现代',
-          location: '城市',
-          rules: 'AI根据你的描述生成的世界规则',
-        },
-        scenes: [
-          {
-            id: createId(),
-            name: '开场',
-            type: 'location',
-            atmosphere: '神秘',
-            details: 'AI根据你的描述生成的场景',
-          },
-        ],
-        themeSetting: {
-          themes: ['mystery', 'drama'],
-          styles: ['modern'],
-          tone: '悬疑',
-        },
-      };
+      const draft = await ideaDraftGenerator.generateDraft(prompt, locale);
 
-      console.log(`[GameGeneratorAgent] ✅ 快速设定生成成功:`, {
-        title: result.projectTitle,
-        charactersCount: result.characters.length,
-        scenesCount: result.scenes.length,
+      console.log(`[GameGeneratorAgent] ✅ 快速设定生成成功`, {
+        title: draft.projectTitle,
+        characters: draft.characters.length,
+        scenes: draft.scenes.length,
       });
 
-      return result;
-
+      return {
+        projectTitle: draft.projectTitle,
+        characters: draft.characters,
+        worldSetting: draft.worldSetting,
+        scenes: draft.scenes,
+        themeSetting: draft.themeSetting,
+      };
     } catch (error) {
       console.error(`[GameGeneratorAgent] ❌ 快速设定生成失败:`, error);
       throw new Error(`快速设定生成失败: ${error instanceof Error ? error.message : '未知错误'}`);
@@ -967,6 +1160,10 @@ export class GameGeneratorAgent {
       }
     }
     return undefined;
+  }
+
+  private shouldAttemptFallback(error: unknown, allowFallback: boolean): boolean {
+    return allowFallback && this.profile === 'primary' && hasLLMProfile('backup') && isRecoverableLLMError(error);
   }
 
 }

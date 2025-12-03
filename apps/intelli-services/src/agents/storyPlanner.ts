@@ -14,6 +14,14 @@ import { promptManager } from '../prompts';
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { generateStructuredOutput } from '../utils/structured-output-helper';
 
+export type ToTRound = 'round1' | 'round2' | 'round3' | 'round4';
+
+export interface ToTProgressCallbacks {
+  onRoundStart?: (round: ToTRound, payload?: Record<string, any>) => void;
+  onRoundComplete?: (round: ToTRound, payload?: Record<string, any>) => void;
+}
+import { buildMastraModelConfig, type LLMProfile } from '../utils/llm-config';
+
 // ============ ToT 中间步骤的 Schema ============
 
 /** 候选叙事方向 */
@@ -55,32 +63,54 @@ const PathEvaluationSchema = z.object({
 });
 
 /** 所有方向的评估 */
+const SelectedFieldSchema = z.union([
+  z.string(),
+  z.object({
+    pathId: z.string().optional(),
+    id: z.string().optional(),
+    value: z.string().optional(),
+  }).passthrough()
+]).optional();
+
 const AllEvaluationsSchema = z.object({
   evaluations: z.array(PathEvaluationSchema),
   selectedPathId: z.string().optional(),
-  selected: z.string().optional(), // 某些模型可能使用 selected
+  selected: SelectedFieldSchema, // 某些模型可能使用对象
   selectionReasoning: z.string().optional(),
   reason: z.string().optional(), // 某些模型可能使用 reason
 }).passthrough().transform((data) => {
   return {
     evaluations: data.evaluations,
-    selectedPathId: data.selectedPathId || data.selected || data.evaluations[0]?.pathId || '',
+    selectedPathId: resolveSelectedPathId(data),
     selectionReasoning: data.selectionReasoning || data.reason || '选择了最佳方向',
   };
 });
 
+function resolveSelectedPathId(data: any): string {
+  if (data.selectedPathId) {
+    return data.selectedPathId;
+  }
+  const selected = data.selected;
+  if (typeof selected === 'string') {
+    return selected;
+  }
+  if (selected && typeof selected === 'object') {
+    return selected.pathId || selected.id || selected.value || data.evaluations?.[0]?.pathId || '';
+  }
+  return data.evaluations?.[0]?.pathId || '';
+}
+
 // ============ 基础 Agent（用于各轮调用） ============
 
-export const storyPlannerAgent = new Agent({
-  name: "story-planner",
-  instructions: promptManager.build('story-planner.instructions').user,
+export function createStoryPlannerAgent(profile: LLMProfile = 'primary') {
+  return new Agent({
+    name: "story-planner",
+    instructions: promptManager.build('story-planner.instructions').user,
+    model: buildMastraModelConfig(profile),
+  });
+}
 
-  model: {
-    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-5'}` as `${string}/${string}`,
-    url: process.env.OPENAI_BASE_URL,
-    apiKey: process.env.OPENAI_API_KEY,
-  },
-});
+export const storyPlannerAgent = createStoryPlannerAgent();
 
 // ============ ToT 多轮调用实现 ============
 
@@ -95,12 +125,14 @@ export const storyPlannerAgent = new Agent({
 export async function generateNarrativePlanWithToT(
   agent: typeof storyPlannerAgent,
   input: WorkflowInput,
-  locale: Locale = DEFAULT_LOCALE
+  locale: Locale = DEFAULT_LOCALE,
+  callbacks?: ToTProgressCallbacks
 ): Promise<NarrativePlan> {
   console.log("[ToT] 🌳 开始 Tree-of-Thoughts 规划...");
 
   // ============ Round 1: 生成候选叙事方向 ============
   console.log("[ToT] Round 1: 生成候选叙事方向...");
+  callbacks?.onRoundStart?.('round1');
   
   const { user: generatePrompt } = promptManager.build('story-planner.generate-candidates', {
     worldBible: JSON.stringify(input.worldBible, null, 2),
@@ -108,12 +140,19 @@ export async function generateNarrativePlanWithToT(
     styleGuide: JSON.stringify(input.styleGuide || {}, null, 2),
   }, locale);
 
-  const candidates = await generateStructuredOutput(
-    agent,
-    generatePrompt,
-    CandidatePathsSchema,
-    { temperature: 1 }
-  );
+  let candidates: z.infer<typeof CandidatePathsSchema>;
+  try {
+    candidates = await generateStructuredOutput(
+      agent,
+      generatePrompt,
+      CandidatePathsSchema,
+      { temperature: 1 }
+    );
+  } catch (error) {
+    console.warn("[ToT] ⚠️ Round 1 解析失败，回退到默认候选:", error instanceof Error ? error.message : error);
+    candidates = createFallbackCandidates(input);
+  }
+  callbacks?.onRoundComplete?.('round1', { candidates: candidates.paths });
   
   console.log(`[ToT] Round 1 完成: 生成了 ${candidates.paths.length} 个候选方向`);
   candidates.paths.forEach((p, i) => {
@@ -122,6 +161,7 @@ export async function generateNarrativePlanWithToT(
 
   // ============ Round 2: 评估每个候选方向 ============
   console.log("[ToT] Round 2: 评估候选方向...");
+  callbacks?.onRoundStart?.('round2', { candidates });
   
   const { user: evaluatePrompt } = promptManager.build('story-planner.evaluate', {
     candidateCount: String(candidates.paths.length),
@@ -132,12 +172,143 @@ export async function generateNarrativePlanWithToT(
     tone: input.styleGuide?.tone || '无',
   }, locale);
 
-  const evaluation = await generateStructuredOutput(
-    agent,
-    evaluatePrompt,
-    AllEvaluationsSchema,
-    { temperature: 1 }
-  );
+  let evaluation: { evaluations: any[]; selectedPathId: string; selectionReasoning: string };
+  try {
+    evaluation = await generateStructuredOutput(
+      agent,
+      evaluatePrompt,
+      AllEvaluationsSchema,
+      { temperature: 1 }
+    );
+  } catch (error) {
+    console.warn("[ToT] ⚠️ Round 2 解析失败，回退到默认评估:", error instanceof Error ? error.message : error);
+    evaluation = createFallbackEvaluation(candidates.paths);
+  }
+function createFallbackCandidates(input: WorkflowInput) {
+  const worldName = input.worldBible?.name || '故事世界';
+  const mainScene = input.worldBible?.scenes?.[0]?.name || '起始场景';
+  return {
+    paths: [
+      {
+        id: 'path-1',
+        name: `${worldName} · 主线探秘`,
+        description: `围绕 ${worldName} 的核心秘密展开线性推进`,
+        premise: `主角在 ${worldName} 追寻真相`,
+        centralConflict: '真相与代价的取舍',
+        potentialEndings: ['解锁真相', '陷入更深阴谋'],
+      },
+      {
+        id: 'path-2',
+        name: `${mainScene} · 关系冲突`,
+        description: `以人际关系为驱动力的情感主线`,
+        premise: `在 ${mainScene} 中伙伴间的信任考验`,
+        centralConflict: '信任与背叛',
+        potentialEndings: ['羁绊更深', '关系破裂'],
+      },
+      {
+        id: 'path-3',
+        name: `系统对抗`,
+        description: '聚焦与权威系统的博弈与反击',
+        premise: '主角对抗掌控一切的系统',
+        centralConflict: '自由与控制',
+        potentialEndings: ['推翻系统', '被系统同化'],
+      },
+    ],
+  };
+}
+
+function createFallbackEvaluation(paths: any[]) {
+  const safePaths = Array.isArray(paths) ? paths : [];
+  const evaluations = safePaths.map((path, idx) => ({
+    pathId: path.id || path.name || `path-${idx + 1}`,
+    scores: {
+      dramatic: 3,
+      characterFit: 3,
+      branchPotential: 3,
+      thematicDepth: 3,
+    },
+    totalScore: 12,
+    reasoning: 'Fallback evaluation',
+  }));
+
+  const selectedPathId = evaluations[0]?.pathId || safePaths[0]?.id || 'path-1';
+
+  return {
+    evaluations,
+    selectedPathId,
+    selectionReasoning: '使用默认评分，选择首个候选方向',
+  };
+}
+
+function createFallbackPlan(input: WorkflowInput, selectedPath: any): NarrativePlan {
+  const premise = selectedPath?.premise || `一个发生在 ${input.worldBible?.name || '世界'} 的故事`;
+  const conflict = selectedPath?.centralConflict || '角色与系统之间的冲突';
+  const sceneName = input.worldBible?.scenes?.[0]?.name || '默认场景';
+
+  const startId = 'node-start';
+  const branchId = 'node-branch';
+  const endingA = 'node-ending-a';
+  const endingB = 'node-ending-b';
+
+  return {
+    outline: {
+      premise,
+      centralConflict: conflict,
+      thematicArc: selectedPath?.description || '自我觉醒与成长',
+    },
+    nodes: [
+      {
+        id: startId,
+        type: 'scene',
+        isStart: true,
+        isEnding: false,
+        title: '故事开端',
+        brief: '主角接触到世界规则的裂缝',
+        functionTag: 'setup',
+        sceneName,
+        nextNodeId: branchId,
+        choicesMeta: [],
+        position: { x: 0, y: 0 },
+      },
+      {
+        id: branchId,
+        type: 'branch',
+        title: '关键抉择',
+        brief: '主角面临选择，决定故事走向',
+        functionTag: 'conflict',
+        sceneName,
+        choicesMeta: [
+          { id: 'choice-a', leadsTo: endingA, text: '接受规则' },
+          { id: 'choice-b', leadsTo: endingB, text: '冲破规则' },
+        ],
+        position: { x: 0, y: 200 },
+      },
+      {
+        id: endingA,
+        type: 'ending',
+        isEnding: true,
+        title: '顺从结局',
+        brief: '主角选择守护现状，付出自我',
+        functionTag: 'resolution',
+        sceneName,
+        choicesMeta: [],
+        position: { x: -150, y: 350 },
+      },
+      {
+        id: endingB,
+        type: 'ending',
+        isEnding: true,
+        title: '反抗结局',
+        brief: '主角冲破系统，开启新的秩序',
+        functionTag: 'resolution',
+        sceneName,
+        choicesMeta: [],
+        position: { x: 150, y: 350 },
+      },
+    ],
+  };
+}
+  callbacks?.onRoundComplete?.('round2', { evaluation });
   
   console.log(`[ToT] Round 2 完成: 选择了 ${evaluation.selectedPathId}`);
   console.log(`  选择理由: ${evaluation.selectionReasoning.slice(0, 100)}...`);
@@ -153,6 +324,7 @@ export async function generateNarrativePlanWithToT(
 
   // ============ Round 3: 展开为完整节点骨架 ============
   console.log("[ToT] Round 3: 展开节点骨架...");
+  callbacks?.onRoundStart?.('round3', { selectedPath });
   
   const { user: expandPrompt } = promptManager.build('story-planner.expand', {
     selectedPathName: selectedPath.name,
@@ -166,16 +338,23 @@ export async function generateNarrativePlanWithToT(
     targetEndingCount: String(input.constraints?.targetEndingCount || 3),
   }, locale);
 
-  const plan = await generateStructuredOutput(
-    agent,
-    expandPrompt,
-    NarrativePlanSchema,
-    { temperature: 1 }
-  );
+  let plan: NarrativePlan;
+  try {
+    plan = await generateStructuredOutput(
+      agent,
+      expandPrompt,
+      NarrativePlanSchema,
+      { temperature: 1 }
+    );
+  } catch (error) {
+    console.warn("[ToT] ⚠️ Round 3 解析失败，回退到默认故事骨架:", error instanceof Error ? error.message : error);
+    plan = createFallbackPlan(input, selectedPath);
+  }
+  callbacks?.onRoundComplete?.('round3', { plan });
   
   console.log(`[ToT] Round 3 完成: 生成了 ${plan.nodes.length} 个节点`);
   console.log(`[ToT] 🌳 ToT 规划完成!`);
-  console.log(`  - 前提: ${plan.outline.premise.slice(0, 50)}...`);
+  console.log(`  - 背景设定: ${plan.outline.premise.slice(0, 50)}...`);
   console.log(`  - 节点数: ${plan.nodes.length}`);
   console.log(`  - 结局数: ${plan.nodes.filter(n => n.isEnding).length}`);
 

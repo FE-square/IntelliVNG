@@ -5,17 +5,17 @@
 import { Agent } from "@mastra/core/agent";
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { promptManager } from '../prompts';
+import { buildMastraModelConfig, type LLMProfile } from '../utils/llm-config';
 
-export const nodeWriterAgent = new Agent({
-  name: "node-writer",
-  instructions: promptManager.build('node-writer.instructions').user,
+export function createNodeWriterAgent(profile: LLMProfile = 'primary') {
+  return new Agent({
+    name: "node-writer",
+    instructions: promptManager.build('node-writer.instructions').user,
+    model: buildMastraModelConfig(profile),
+  });
+}
 
-  model: {
-    id: `openai/${process.env.OPENAI_MODEL_NAME || 'gpt-5'}` as `${string}/${string}`,
-    url: process.env.OPENAI_BASE_URL,
-    apiKey: process.env.OPENAI_API_KEY,
-  },
-});
+export const nodeWriterAgent = createNodeWriterAgent();
 
 /**
  * Node Writer 的调用包装函数
