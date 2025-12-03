@@ -8,6 +8,9 @@ export { GameGenerator } from "./game-generator";
 // 新版 GameGeneratorAgent（多智能体模式）
 export { GameGeneratorAgent, gameGeneratorAgent } from "./game-generator-agent";
 
+// Idea Draft 生成器
+export { IdeaDraftGenerator, ideaDraftGenerator } from "./idea-draft-generator";
+
 // 进度发射器（用于 SSE 实时进度推送）
 export * from "./progress-emitter";
 

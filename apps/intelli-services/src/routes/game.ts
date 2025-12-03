@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { GameGenerator } from '../services/game-generator';
 import { GameGeneratorAgent, gameGeneratorAgent } from '../services/game-generator-agent';
+import { ideaDraftGenerator } from '../services/idea-draft-generator';
 import { createProgressEmitter, removeProgressEmitter, type ProgressEvent } from '../services/progress-emitter';
 import { ImageGenerator, ImageType } from '../services/image-generator';
 import { FormAutocomplete, FormType } from '../services/form-autocomplete';
@@ -571,6 +572,11 @@ const quickSetupSchema = z.object({
     locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
 });
 
+const ideaToDraftSchema = z.object({
+    idea: z.string().min(1, 'idea 不能为空'),
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
+});
+
 // POST /api/game/quick-setup - 快速设定生成
 gameRoutes.post(
     '/quick-setup',
@@ -597,6 +603,47 @@ gameRoutes.post(
                 success: false,
                 error: '设定生成失败',
                 details: message,
+            }, 500);
+        }
+    }
+);
+
+// POST /api/game/idea-to-draft - 根据创意生成设定草稿
+gameRoutes.post(
+    '/idea-to-draft',
+    zValidator('json', ideaToDraftSchema),
+    async (c) => {
+        try {
+            const { idea, locale } = c.req.valid('json');
+            const userLocale = getLocaleFromRequest(locale);
+
+            console.log(`[GameRoute] Idea to draft: locale=${userLocale}, idea="${idea.slice(0, 40)}..."`);
+            const cacheKey = getCacheKey(`idea-draft:${userLocale}:${idea}`);
+            const cachedDraft = getFromCache<any>(cacheKey);
+            if (cachedDraft) {
+                return c.json({
+                    success: true,
+                    cached: true,
+                    data: cachedDraft,
+                });
+            }
+
+            const draft = await ideaDraftGenerator.generateDraft(idea, userLocale);
+            saveToCache(cacheKey, draft);
+
+            return c.json({
+                success: true,
+                cached: false,
+                data: draft,
+            });
+        } catch (error) {
+            console.error('[GameRoute] Idea to draft error:', error);
+
+            const message = error instanceof Error ? error.message : '未知错误';
+
+            return c.json({
+                success: false,
+                error: message,
             }, 500);
         }
     }

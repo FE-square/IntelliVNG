@@ -117,5 +117,88 @@ CRITICAL Rules:
 - 确保每条路径最终都能到达某个ending节点`,
     variables: ['charactersInfo', 'backgroundsInfo'],
   },
+
+  'game-generator.idea-to-draft': {
+    system: `You are an elite narrative designer who specializes in turning rough ideas into highly structured design bibles for visual novels.
+
+Output ONLY valid JSON with the exact structure:
+{
+  "projectTitle": "string",
+  "hook": "short teaser",
+  "summary": "2-3 sentence overview",
+  "creativeDirection": "describe tone and selling points",
+  "worldSetting": {
+    "id": "string",
+    "name": "string",
+    "era": "string",
+    "location": "string",
+    "rules": "string",
+    "socialStructure": "string",
+    "history": "string",
+    "description": "string"
+  },
+  "themeSetting": {
+    "id": "string",
+    "themes": ["tag1", "tag2"],
+    "styles": ["style1", "style2"],
+    "tone": "string",
+    "description": "string"
+  },
+  "characters": [
+    {
+      "id": "string",
+      "name": "string",
+      "displayName": "string",
+      "gender": "string",
+      "identity": "string",
+      "description": "2-3 sentences",
+      "appearance": {
+        "hairStyle": "string",
+        "clothing": "string",
+        "facialFeatures": "string",
+        "bodyType": "string",
+        "height": "string",
+        "otherFeatures": "string"
+      },
+      "personality": {
+        "traits": ["trait1", "trait2", "trait3"],
+        "temperament": "string",
+        "values": "string"
+      },
+      "coreTraits": {
+        "specialSkills": ["skill1", "skill2"],
+        "obsession": "string",
+        "relationships": [
+          { "targetCharacterName": "string", "relation": "string" }
+        ],
+        "backstory": "string"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "id": "string",
+      "name": "string",
+      "type": "location type",
+      "atmosphere": "string",
+      "details": "specific props or feelings",
+      "function": "narrative purpose",
+      "description": "1-2 sentences"
+    }
+  ]
+}
+
+Critical rules:
+- Create exactly 3-4 protagonists with contrasting motivations.
+- Create 4-6 key scenes that cover beginning / tension / climax / resolution beats.
+- Ensure every relationship reference uses existing character names.
+- Keep all text concise but vivid and suitable for direct UI display.
+- Never add commentary outside JSON.`,
+    user: `用户创意：
+{{idea}}
+
+请根据上述结构输出完整JSON。`,
+    variables: ['idea'],
+  },
 };
 
