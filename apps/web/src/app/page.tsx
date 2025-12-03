@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, useToast } from '@vng/ui';
-import { Sparkles, FolderOpen, Zap, Settings, Users, Map, BookOpen, Globe2, Loader2 } from 'lucide-react';
+import { Sparkles, FolderOpen, Zap, Settings, Users, Map, BookOpen, Globe2, Loader2, BrainCircuit } from 'lucide-react';
 import type { Character, Scene, ThemeSetting, WorldSetting } from '@vng/core';
 
 type ProgressStage =
@@ -70,7 +70,7 @@ export default function Home() {
     const [quickPrompt, setQuickPrompt] = useState('');
     const [isQuickGenerating, setIsQuickGenerating] = useState(false);
     const [isAgentGenerating, setIsAgentGenerating] = useState(false);
-    const isBusy = isQuickGenerating || isAgentGenerating;
+    const [isDraftGenerating, setIsDraftGenerating] = useState(false);
     const [draftData, setDraftData] = useState<DraftData | null>(null);
     const [draftCached, setDraftCached] = useState(false);
     const [progressEvents, setProgressEvents] = useState<AgentProgressEvent[]>([]);
@@ -160,8 +160,9 @@ export default function Home() {
         error: { label: '已中断', className: 'bg-rose-100 text-rose-700' },
     }[sessionStatus];
     const recentProgressEvents = progressEvents.slice(-20);
-    const showDraftSection = Boolean(draftData) || isAgentGenerating;
-    const showDraftLoading = isAgentGenerating && !draftData;
+    const showDraftSection = Boolean(draftData) || isDraftGenerating;
+    const showDraftLoading = isDraftGenerating && !draftData;
+    const [showFastScriptLoading, setShowFastScriptLoading] = useState(false);
     const shouldShowAgentsProgress =
         Boolean(draftData) && (recentProgressEvents.length > 0 || sessionStatus === 'error' || sessionStatus === 'success' || Boolean(finalProject));
 
@@ -273,11 +274,14 @@ export default function Home() {
         await reader.cancel().catch(() => { });
     };
 
-    const runAgentGeneration = async (draft: DraftData, locale: string) => {
+    const requestScriptsGeneration = async (draft: DraftData, locale: string, mode = 'fast') => {
         setSessionStatus('running');
         const controller = new AbortController();
         controllerRef.current = controller;
-
+        toast.info('连接智能创作服务', `模式: ${mode}`);
+        if (mode === 'fast') {
+            setShowFastScriptLoading(true);
+        }
         const response = await fetch('/api/game/generate-by-agents', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -287,7 +291,7 @@ export default function Home() {
                 scenes: draft.scenes,
                 themeSetting: draft.themeSetting,
                 locale,
-                mode: 'agent',
+                mode,
             }),
             signal: controller.signal,
         });
@@ -296,51 +300,37 @@ export default function Home() {
             const errorPayload = await response.json().catch(() => ({}));
             throw new Error(errorPayload.error || '智能体服务异常');
         }
-
-        await streamAgentResponse(response);
-    };
-
-    // 快速生成处理
-    const handleQuickGenerate = async () => {
-        if (!quickPrompt.trim()) {
-            toast.warning('请输入故事描述');
-            return;
-        }
-
-        setIsQuickGenerating(true);
-        try {
-            toast.info('AI创作中', '正在基于你的描述生成完整游戏...');
-
-            // 调用快速生成API
-            const response = await fetch('/api/quick-generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: quickPrompt }),
-            });
-
+        if (mode === 'fast') {
             const result = await response.json();
-
+            setIsQuickGenerating(false)
+            setShowFastScriptLoading(false);
             if (result.success) {
-                toast.success('生成成功', '正在跳转到编辑器...');
-                router.push(`/editor?projectId=${result.data.id}`);
+                toast.success('剧本生成成功', '即将跳转到编辑器...');
+                setTimeout(() => {
+                    router.push(`/editor?projectId=${result.data.id}`);
+                }, 5000);
             } else {
+                setIsQuickGenerating(false)
+                setShowFastScriptLoading(false);
                 toast.error('生成失败', result.error || '请重试');
             }
-        } catch (error) {
-            console.error('Quick generate error:', error);
-            toast.error('生成失败', '请检查网络连接');
-        } finally {
-            setIsQuickGenerating(false);
+        } else {
+            await streamAgentResponse(response);
         }
     };
-    // Agents生成处理
-    const handleAgentsGenerate = async () => {
+
+    // 先 /idea-to-draft 生成草稿 然后交给 /generate-by-agents 接口生成脚本
+    const handleDraftAndScripts = async (mode = 'fast') => {
         if (!quickPrompt.trim()) {
             toast.warning('请输入故事描述');
             return;
         }
-
-        setIsAgentGenerating(true);
+        setIsDraftGenerating(true);
+        if (mode === 'fast') {
+            setIsQuickGenerating(true);
+        } else {
+            setIsAgentGenerating(true);
+        }
         resetAgentFlow();
 
         try {
@@ -360,6 +350,7 @@ export default function Home() {
                     locale,
                 }),
             });
+            setIsDraftGenerating(false);
 
             const draftResult = await draftResponse.json().catch(() => ({}));
             if (!draftResponse.ok || !draftResult.success) {
@@ -373,7 +364,7 @@ export default function Home() {
             }
             toast.info('设定草稿完成', '智能体系统即将写作剧本...');
 
-            await runAgentGeneration(draftResult.data, locale);
+            await requestScriptsGeneration(draftResult.data, locale, mode);
         } catch (error) {
             if (error instanceof DOMException && error.name === 'AbortError') {
                 toast.info('已取消生成');
@@ -388,13 +379,13 @@ export default function Home() {
         }
     };
 
-    const handleRetryAgents = async () => {
+    const handleRetryAgents = async (mode = 'fast') => {
         if (!draftData) return;
         resetAgentFlow({ keepDraft: true });
         setIsAgentGenerating(true);
         try {
             toast.info('正在重试', '使用现有设定重新驱动智能体系统...');
-            await runAgentGeneration(draftData, lastLocale || getUserLocale());
+            await requestScriptsGeneration(draftData, lastLocale || getUserLocale(), mode);
         } catch (error) {
             console.error('Agents retry error:', error);
             toast.error('重试失败', error instanceof Error ? error.message : '请检查网络连接');
@@ -405,352 +396,352 @@ export default function Home() {
         }
     };
 
-    const handleProgressRetry = () => {
+    const handleProgressRetry = (mode: 'fast' | 'agent') => {
         if (!draftData || isAgentGenerating) return;
         setProgressEvents([]);
-        handleRetryAgents();
+        handleRetryAgents(mode);
     };
 
     return (
         <>
             <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
-            <Card className="w-full max-w-3xl shadow-2xl border-2 border-slate-200 bg-white">
-                <CardHeader className="text-center pb-4">
-                    <div className="flex justify-center mb-4">
-                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-600 to-pink-600 flex items-center justify-center shadow-lg">
-                            <Sparkles className="w-10 h-10 text-white" />
+                <Card className="w-full max-w-3xl shadow-2xl border-2 border-slate-200 bg-white">
+                    <CardHeader className="text-center pb-4">
+                        <div className="flex justify-center mb-4">
+                            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-600 to-pink-600 flex items-center justify-center shadow-lg">
+                                <Sparkles className="w-10 h-10 text-white" />
+                            </div>
                         </div>
-                    </div>
-                    <CardTitle className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600">
-                        IntelliVNG Studio
-                    </CardTitle>
-                    <CardDescription className="text-xl mt-3 text-slate-600">
-                        用 AI 讲述你的故事
-                    </CardDescription>
-                    <p className="text-sm mt-2 text-slate-500">
-                        一句话创作完整视觉小说，从灵感到成品只需几分钟
-                    </p>
-                </CardHeader>
+                        <CardTitle className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600">
+                            IntelliVNG Studio
+                        </CardTitle>
+                        <CardDescription className="text-xl mt-3 text-slate-600">
+                            用 AI 讲述你的故事
+                        </CardDescription>
+                        <p className="text-sm mt-2 text-slate-500">
+                            一句话创作完整视觉小说，从灵感到成品只需几分钟
+                        </p>
+                    </CardHeader>
 
-                <CardContent className="space-y-6 pt-6">
-                    {/* 开始按钮 */}
-                    <div className="space-y-3">
-                        <>
-                            {/* 自动模式 - 主推荐 */}
-                            <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <Zap className="w-5 h-5 text-amber-600" />
-                                        <h3 className="font-semibold text-amber-900">自动创作模式</h3>
-                                        <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">推荐</span>
-                                    </div>
-                                    <p className="text-sm text-amber-700 mb-3">描述你的故事创意，AI 自动生成完整的多分支剧情游戏</p>
-                                    <div className="space-y-2">
-                                        <textarea
-                                            className="w-full px-4 py-3 border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
-                                            rows={3}
-                                            value={quickPrompt}
-                                            onChange={(e) => setQuickPrompt(e.target.value)}
-                                            placeholder="例如：关于失忆少女在未来城市寻找记忆的悬疑故事"
-                                            disabled={isBusy}
-                                        />
-                                        <div className="flex items-center gap-2">
-                                            <Button
-                                                className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg"
-                                                onClick={handleQuickGenerate}
-                                                disabled={isBusy || !quickPrompt.trim()}
-                                            >
-                                                {isQuickGenerating ? (
-                                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                                ) : (
-                                                    <Zap className="w-5 h-5 mr-2" />
-                                                )}
-                                                {isQuickGenerating ? 'LLM 正在创作...' : '✨ 快速创作 (大模型)'}
-                                            </Button>
-                                            <Button
-                                                className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg"
-                                                onClick={handleAgentsGenerate}
-                                                disabled={isBusy || !quickPrompt.trim()}
-                                            >
-                                                {isAgentGenerating ? (
-                                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                                ) : (
-                                                    <Zap className="w-5 h-5 mr-2" />
-                                                )}
-                                                {isAgentGenerating ? 'Agents 正在创作...' : '✨ 高级创作 (智能体系统)'}
-                                            </Button>
+                    <CardContent className="space-y-6 pt-6">
+                        {/* 开始按钮 */}
+                        <div className="space-y-3">
+                            <>
+                                {/* 自动模式 - 主推荐 */}
+                                <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300">
+                                    <CardContent className="p-4">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Zap className="w-5 h-5 text-amber-600" />
+                                            <h3 className="font-semibold text-amber-900">自动创作模式</h3>
+                                            <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">推荐</span>
                                         </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                        <p className="text-sm text-amber-700 mb-3">描述你的故事创意，AI 自动生成完整的多分支剧情游戏</p>
+                                        <div className="space-y-2">
+                                            <textarea
+                                                className="w-full px-4 py-3 border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                                                rows={3}
+                                                value={quickPrompt}
+                                                onChange={(e) => setQuickPrompt(e.target.value)}
+                                                placeholder="例如：关于失忆少女在未来城市寻找记忆的悬疑故事"
+                                                disabled={isDraftGenerating}
+                                            />
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg"
+                                                    onClick={() => handleDraftAndScripts('fast')}
+                                                    disabled={isDraftGenerating || !quickPrompt.trim()}
+                                                >
+                                                    {isQuickGenerating ? (
+                                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                                    ) : (
+                                                        <Zap className="w-5 h-5 mr-2" />
+                                                    )}
+                                                    {isQuickGenerating ? 'LLM 正在创作...' : '快速创作 (大模型)'}
+                                                </Button>
+                                                <Button
+                                                    className="w-full h-12 bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 shadow-lg"
+                                                    onClick={() => handleDraftAndScripts('agent')}
+                                                    disabled={isDraftGenerating || !quickPrompt.trim()}
+                                                >
+                                                    {isAgentGenerating ? (
+                                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                                    ) : (
+                                                        <BrainCircuit className="w-5 h-5 mr-2" />
+                                                    )}
+                                                    {isAgentGenerating ? 'Agents 正在创作...' : '高级创作 (智能体系统)'}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
 
-                            {/* 专业模式 */}
+                                {/* 专业模式 */}
+                                <Button
+                                    variant="outline"
+                                    className="w-full h-12 text-lg border-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+                                    onClick={() => router.push('/setup')}
+                                >
+                                    <Settings className="w-5 h-5 mr-2" />
+                                    专业模式
+                                </Button>
+                            </>
+
                             <Button
                                 variant="outline"
                                 className="w-full h-12 text-lg border-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-                                onClick={() => router.push('/setup')}
+                                onClick={() => router.push('/dashboard')}
                             >
-                                <Settings className="w-5 h-5 mr-2" />
-                                专业模式
+                                <FolderOpen className="w-5 h-5 mr-2" />
+                                查看我的项目
                             </Button>
-                        </>
+                        </div>
 
-                        <Button
-                            variant="outline"
-                            className="w-full h-12 text-lg border-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-                            onClick={() => router.push('/dashboard')}
-                        >
-                            <FolderOpen className="w-5 h-5 mr-2" />
-                            查看我的项目
-                        </Button>
-                    </div>
+                        {/* 额外说明 */}
+                        <div className="text-center text-sm text-slate-500 pt-2">
+                            <p>💡 AI 自动生成角色、场景、对话和分支剧情 | 🎨 支持自定义立绘和背景</p>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    {/* 额外说明 */}
-                    <div className="text-center text-sm text-slate-500 pt-2">
-                        <p>💡 AI 自动生成角色、场景、对话和分支剧情 | 🎨 支持自定义立绘和背景</p>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {showDraftSection && (
-                <div ref={draftSectionRef} className="w-full max-w-4xl mt-8">
-                    <Card className="border border-slate-200 bg-white/90 shadow-xl">
-                        <CardHeader>
-                            <CardTitle className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-                                <BookOpen className="w-6 h-6 text-indigo-500" />
-                                设定草稿
-                                {draftCached && draftData && (
-                                    <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
-                                        缓存命中
-                                    </span>
-                                )}
-                            </CardTitle>
-                            <CardDescription className="text-slate-600">
-                                {draftData
-                                    ? `${draftData.projectTitle} · ${draftData.summary || draftData.hook || 'AI 已完成世界观、角色与场景规划'}`
-                                    : '正在生成草稿（世界观 / 角色阵容 / 关键场景 / 主题 & 风格）...'}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <section>
-                                <div className="flex items-center gap-2 text-slate-800 font-semibold">
-                                    <Globe2 className="w-4 h-4 text-indigo-500" />
-                                    世界观
-                                </div>
-                                {draftData ? (
-                                    <>
-                                        <p className="text-sm text-slate-600 mt-1">
-                                            {draftData.worldSetting.name} · {draftData.worldSetting.era} · {draftData.worldSetting.location}
-                                        </p>
-                                        {draftData.worldSetting.rules && (
-                                            <p className="text-sm text-slate-600 mt-1">{draftData.worldSetting.rules}</p>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="mt-2 space-y-2 text-sm text-slate-500">
-                                        <p>AI 正在梳理世界观设定...</p>
-                                        <div className="h-3 rounded bg-slate-100 animate-pulse" />
-                                        <div className="h-3 rounded bg-slate-100 animate-pulse w-3/4" />
+                {showDraftSection && (
+                    <div ref={draftSectionRef} className="w-full max-w-4xl mt-8">
+                        <Card className="border border-slate-200 bg-white/90 shadow-xl">
+                            <CardHeader>
+                                <CardTitle className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+                                    <BookOpen className="w-6 h-6 text-indigo-500" />
+                                    设定草稿
+                                    {draftCached && draftData && (
+                                        <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
+                                            缓存命中
+                                        </span>
+                                    )}
+                                </CardTitle>
+                                <CardDescription className="text-slate-600">
+                                    {draftData
+                                        ? `${draftData.projectTitle} · ${draftData.summary || draftData.hook || 'AI 已完成世界观、角色与场景规划'}`
+                                        : '正在生成草稿（世界观 / 角色阵容 / 关键场景 / 主题 & 风格）...'}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <section>
+                                    <div className="flex items-center gap-2 text-slate-800 font-semibold">
+                                        <Globe2 className="w-4 h-4 text-indigo-500" />
+                                        世界观
                                     </div>
-                                )}
-                            </section>
-                            <section>
-                                <div className="flex items-center gap-2 font-semibold text-slate-800">
-                                    <Users className="w-4 h-4 text-indigo-500" />
-                                    角色阵容
-                                </div>
-                                {draftData ? (
-                                    <div className="mt-2 grid gap-3 md:grid-cols-2">
-                                        {draftData.characters.map((character) => (
-                                            <div key={character.id} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-                                                <div className="flex items-center justify-between">
-                                                    <p className="font-semibold text-slate-900">{character.displayName || character.name}</p>
-                                                    {character.identity && <span className="text-xs text-slate-500">{character.identity}</span>}
-                                                </div>
-                                                <p className="text-sm text-slate-600 mt-1">{character.description}</p>
-                                                {character.personality?.traits && character.personality?.traits.length > 0 && (
-                                                    <div className="mt-2 flex flex-wrap gap-1">
-                                                        {character.personality.traits.slice(0, 3).map((trait) => (
-                                                            <span key={trait} className="text-xs px-2 py-0.5 bg-white border border-slate-200 rounded-full text-slate-600">
-                                                                {trait}
-                                                            </span>
-                                                        ))}
+                                    {draftData ? (
+                                        <>
+                                            <p className="text-sm text-slate-600 mt-1">
+                                                {draftData.worldSetting.name} · {draftData.worldSetting.era} · {draftData.worldSetting.location}
+                                            </p>
+                                            {draftData.worldSetting.rules && (
+                                                <p className="text-sm text-slate-600 mt-1">{draftData.worldSetting.rules}</p>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="mt-2 space-y-2 text-sm text-slate-500">
+                                            <p>AI 正在梳理世界观设定...</p>
+                                            <div className="h-3 rounded bg-slate-100 animate-pulse" />
+                                            <div className="h-3 rounded bg-slate-100 animate-pulse w-3/4" />
+                                        </div>
+                                    )}
+                                </section>
+                                <section>
+                                    <div className="flex items-center gap-2 font-semibold text-slate-800">
+                                        <Users className="w-4 h-4 text-indigo-500" />
+                                        角色阵容
+                                    </div>
+                                    {draftData ? (
+                                        <div className="mt-2 grid gap-3 md:grid-cols-2">
+                                            {draftData.characters.map((character) => (
+                                                <div key={character.id} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="font-semibold text-slate-900">{character.displayName || character.name}</p>
+                                                        {character.identity && <span className="text-xs text-slate-500">{character.identity}</span>}
                                                     </div>
+                                                    <p className="text-sm text-slate-600 mt-1">{character.description}</p>
+                                                    {character.personality?.traits && character.personality?.traits.length > 0 && (
+                                                        <div className="mt-2 flex flex-wrap gap-1">
+                                                            {character.personality.traits.slice(0, 3).map((trait) => (
+                                                                <span key={trait} className="text-xs px-2 py-0.5 bg-white border border-slate-200 rounded-full text-slate-600">
+                                                                    {trait}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="mt-2 grid gap-3 md:grid-cols-2">
+                                            {[0, 1, 2, 3].map((index) => (
+                                                <div key={index} className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3 animate-pulse h-24" />
+                                            ))}
+                                        </div>
+                                    )}
+                                </section>
+                                <section>
+                                    <div className="flex items-center gap-2 font-semibold text-slate-800">
+                                        <Map className="w-4 h-4 text-indigo-500" />
+                                        关键场景
+                                    </div>
+                                    {draftData ? (
+                                        <div className="mt-2 space-y-2">
+                                            {draftData.scenes.map((scene, index) => (
+                                                <div key={scene.id} className="border-l-4 border-indigo-200 pl-3">
+                                                    <p className="text-sm font-semibold text-slate-800">
+                                                        S{index + 1} · {scene.name} ({scene.atmosphere})
+                                                    </p>
+                                                    <p className="text-sm text-slate-600">{scene.description || scene.details || '暂无详细描述'}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="mt-2 space-y-2">
+                                            {[0, 1, 2].map((index) => (
+                                                <div key={index} className="border-l-4 border-indigo-100 pl-3 space-y-2">
+                                                    <div className="h-3 bg-slate-100 rounded animate-pulse w-1/2" />
+                                                    <div className="h-3 bg-slate-100 rounded animate-pulse w-3/4" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </section>
+                                <section>
+                                    <div className="flex items-center gap-2 font-semibold text-slate-800">
+                                        <Sparkles className="w-4 h-4 text-indigo-500" />
+                                        主题 & 风格
+                                    </div>
+                                    {draftData ? (
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            {draftData.themeSetting.themes?.map((theme) => (
+                                                <span key={theme} className="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-600">
+                                                    #{theme}
+                                                </span>
+                                            ))}
+                                            {draftData.themeSetting.styles?.map((style) => (
+                                                <span key={style} className="px-3 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-600">
+                                                    {style}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            {[0, 1, 2].map((index) => (
+                                                <span key={index} className="px-6 py-2 text-xs font-semibold rounded-full bg-slate-100 text-slate-400 animate-pulse">
+                                                    正在构思...
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </section>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
+                {shouldShowAgentsProgress && (
+                    <div ref={agentsSectionRef} className="w-full max-w-4xl mt-6">
+                        <Card className="border border-slate-200 bg-white/90 shadow-xl">
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+                                        <Sparkles className="w-6 h-6 text-indigo-500" />
+                                        Agents 实时进度
+                                    </CardTitle>
+                                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${agentStatusMeta.className}`}>
+                                        {agentStatusMeta.label}
+                                    </span>
+                                </div>
+                                {sessionInfo.message && <CardDescription className="text-slate-600">{sessionInfo.message}</CardDescription>}
+                            </CardHeader>
+                            <CardContent>
+                                {recentProgressEvents.length === 0 ? (
+                                    <p className="text-sm text-slate-500">等待智能体协作启动...</p>
+                                ) : (
+                                    <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1" ref={progressListRef}>
+                                        {recentProgressEvents.map((event) => (
+                                            <div key={`${event.stage}-${event.timestamp}`} className="rounded-lg border border-slate-200 bg-white/70 p-3 shadow-sm">
+                                                <div className="flex items-center text-sm font-semibold text-slate-800">
+                                                    <span>{stageLabels[event.stage] || event.stage}</span>
+                                                    <div className="ml-auto flex items-center gap-2">
+                                                        {typeof event.progress === 'number' && (
+                                                            <span className="text-xs text-slate-500">{event.progress}%</span>
+                                                        )}
+                                                        {event.status === 'failed' && draftData && (
+                                                            <Button
+                                                                variant="outline"
+                                                                className="h-7 px-2 text-xs"
+                                                                disabled={isAgentGenerating}
+                                                                onClick={() => handleProgressRetry('agent')}
+                                                            >
+                                                                重试
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <p className="text-sm text-slate-600 mt-1">{event.message || event.action}</p>
+                                                {event.details && (
+                                                    <p className="text-xs text-slate-400 mt-1">
+                                                        {event.details.nodeCount ? `节点数：${event.details.nodeCount}` : null}
+                                                        {event.details.layer ? ` · 第 ${event.details.layer}/${event.details.totalLayers} 层` : null}
+                                                    </p>
+                                                )}
+                                                {Array.isArray((event.details as any)?.candidates) && (event.details as any).candidates.length > 0 && (
+                                                    <ul className="mt-2 space-y-1 text-xs text-slate-500 list-disc pl-4">
+                                                        {(event.details as any).candidates.map((candidate: any, idx: number) => (
+                                                            <li key={`${event.timestamp}-candidate-${idx}`}>
+                                                                <span className="font-medium text-slate-600">{candidate.name || candidate.id}</span>
+                                                                {candidate.description ? `：${candidate.description}` : null}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                                {Array.isArray((event.details as any)?.nodes) && (event.details as any).nodes.length > 0 && (
+                                                    <ul className="mt-2 space-y-1 text-xs text-slate-500 list-disc pl-4">
+                                                        {(event.details as any).nodes.map((node: any, idx: number) => (
+                                                            <li key={`${event.timestamp}-node-${idx}`}>
+                                                                <span className="font-medium text-slate-600">
+                                                                    {node.title || node.id} {node.isEnding ? '(结局)' : ''}
+                                                                </span>
+                                                                {node.brief ? `：${node.brief}` : null}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
                                                 )}
                                             </div>
                                         ))}
                                     </div>
-                                ) : (
-                                    <div className="mt-2 grid gap-3 md:grid-cols-2">
-                                        {[0, 1, 2, 3].map((index) => (
-                                            <div key={index} className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3 animate-pulse h-24" />
-                                        ))}
-                                    </div>
                                 )}
-                            </section>
-                            <section>
-                                <div className="flex items-center gap-2 font-semibold text-slate-800">
-                                    <Map className="w-4 h-4 text-indigo-500" />
-                                    关键场景
-                                </div>
-                                {draftData ? (
-                                    <div className="mt-2 space-y-2">
-                                        {draftData.scenes.map((scene, index) => (
-                                            <div key={scene.id} className="border-l-4 border-indigo-200 pl-3">
-                                                <p className="text-sm font-semibold text-slate-800">
-                                                    S{index + 1} · {scene.name} ({scene.atmosphere})
-                                                </p>
-                                                <p className="text-sm text-slate-600">{scene.description || scene.details || '暂无详细描述'}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="mt-2 space-y-2">
-                                        {[0, 1, 2].map((index) => (
-                                            <div key={index} className="border-l-4 border-indigo-100 pl-3 space-y-2">
-                                                <div className="h-3 bg-slate-100 rounded animate-pulse w-1/2" />
-                                                <div className="h-3 bg-slate-100 rounded animate-pulse w-3/4" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </section>
-                            <section>
-                                <div className="flex items-center gap-2 font-semibold text-slate-800">
-                                    <Sparkles className="w-4 h-4 text-indigo-500" />
-                                    主题 & 风格
-                                </div>
-                                {draftData ? (
-                                    <div className="mt-2 flex flex-wrap gap-2">
-                                        {draftData.themeSetting.themes?.map((theme) => (
-                                            <span key={theme} className="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-600">
-                                                #{theme}
-                                            </span>
-                                        ))}
-                                        {draftData.themeSetting.styles?.map((style) => (
-                                            <span key={style} className="px-3 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-600">
-                                                {style}
-                                            </span>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="mt-2 flex flex-wrap gap-2">
-                                        {[0, 1, 2].map((index) => (
-                                            <span key={index} className="px-6 py-2 text-xs font-semibold rounded-full bg-slate-100 text-slate-400 animate-pulse">
-                                                正在构思...
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </section>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-
-            {shouldShowAgentsProgress && (
-                <div ref={agentsSectionRef} className="w-full max-w-4xl mt-6">
-                    <Card className="border border-slate-200 bg-white/90 shadow-xl">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-                                    <Sparkles className="w-6 h-6 text-indigo-500" />
-                                    Agents 实时进度
-                                </CardTitle>
-                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${agentStatusMeta.className}`}>
-                                    {agentStatusMeta.label}
-                                </span>
-                            </div>
-                            {sessionInfo.message && <CardDescription className="text-slate-600">{sessionInfo.message}</CardDescription>}
-                        </CardHeader>
-                        <CardContent>
-                            {recentProgressEvents.length === 0 ? (
-                                <p className="text-sm text-slate-500">等待智能体协作启动...</p>
-                            ) : (
-                                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1" ref={progressListRef}>
-                                    {recentProgressEvents.map((event) => (
-                                        <div key={`${event.stage}-${event.timestamp}`} className="rounded-lg border border-slate-200 bg-white/70 p-3 shadow-sm">
-                                            <div className="flex items-center text-sm font-semibold text-slate-800">
-                                                <span>{stageLabels[event.stage] || event.stage}</span>
-                                                <div className="ml-auto flex items-center gap-2">
-                                                    {typeof event.progress === 'number' && (
-                                                        <span className="text-xs text-slate-500">{event.progress}%</span>
-                                                    )}
-                                                    {event.status === 'failed' && draftData && (
-                                                        <Button
-                                                            variant="outline"
-                                                            className="h-7 px-2 text-xs"
-                                                            disabled={isAgentGenerating}
-                                                            onClick={handleProgressRetry}
-                                                        >
-                                                            重试
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-slate-600 mt-1">{event.message || event.action}</p>
-                                            {event.details && (
-                                                <p className="text-xs text-slate-400 mt-1">
-                                                    {event.details.nodeCount ? `节点数：${event.details.nodeCount}` : null}
-                                                    {event.details.layer ? ` · 第 ${event.details.layer}/${event.details.totalLayers} 层` : null}
-                                                </p>
-                                            )}
-                                            {Array.isArray((event.details as any)?.candidates) && (event.details as any).candidates.length > 0 && (
-                                                <ul className="mt-2 space-y-1 text-xs text-slate-500 list-disc pl-4">
-                                                    {(event.details as any).candidates.map((candidate: any, idx: number) => (
-                                                        <li key={`${event.timestamp}-candidate-${idx}`}>
-                                                            <span className="font-medium text-slate-600">{candidate.name || candidate.id}</span>
-                                                            {candidate.description ? `：${candidate.description}` : null}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            )}
-                                            {Array.isArray((event.details as any)?.nodes) && (event.details as any).nodes.length > 0 && (
-                                                <ul className="mt-2 space-y-1 text-xs text-slate-500 list-disc pl-4">
-                                                    {(event.details as any).nodes.map((node: any, idx: number) => (
-                                                        <li key={`${event.timestamp}-node-${idx}`}>
-                                                            <span className="font-medium text-slate-600">
-                                                                {node.title || node.id} {node.isEnding ? '(结局)' : ''}
-                                                            </span>
-                                                            {node.brief ? `：${node.brief}` : null}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            )}
+                                {finalProject && (
+                                    <div className="mt-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                        {redirectCountdown !== null && (
+                                            <p className="text-xs text-slate-500">
+                                                {`将在 ${redirectCountdown}s 后自动跳转，如需立即进入可点击下方按钮。`}
+                                            </p>
+                                        )}
+                                        <div className="flex justify-end">
+                                            <Button variant="outline" onClick={handleViewProject}>
+                                                查看 {finalProject.title}
+                                            </Button>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                            {finalProject && (
-                                <div className="mt-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                                    {redirectCountdown !== null && (
-                                        <p className="text-xs text-slate-500">
-                                            {`将在 ${redirectCountdown}s 后自动跳转，如需立即进入可点击下方按钮。`}
-                                        </p>
-                                    )}
-                                    <div className="flex justify-end">
-                                        <Button variant="outline" onClick={handleViewProject}>
-                                            查看 {finalProject.title}
+                                    </div>
+                                )}
+                                {sessionStatus === 'error' && draftData && (
+                                    <div className="mt-4 flex flex-col gap-2 md:flex-row md:justify-end">
+                                        <Button variant="outline" onClick={() => resetAgentFlow()} disabled={isAgentGenerating}>
+                                            重新输入创意
+                                        </Button>
+                                        <Button onClick={() => handleRetryAgents('agent')} disabled={isAgentGenerating}>
+                                            {isAgentGenerating ? '正在重试...' : '使用当前草稿重试生成'}
                                         </Button>
                                     </div>
-                                </div>
-                            )}
-                            {sessionStatus === 'error' && draftData && (
-                                <div className="mt-4 flex flex-col gap-2 md:flex-row md:justify-end">
-                                    <Button variant="outline" onClick={() => resetAgentFlow()} disabled={isAgentGenerating}>
-                                        重新输入创意
-                                    </Button>
-                                    <Button onClick={handleRetryAgents} disabled={isAgentGenerating}>
-                                        {isAgentGenerating ? '正在重试...' : '使用当前草稿重试生成'}
-                                    </Button>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
-            {/* 页脚 */}
+                {/* 页脚 */}
                 <p className="text-slate-600 mt-8 text-sm">
                     Made with ❤️ by IntelliVNG Team
                 </p>
@@ -764,7 +755,7 @@ export default function Home() {
                                 <Loader2 className="absolute inset-0 m-auto h-10 w-10 text-indigo-500 animate-spin" />
                             </div>
                             <div>
-                                <p className="text-lg font-semibold text-slate-900">设定草稿生成中</p>
+                                <p className="text-lg font-semibold text-slate-900">设定草稿生成中（约 30s）</p>
                                 <p className="text-sm text-slate-500 mt-1">世界观 / 角色阵容 / 关键场景 / 主题 & 风格</p>
                             </div>
                             <div className="w-full space-y-2 text-left text-sm text-slate-500">
@@ -779,6 +770,37 @@ export default function Home() {
                                 <div className="flex items-center gap-2">
                                     <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse delay-500" />
                                     整合角色与场景草稿
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {showFastScriptLoading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/10 ">
+                    <div className="w-80 rounded-2xl border border-white/30 bg-white/90 p-6 shadow-2xl">
+                        <div className="flex flex-col items-center text-center space-y-4" aria-live="polite">
+                            <div className="relative">
+                                <div className="h-16 w-16 rounded-full border-4 border-indigo-100" />
+                                <Loader2 className="absolute inset-0 m-auto h-10 w-10 text-indigo-500 animate-spin" />
+                            </div>
+                            <div>
+                                <p className="text-lg font-semibold text-slate-900">故事线生成中</p>
+                                <p className="text-sm text-slate-500 mt-1">大约 30s 内即可完成
+                                </p>
+                            </div>
+                            <div className="w-full space-y-2 text-left text-sm text-slate-500">
+                                <div className="flex items-center gap-2">
+                                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                                    丰富场景与情节
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse delay-200" />
+                                    编写人物对话与旁白
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse delay-500" />
+                                    设计分支剧情与结局
                                 </div>
                             </div>
                         </div>
