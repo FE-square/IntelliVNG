@@ -52,8 +52,6 @@ IntelliVNG Studio 想做的是一款 **“从 0 到 可玩的多结局视觉小�
 
 这篇文章后面的内容，会从这些“非常实际的问题”出发，讲清楚我们是怎么一步步从“单次 LLM 调用”，走到现在这个 **多智能体 + 工作流 + 实时进度** 的系统设计的。
 
----
-
 ## 一、需求初衷：为什么需要多智能体方案 (Multi-Agent)？
 
 ### 1.1 原有方案的局限
@@ -111,8 +109,6 @@ const response = await openai.chat.completions.create({
 └──────────────────────────────────────────────────────────────┘
 ```
 
----
-
 ## 二、设计哲学：分而治之 + 专业分工
 
 ### 2.1 核心理念
@@ -167,8 +163,6 @@ const response = await openai.chat.completions.create({
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
----
-
 ## 三、Agent 设计：三位专家 + 一位指挥
 
 ### 3.1 Agent 角色映射
@@ -217,8 +211,6 @@ const response = await openai.chat.completions.create({
 | **推理深度** | 无法在单次调用中进行多层级推理 | 每个 Agent 在自己领域深入推理 |
 | **可观测性** | 决策过程是黑盒 | 每个阶段的输入输出都可追踪 |
 | **错误恢复** | 一旦出错只能重新开始 | 可以只重试特定 Agent |
-
----
 
 ## 四、技术模式详解
 
@@ -344,8 +336,6 @@ export async function generateNarrativePlanWithToT(
 | **质量可控** | 通过评分标准引导 LLM 的选择 |
 | **多样性** | 即使最终只选一个方向，也探索了多种可能 |
 | **可复现** | 给定相同输入，评分标准确保相对稳定的输出 |
-
----
 
 ### 4.2 Story Reviewer：ReAct (Reasoning + Acting)
 
@@ -510,8 +500,6 @@ const formatResponse = await agent.generate(formatPrompt, {
 | **灵活性** | Agent 可以根据情况决定调用哪些工具 |
 | **可扩展** | 添加新工具即可扩展审核维度 |
 
----
-
 ### 4.3 Node Writer：Few-Shot CoT (Chain-of-Thought)
 
 #### 什么是 Few-Shot CoT？
@@ -621,8 +609,6 @@ for (const layer of layers) {
 }
 ```
 
----
-
 ### 4.4 Orchestrator：Plan-and-Execute 状态机
 
 #### Orchestrator 的职责
@@ -692,8 +678,6 @@ progressEmitter.stageComplete("reviewing",
   `综合评分: ${report.overallScore}`, 
   { score: report.overallScore });
 ```
-
----
 
 ## 五、数据流与协作
 
@@ -814,8 +798,6 @@ const CriticReportSchema = z.object({
 - **文档化**：Schema 本身就是 API 文档
 - **验证**：自动验证 LLM 输出是否符合预期
 
----
-
 ## 六、案例串联
 
 ### 6.1 案例：校园恋爱故事
@@ -886,8 +868,6 @@ const CriticReportSchema = z.object({
 
 **最终输出**：包含 12 个节点、3 个结局的完整剧本
 
----
-
 ### 6.2 案例：审阅发现问题
 
 **场景**：某次生成的剧本存在结构问题
@@ -939,8 +919,6 @@ const CriticReportSchema = z.object({
 [Orchestrator] 发现 critical 问题，需要重写
 [Orchestrator] 进入 REWRITING 阶段，目标节点: ["scene-3"]
 ```
-
----
 
 ## 七、设计亮点总结
 
@@ -999,8 +977,6 @@ const thought2 = await llm.generate(thought1 + observation1 + "...");
     └── 例如: 在 PLANNING 后暂停，等待用户确认方向
 ```
 
----
-
 ## 八、结语
 
 IntelliVNG 多智能体视觉小说创作编排系统展示了如何将**学术界的 Agent 设计模式**（ToT、ReAct、CoT）**落地到实际产品**中。通过专业分工、Schema 驱动、可观测设计，我们实现了：
@@ -1008,8 +984,6 @@ IntelliVNG 多智能体视觉小说创作编排系统展示了如何将**学术�
 - **从黑盒到白盒**：每个决策都有推理过程
 - **从单次到迭代**：支持自动重试和局部修正
 - **从串行到并行**：拓扑分层提升效率
-
----
 
 ## 参考资料
 

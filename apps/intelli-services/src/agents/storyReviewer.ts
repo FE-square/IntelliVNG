@@ -252,7 +252,16 @@ export async function reviewStory(
   schema: any,
   locale: Locale = DEFAULT_LOCALE
 ): Promise<any> {
+  const disableReAct =
+    process.env.REVIEWER_DISABLE_REACT === 'true' ||
+    (process.env.OPENAI_MODEL_NAME || '').toLowerCase().includes('qwen');
+
   console.log("🚀 Entering reviewStory function...");
+  if (disableReAct) {
+    console.log("[ReAct] ⚠️ 当前模型不支持工具调用，切换至简化审阅流程");
+    return simpleReview(agent, input, schema, locale);
+  }
+
   const { plan, drafts, characterDB } = input;
 
   // 构建供工具使用的节点数据
@@ -282,19 +291,25 @@ export async function reviewStory(
     nodesForValidation: JSON.stringify(nodesForValidation, null, 2),
   }, locale);
 
-  const reactResponse = await agent.generate(reactPrompt, {
-    maxSteps: 6,  // 允许足够的工具调用轮次
-    modelSettings: {
-      temperature: 1,
-    },
-  });
+  let reactResponse: any;
+  try {
+    reactResponse = await agent.generate(reactPrompt, {
+      maxSteps: 6,  // 允许足够的工具调用轮次
+      modelSettings: {
+        temperature: 1,
+      },
+    });
+  } catch (error) {
+    console.warn("[ReAct] ❌ 工具调用失败，将回退到简化审阅流程:", error instanceof Error ? error.message : error);
+    return simpleReview(agent, input, schema, locale);
+  }
 
   console.log("[ReAct] ✅ ReAct 循环完成");
   console.log(`[ReAct] 响应状态: Text Length=${reactResponse.text?.length}, ToolCalls=${reactResponse.toolCalls?.length}`);
   
   if (!reactResponse.text && (!reactResponse.toolCalls || reactResponse.toolCalls.length === 0)) {
-    console.warn("[ReAct] ⚠️ 警告: ReAct 阶段没有返回任何文本或工具调用。可能由于上下文过长或模型拒绝。");
-    // 可以考虑在这里抛出错误，或者让 Format 阶段尝试挽救
+    console.warn("[ReAct] ⚠️ 警告: ReAct 阶段没有返回任何文本或工具调用，改用简化审阅流程。");
+    return simpleReview(agent, input, schema, locale);
   }
   
   // 打印工具调用详情（用于调试）
@@ -361,5 +376,49 @@ export async function reviewStoryWithTrace(
   };
 
   return { report, trace };
+}
+
+async function simpleReview(
+  agent: typeof storyReviewerAgent,
+  input: {
+    plan: any;
+    drafts: Record<string, any>;
+    worldBible: any;
+    characterDB: any;
+  },
+  schema: any,
+  locale: Locale
+) {
+  const { plan, drafts, characterDB } = input;
+  const nodesForValidation = Object.values(drafts).map((d: any) => ({
+    id: d.id,
+    type: d.type,
+    isStart: plan.nodes.find((n: any) => n.id === d.id)?.isStart,
+    isEnding: plan.nodes.find((n: any) => n.id === d.id)?.isEnding,
+    nextNodeId: d.nextNodeId,
+    choices: d.choices?.map((c: any) => ({ targetNodeId: c.targetNodeId })),
+    dialogues: d.dialogues,
+    narration: d.narration,
+  }));
+
+  console.log("[Reviewer] ✳️ 使用简化审阅流程（无工具调用）");
+
+  const { user: reviewPrompt } = promptManager.build('workflow.review', {
+    drafts: JSON.stringify(Object.values(drafts), null, 2),
+    planOutline: JSON.stringify(plan.outline, null, 2),
+    characters: JSON.stringify(characterDB.characters?.map((c: any) => ({
+      name: c.name,
+      displayName: c.displayName,
+      personality: c.personality?.traits,
+    })), null, 2),
+    nodesForValidation: JSON.stringify(nodesForValidation, null, 2),
+  }, locale);
+
+  return generateStructuredOutput(
+    agent,
+    reviewPrompt,
+    schema,
+    { temperature: 1 }
+  );
 }
 
