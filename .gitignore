@@ -19,7 +19,6 @@ dist/
 build/
 out/
 .next/
-.cache/
 
 # 应用特定缓存
 apps/intelli-services/.cache/

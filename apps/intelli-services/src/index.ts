@@ -38,6 +38,7 @@ console.log(`📍 Server: http://localhost:${port}`);
 console.log('');
 console.log('📡 API endpoints:');
 console.log(`   POST /api/game/generate           - Generate (Fast mode, single LLM call)`);
+console.log(`   POST /api/game/idea-to-draft      - Generate structured draft from idea`);
 console.log(`   POST /api/game/generate-by-agents - Generate (Agent mode, multi-agent with SSE progress)`);
 console.log(`   POST /api/game/generate-image     - Generate image (sprite/avatar/background)`);
 console.log(`   GET  /api/game/projects           - List all projects`);
