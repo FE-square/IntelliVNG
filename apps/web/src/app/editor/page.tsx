@@ -1,6 +1,6 @@
 "use client";
 /** 故事脚本可视化编辑器 */
-import { useEffect, useState, useRef, Suspense } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { Loader2, AlertCircle, Home, Save, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { ReactFlowProvider } from 'reactflow';
@@ -106,7 +106,16 @@ function EditorPageContent() {
     const projectId = searchParams.get('projectId') || searchParams.get('project');
     
     const [project, setProject] = useState<GameProject | null>(null);
-    const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
+    const [activeTab, _setActiveTab] = useState<'editor' | 'preview'>('editor');
+    const setActiveTab = useCallback((tab: 'editor' | 'preview') => {
+        _setActiveTab((t: 'editor' | 'preview') => {
+            if (t === tab) {
+                toast.warning('现在已经处于这个界面啦');
+                return t;
+            }
+            return tab;
+        });
+    }, [_setActiveTab]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);

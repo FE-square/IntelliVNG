@@ -9,11 +9,15 @@ import { EventEmitter } from "events";
 export type ProgressStage = 
   | "init"           // 初始化
   | "planning"       // 规划阶段
+  | "planning_round1"
+  | "planning_round2"
+  | "planning_round3"
   | "plan_validate"  // 规划验证
   | "writing"        // 写作阶段
   | "reviewing"      // 审阅阶段
   | "rewriting"      // 重写阶段
   | "finalizing"     // 最终化
+  | "fallback"       // 切换备用
   | "completed"      // 完成
   | "failed";        // 失败
 
@@ -121,11 +125,15 @@ export class ProgressEmitter extends EventEmitter {
     const names: Record<ProgressStage, string> = {
       init: "初始化",
       planning: "故事规划",
+      planning_round1: "故事规划 · Round 1",
+      planning_round2: "故事规划 · Round 2",
+      planning_round3: "故事规划 · Round 3",
       plan_validate: "规划验证",
       writing: "节点写作",
       reviewing: "故事审阅",
       rewriting: "节点重写",
       finalizing: "最终处理",
+      fallback: "备用模型切换",
       completed: "完成",
       failed: "失败",
     };
