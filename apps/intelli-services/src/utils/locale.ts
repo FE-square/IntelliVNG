@@ -29,6 +29,14 @@ export function buildLocalePrompt(locale: Locale = DEFAULT_LOCALE): string {
   return `\n\n重要提示：用户的语言是 ${locale} (${localeName})，请使用 ${localeName} 进行创作和回答。所有生成的内容（包括对话、旁白、描述等）都必须使用 ${localeName}。`;
 }
 
+const getTodayDatePrompt = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `\nToday is ${year}-${month}-${day}.`;
+}
+
 /**
  * 在system prompt中添加语言提示
  * @param systemPrompt 原始system prompt
@@ -36,7 +44,8 @@ export function buildLocalePrompt(locale: Locale = DEFAULT_LOCALE): string {
  * @returns 添加了语言提示的system prompt
  */
 export function addLocaleToSystemPrompt(systemPrompt: string, locale: Locale = DEFAULT_LOCALE): string {
-  return systemPrompt + buildLocalePrompt(locale);
+
+  return systemPrompt + buildLocalePrompt(locale) + getTodayDatePrompt();
 }
 
 /**
@@ -46,7 +55,8 @@ export function addLocaleToSystemPrompt(systemPrompt: string, locale: Locale = D
  * @returns 添加了语言提示的user prompt
  */
 export function addLocaleToUserPrompt(userPrompt: string, locale: Locale = DEFAULT_LOCALE): string {
-  return userPrompt + buildLocalePrompt(locale);
+  
+  return userPrompt + buildLocalePrompt(locale) + getTodayDatePrompt();
 }
 
 /**

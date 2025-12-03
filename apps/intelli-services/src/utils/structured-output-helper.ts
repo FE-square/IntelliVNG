@@ -117,6 +117,10 @@ export function getCacheStats(): { count: number; size: number; files: string[] 
 /**
  * 从文本中提取 JSON 并验证
  */
+function sanitizeControlCharacters(input: string): string {
+  return input.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+}
+
 export function extractAndValidateJson<T>(text: string, schema: z.ZodType<T, any, any>): T {
   // 尝试多种 JSON 提取方式
   const jsonPatterns = [
@@ -143,12 +147,14 @@ export function extractAndValidateJson<T>(text: string, schema: z.ZodType<T, any
   }
 
   // 清理 JSON 字符串（处理常见问题）
-  jsonStr = jsonStr
+  jsonStr = sanitizeControlCharacters(
+    jsonStr
     // 移除尾部逗号
     .replace(/,(\s*[}\]])/g, '$1')
     // 移除注释
     .replace(/\/\/.*$/gm, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '');
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+  );
 
   try {
     const parsed = JSON.parse(jsonStr);
@@ -157,7 +163,7 @@ export function extractAndValidateJson<T>(text: string, schema: z.ZodType<T, any
     // 尝试修复常见的 JSON 问题
     try {
       // 尝试使用更宽松的解析
-      const relaxedJson = jsonStr
+      const relaxedJson = sanitizeControlCharacters(jsonStr)
         .replace(/'/g, '"')  // 单引号替换为双引号
         .replace(/(\w+):/g, '"$1":');  // 未引用的键名
       
@@ -204,6 +210,14 @@ ${schemaDescription}
  * - 缓存基于 agent name + prompt + schema 生成唯一键
  * - 成功解析后自动保存缓存
  */
+function shouldDisableStructuredOutput(modelId?: string): boolean {
+  if (!modelId) {
+    const envModel = process.env.OPENAI_MODEL_NAME || '';
+    return envModel.toLowerCase().includes('qwen');
+  }
+  return modelId.toLowerCase().includes('qwen');
+}
+
 export async function generateStructuredOutput<T>(
   agent: any,
   prompt: string,
@@ -214,9 +228,17 @@ export async function generateStructuredOutput<T>(
     temperature?: number; // 模型温度参数
     cacheKey?: string; // 自定义缓存键（用于更细粒度的控制）
     skipCache?: boolean; // 跳过缓存（强制重新生成）
+    disableStructuredOutput?: boolean; // 强制禁用 structuredOutput
   }
 ): Promise<T> {
-  const { maxSteps, fallbackOnly = false, temperature = 1, cacheKey: customCacheKey, skipCache = false } = options || {};
+  const {
+    maxSteps,
+    fallbackOnly: fallbackOnlyOption = false,
+    temperature = 1,
+    cacheKey: customCacheKey,
+    skipCache = false,
+    disableStructuredOutput,
+  } = options || {};
 
   // 获取 agent 名称和 schema 名称
   const agentName = agent.name || 'unknown-agent';
@@ -241,6 +263,14 @@ export async function generateStructuredOutput<T>(
   let result: T;
 
   // 如果指定只使用回退模式，直接使用 JSON 解析
+  const agentModelId = agent?.model?.id || agent?.modelId || '';
+  const disableStructured = disableStructuredOutput ?? shouldDisableStructuredOutput(agentModelId);
+  const fallbackOnly = fallbackOnlyOption || disableStructured;
+
+  if (disableStructured) {
+    console.warn('[StructuredOutput] 非 structuredOutput 模型，直接使用 JSON 解析模式');
+  }
+
   if (fallbackOnly) {
     const enhancedPrompt = enhancePromptForJson(prompt, schema);
     const response = await agent.generate(enhancedPrompt, { modelSettings });
