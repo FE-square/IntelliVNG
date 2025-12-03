@@ -11,41 +11,43 @@ export const PlanNodeSchema = z.object({
   type: z.enum(["scene", "branch", "ending"]).describe("节点类型"),
   isStart: z.boolean().optional().describe("是否为起始节点"),
   isEnding: z.boolean().optional().describe("是否为结局节点"),
-  title: z.string().describe("节点标题"),
-  brief: z.string().optional().describe("节点一句话摘要"), // 设为可选
-  description: z.string().optional(), // 某些模型可能使用 description
-  summary: z.string().optional(), // 某些模型可能使用 summary
+  title: z.string().optional().describe("节点标题"), // 改为可选
+  brief: z.string().optional().describe("节点一句话摘要"), 
+  description: z.string().optional(), 
+  summary: z.string().optional(), 
   functionTag: z.enum([
     "setup", "rising", "conflict", "twist", "climax", "falling", "resolution"
-  ]).optional().describe("叙事功能标签"), // 设为可选
-  sceneName: z.string().optional().describe("绑定的场景名称"), // 设为可选
-  scene: z.string().optional(), // 某些模型可能使用 scene
-  location: z.string().optional(), // 某些模型可能使用 location
+  ]).optional().describe("叙事功能标签"), 
+  sceneName: z.string().optional().describe("绑定的场景名称"), 
+  scene: z.string().optional(), 
+  location: z.string().optional(), 
   nextNodeId: z.string().optional().describe("下一个节点ID"),
-  next: z.string().optional(), // 某些模型可能使用 next
+  next: z.string().optional(), 
   choicesMeta: z.array(z.object({
     id: z.string().optional(),
     leadsTo: z.string().optional(),
-    targetNodeId: z.string().optional(), // 某些模型可能使用 targetNodeId
+    targetNodeId: z.string().optional(), 
     text: z.string().optional(),
     emotionalWeight: z.string().optional(),
     consequenceHint: z.string().optional(),
     pathType: z.string().optional(),
   }).passthrough()).optional().describe("分支选项元信息"),
-  choices: z.array(z.any()).optional(), // 某些模型可能使用 choices
+  choices: z.array(z.any()).optional(), 
   position: z.object({ 
     x: z.number(), 
     y: z.number() 
   }).optional().describe("节点位置"),
+  name: z.string().optional(), // 增加 name 作为可能的替代字段
 }).passthrough().transform((data) => {
   // 标准化字段名
+  const rawTitle = data.title || data.name || data.brief || data.summary || data.description || '未命名节点';
   return {
     id: data.id,
     type: data.type,
     isStart: data.isStart,
     isEnding: data.isEnding,
-    title: data.title,
-    brief: data.brief || data.description || data.summary || data.title,
+    title: rawTitle, // 确保有值
+    brief: data.brief || data.description || data.summary || rawTitle,
     functionTag: data.functionTag || 'setup',
     sceneName: data.sceneName || data.scene || data.location || '未知场景',
     nextNodeId: data.nextNodeId || data.next,
@@ -93,7 +95,8 @@ export const ChoiceDraftSchema = z.object({
 export const NodeDraftSchema = z.object({
   id: z.string().describe("与 PlanNode.id 对齐"),
   type: z.enum(["scene", "branch", "ending"]),
-  title: z.string(),
+  title: z.string().optional(), // 设为可选
+  name: z.string().optional(), // 某些模型可能使用 name
   sceneName: z.string().optional(), // 设为可选
   scene: z.string().optional(), // 某些模型可能使用 scene
   narration: z.string().optional().nullable().describe("旁白/场景描述"),
@@ -105,13 +108,13 @@ export const NodeDraftSchema = z.object({
 }).passthrough().transform((data) => ({
   id: data.id,
   type: data.type,
-  title: data.title,
+  title: data.title || data.name || '未命名节点', // 确保有值
   sceneName: data.sceneName || data.scene || '未知场景',
   narration: data.narration || undefined,
   dialogues: data.dialogues,
   choices: data.choices || undefined,
   nextNodeId: data.nextNodeId || data.next || undefined,
-  summary: data.summary || data.title,
+  summary: data.summary || data.title || data.name,
 }));
 
 export type NodeDraft = z.infer<typeof NodeDraftSchema>;

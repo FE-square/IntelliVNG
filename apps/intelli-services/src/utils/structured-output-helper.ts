@@ -117,7 +117,7 @@ export function getCacheStats(): { count: number; size: number; files: string[] 
 /**
  * 从文本中提取 JSON 并验证
  */
-export function extractAndValidateJson<T>(text: string, schema: z.ZodType<T>): T {
+export function extractAndValidateJson<T>(text: string, schema: z.ZodType<T, any, any>): T {
   // 尝试多种 JSON 提取方式
   const jsonPatterns = [
     // 完整的 JSON 代码块
@@ -172,7 +172,7 @@ export function extractAndValidateJson<T>(text: string, schema: z.ZodType<T>): T
 /**
  * 增强提示词，要求模型返回 JSON
  */
-function enhancePromptForJson<T>(prompt: string, schema: z.ZodType<T>): string {
+function enhancePromptForJson<T>(prompt: string, schema: z.ZodType<T, any, any>): string {
   // 尝试获取 schema 的描述
   let schemaDescription = '';
   try {
@@ -207,7 +207,7 @@ ${schemaDescription}
 export async function generateStructuredOutput<T>(
   agent: any,
   prompt: string,
-  schema: z.ZodType<T>,
+  schema: z.ZodType<T, any, any>,
   options?: {
     maxSteps?: number;
     fallbackOnly?: boolean; // 是否只使用回退模式
@@ -225,13 +225,15 @@ export async function generateStructuredOutput<T>(
   // 生成缓存键
   const cacheKey = customCacheKey || generateCacheKey(agentName, prompt, schemaName);
   
-  // 检查缓存（除非明确跳过）
+    // 检查缓存（除非明确跳过）
   if (!skipCache) {
     const cached = readFromCache<T>(cacheKey);
     if (cached !== null) {
       return cached;
     }
   }
+
+  console.log(`[StructuredOutput] 🤖 调用 Agent: ${agentName}, Schema: ${schemaName}`);
 
   // 模型设置，用于支持 o1 等不支持 temperature=0 的模型
   const modelSettings = { temperature };
@@ -256,6 +258,8 @@ export async function generateStructuredOutput<T>(
       modelSettings,
       ...(maxSteps && { maxSteps }),
     });
+
+    console.log(`[StructuredOutput] 📦 收到响应 (Length: ${response.text?.length || 0}, Object: ${!!response.object})`);
 
     // 检查返回值是否有效
     if (response.object !== undefined && response.object !== null) {

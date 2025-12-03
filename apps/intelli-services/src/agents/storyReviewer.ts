@@ -7,6 +7,7 @@ import { Agent } from "@mastra/core/agent";
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import { promptManager } from '../prompts';
+import { generateStructuredOutput } from '../utils/structured-output-helper';
 
 // ============ 工具定义 ============
 
@@ -18,18 +19,10 @@ export const validateStructureTool = createTool({
   id: "validate-structure",
   description: "检查节点连通性，找出孤立节点和死胡同。在审阅故事前必须先调用此工具。",
   inputSchema: z.object({
-    nodes: z.array(z.object({
-      id: z.string(),
-      type: z.string(),
-      isStart: z.boolean().optional(),
-      isEnding: z.boolean().optional(),
-      nextNodeId: z.string().optional(),
-      choices: z.array(z.object({
-        targetNodeId: z.string(),
-      })).optional(),
-    })),
+    nodes: z.array(z.any()).describe("节点列表，包含id, nextNodeId, choices等连接信息"),
   }),
   execute: async ({ context }) => {
+    // ... (代码保持不变，因为内部也是把它当 any 处理的)
     const { nodes } = context;
     const nodeIds = new Set(nodes.map((n: any) => n.id));
     const orphans: string[] = [];
@@ -114,16 +107,7 @@ export const analyzePathsTool = createTool({
   id: "analyze-paths",
   description: "分析所有可能的故事路径，评估分支的多样性和意义性。可以了解故事有多少条不同的路线。",
   inputSchema: z.object({
-    nodes: z.array(z.object({
-      id: z.string(),
-      type: z.string().optional(),
-      isStart: z.boolean().optional(),
-      isEnding: z.boolean().optional(),
-      nextNodeId: z.string().optional(),
-      choices: z.array(z.object({
-        targetNodeId: z.string(),
-      })).optional(),
-    })),
+    nodes: z.array(z.any()).describe("节点列表，包含id, nextNodeId, choices等连接信息"),
   }),
   execute: async ({ context }) => {
     const { nodes } = context;
@@ -200,14 +184,7 @@ export const analyzeDialogueQualityTool = createTool({
   id: "analyze-dialogue-quality",
   description: "分析每个节点的对话数量和质量，找出对话过少或过多的节点。",
   inputSchema: z.object({
-    nodes: z.array(z.object({
-      id: z.string(),
-      dialogues: z.array(z.object({
-        characterId: z.string().optional(),
-        text: z.string().optional(),
-      })).optional(),
-      narration: z.string().optional(),
-    })),
+    nodes: z.array(z.any()).describe("节点列表，包含id, dialogues, narration等内容信息"),
   }),
   execute: async ({ context }) => {
     const { nodes } = context;
@@ -236,6 +213,7 @@ export const analyzeDialogueQualityTool = createTool({
 });
 
 // ============ Reviewer Agent ============
+console.log("🔄 Loading storyReviewer module...");
 
 export const storyReviewerAgent = new Agent({
   name: "story-reviewer",
@@ -251,13 +229,6 @@ export const storyReviewerAgent = new Agent({
     validateStructure: validateStructureTool,
     analyzePaths: analyzePathsTool,
     analyzeDialogueQuality: analyzeDialogueQualityTool,
-  },
-  
-  // 某些模型（如 o1 系列）不支持 temperature=0，必须设为 1
-  defaultGenerateOptions: {
-    modelSettings: {
-      temperature: 1,
-    },
   },
 });
 
@@ -281,6 +252,7 @@ export async function reviewStory(
   schema: any,
   locale: Locale = DEFAULT_LOCALE
 ): Promise<any> {
+  console.log("🚀 Entering reviewStory function...");
   const { plan, drafts, characterDB } = input;
 
   // 构建供工具使用的节点数据
@@ -312,10 +284,18 @@ export async function reviewStory(
 
   const reactResponse = await agent.generate(reactPrompt, {
     maxSteps: 6,  // 允许足够的工具调用轮次
+    modelSettings: {
+      temperature: 1,
+    },
   });
 
   console.log("[ReAct] ✅ ReAct 循环完成");
-  console.log(`[ReAct] 工具调用次数: ${reactResponse.toolCalls?.length || 0}`);
+  console.log(`[ReAct] 响应状态: Text Length=${reactResponse.text?.length}, ToolCalls=${reactResponse.toolCalls?.length}`);
+  
+  if (!reactResponse.text && (!reactResponse.toolCalls || reactResponse.toolCalls.length === 0)) {
+    console.warn("[ReAct] ⚠️ 警告: ReAct 阶段没有返回任何文本或工具调用。可能由于上下文过长或模型拒绝。");
+    // 可以考虑在这里抛出错误，或者让 Format 阶段尝试挽救
+  }
   
   // 打印工具调用详情（用于调试）
   if (reactResponse.toolCalls && reactResponse.toolCalls.length > 0) {
@@ -334,15 +314,16 @@ export async function reviewStory(
   }, locale);
 
   // 第二次调用：纯结构化输出，不需要工具
-  const formatResponse = await agent.generate(formatPrompt, {
-    structuredOutput: {
-      schema: schema,
-    },
-  });
+  const report = await generateStructuredOutput(
+    agent,
+    formatPrompt,
+    schema,
+    { temperature: 1 }
+  );
 
   console.log("[ReAct] ✅ 审阅报告生成完成");
 
-  return formatResponse.object;
+  return report;
 }
 
 /**

@@ -67,7 +67,7 @@ if (shouldShowStats) {
 const mockCharacters = [
   {
     id: 'char_001',
-    name: '林晓晨',
+    name: '刘晓晨',
     displayName: '晓晨',
     gender: 'female',
     identity: '大学生 / 业余侦探',
@@ -83,7 +83,7 @@ const mockCharacters = [
   },
   {
     id: 'char_002',
-    name: '陆修远',
+    name: '刘修远',
     displayName: '修远',
     gender: 'male',
     identity: '图书馆管理员 / 神秘的知情者',
@@ -118,7 +118,7 @@ const mockCharacters = [
 // 模拟数据：世界观
 const mockWorldSetting = {
   name: '青云大学',
-  era: '现代（2024年）',
+  era: '现代（2025年）',
   location: '中国某沿海城市的著名综合大学',
   rules: `
     1. 这是一所历史悠久的大学，有着许多未解之谜和校园传说

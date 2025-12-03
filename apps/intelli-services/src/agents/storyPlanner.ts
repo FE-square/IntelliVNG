@@ -80,13 +80,6 @@ export const storyPlannerAgent = new Agent({
     url: process.env.OPENAI_BASE_URL,
     apiKey: process.env.OPENAI_API_KEY,
   },
-  
-  // 某些模型（如 o1 系列）不支持 temperature=0，必须设为 1
-  defaultGenerateOptions: {
-    modelSettings: {
-      temperature: 1,
-    },
-  },
 });
 
 // ============ ToT 多轮调用实现 ============

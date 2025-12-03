@@ -12,6 +12,7 @@ import { mastra, getStoryWorkflow } from "../mastra";
 import type { NarrativePlan, NodeDraft, CriticReport, WorkflowInput } from "../agents/schemas";
 import { NarrativePlanSchema, NodeDraftSchema, CriticReportSchema } from "../agents/schemas";
 import { generateNarrativePlanWithToT, storyPlannerAgent } from "../agents/storyPlanner";
+import { reviewStory, storyReviewerAgent } from "../agents/storyReviewer";
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { ProgressEmitter, createProgressEmitter } from "./progress-emitter";
 import { promptManager } from '../prompts';
@@ -670,36 +671,21 @@ export class GameGeneratorAgent {
       // ============ 审阅阶段 ============
       progressEmitter.stageStart("reviewing", "Story Reviewer 审阅故事", "ReAct 模式正在使用工具分析故事质量...");
 
-      const reviewerAgent = mastra.getAgent("story-reviewer");
-      
-      const nodesForValidation = Object.values(drafts).map((d: any) => ({
-        id: d.id,
-        type: d.type,
-        isStart: plan!.nodes.find(n => n.id === d.id)?.isStart,
-        isEnding: plan!.nodes.find(n => n.id === d.id)?.isEnding,
-        nextNodeId: d.nextNodeId,
-        choices: d.choices?.map((c: any) => ({ targetNodeId: c.targetNodeId })),
-        dialogues: d.dialogues,
-        narration: d.narration,
-      }));
-
-      const { user: reviewPrompt } = promptManager.build('workflow.review', {
-        drafts: JSON.stringify(Object.values(drafts), null, 2),
-        planOutline: JSON.stringify(plan.outline, null, 2),
-        characters: JSON.stringify(workflowInput.characterDB.characters.map((c: any) => ({
-          name: c.name,
-          displayName: c.displayName,
-          personality: c.personality?.traits,
-        })), null, 2),
-        nodesForValidation: JSON.stringify(nodesForValidation, null, 2),
-      }, locale);
-
-      report = await generateStructuredOutput(
-        reviewerAgent,
-        reviewPrompt,
+      report = await reviewStory(
+        storyReviewerAgent,
+        { 
+          plan, 
+          drafts, 
+          worldBible: workflowInput.worldBible,
+          characterDB: workflowInput.characterDB 
+        },
         CriticReportSchema,
-        { maxSteps: 5, temperature: 1 }
+        locale
       );
+
+      if (!report) {
+        throw new Error("Reviewer 报告生成失败");
+      }
 
       progressEmitter.stageComplete("reviewing", "审阅完成", 
         `综合评分: ${report.overallScore}，发现 ${report.issues.length} 个问题`, {

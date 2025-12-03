@@ -1,9 +1,9 @@
 {
-  "id": "yi4q6px18k",
-  "title": "在青云大学，业余侦探晓晨与校报记者雨萱注意到百年图书馆内接连发生的“偷书”“误入门禁”“深夜电力异常",
-  "description": "在青云大学，业余侦探晓晨与校报记者雨萱注意到百年图书馆内接连发生的“偷书”“误入门禁”“深夜电力异常”等事件，怀疑与地下室密档有关。神秘管理员修远作为守秘者刻意误导与阻挠调查，三人围绕是否揭露校史黑幕展开对峙。\n\n核心冲突: 修远为了守护不愿示人的校史与受害者名誉，持续误导调查；晓晨与雨萱致力于查清真相与制度问题，立场与信任不断碰撞。最终，三人必须在公开真相的社会代价与继续隐瞒的道德压力之间做出选择。",
-  "createdAt": "2025-12-02T14:11:39.615Z",
-  "updatedAt": "2025-12-02T14:11:39.615Z",
+  "id": "c9gd415tn1",
+  "title": "一个关于百年图书馆、未解之谜与连环怪事交织的故事",
+  "description": "一个关于百年图书馆、未解之谜与连环怪事交织的故事\n\n核心冲突: 晓晨与修远在“揭露真相”与“守护秘密”的博弈中不断试探边界，雨萱的新闻自由诉求与校园门禁的封闭制度形成对冲，三人关系在真相推进中出现裂痕。",
+  "createdAt": "2025-12-03T03:10:52.933Z",
+  "updatedAt": "2025-12-03T03:10:52.933Z",
   "meta": {
     "author": "IntelliVNG Multi-Agent System",
     "version": "2.0.0",
@@ -13,7 +13,7 @@
   "characters": [
     {
       "id": "char_001",
-      "name": "林晓晨",
+      "name": "刘晓晨",
       "displayName": "晓晨",
       "gender": "female",
       "identity": "大学生 / 业余侦探",
@@ -35,7 +35,7 @@
     },
     {
       "id": "char_002",
-      "name": "陆修远",
+      "name": "刘修远",
       "displayName": "修远",
       "gender": "male",
       "identity": "图书馆管理员 / 神秘的知情者",
@@ -76,6 +76,15 @@
       },
       "sprites": [],
       "defaultSpriteId": ""
+    },
+    {
+      "id": "u81kbzhl1m",
+      "name": "narration",
+      "displayName": "narration",
+      "description": "AI生成的角色: narration",
+      "avatarUrl": "",
+      "sprites": [],
+      "defaultSpriteId": ""
     }
   ],
   "backgrounds": [
@@ -106,641 +115,820 @@
   ],
   "script": [
     {
-      "id": "node_start",
+      "id": "START_01",
       "type": "scene",
       "isStart": true,
+      "isEnding": false,
       "position": {
         "x": 400,
         "y": 50
       },
-      "title": "书香之下的异常",
+      "title": "图书馆奇遇",
       "sceneName": "图书馆阅览室",
       "backgroundId": "scene_001",
-      "narration": "百年图书馆的木质地板轻轻作响，旧钟的指针在静默中行进。暖黄灯光下，纸页的味道与陈旧书架的木香交织。近来关于“偷书”“误入门禁”“深夜电力异常”的传闻在走廊里悄悄流动：有人说锁着的古籍室被试图刷卡，有人说夜里应急灯忽明忽暗，像在呼吸。阅览室很安静，却不知为何让人不自觉屏住呼吸。",
+      "narration": "阳光透过巨大的落地窗洒进图书馆阅览室，书架间弥漫着知识的芬芳。晓晨正埋首于一堆古籍中，试图从历史的尘埃里寻找毕业论文的灵感。",
       "dialogues": [
         {
-          "id": "k838cz9jvk",
+          "id": "ygaya24cxt",
+          "characterId": "u81kbzhl1m",
+          "text": "她手指拂过一本厚重的典籍，却在不经意间瞥见，角落里一本封面古朴的《星辰秘语》似乎发出微弱的光芒，书脊上的纹路如同活了一般，轻轻颤动着。",
+          "emotion": "neutral"
+        },
+        {
+          "id": "xsuwa3l4tr",
           "characterId": "char_001",
-          "text": "古籍室的门禁换了新读卡器，门框这几道划痕不旧——像是有人试过不该试的卡。我来不是凑热闹，想看看传闻到底有几分真。",
+          "text": "嗯？是我眼花了？还是……这书真的在发光？",
           "emotion": "curious"
         },
         {
-          "id": "t5pyjrqq7j",
+          "id": "kyn2zslwgx",
+          "characterId": "u81kbzhl1m",
+          "text": "晓晨揉了揉眼睛，再次仔细看去。那微光依旧，甚至带着一丝若有若无的低语，像是在召唤着她。",
+          "emotion": "mysterious"
+        },
+        {
+          "id": "mokf5hujvn",
           "characterId": "char_003",
-          "text": "偷书案我已经听到三个版本了，还有人说误入门禁被困在玻璃门里，差点叫保安来救。这个题材不写太对不起我的记者证。你要不要跟我一起挖？",
+          "text": "晓晨！我可算找到你了！你猜我刚才听说了什么大八卦？高数老师居然被拍到在校外和…哎哟！你干嘛呢？鬼鬼祟祟的，对着一本书发呆？",
           "emotion": "excited"
         },
         {
-          "id": "o5oi0qo8bz",
-          "characterId": "char_002",
-          "text": "借书请按规矩。传闻往往比事实热闹，也更容易让人迷路。今晚别在馆里逗留太久，电闸最近脾气不太好。",
-          "emotion": "calm"
-        },
-        {
-          "id": "p38sv6fimx",
+          "id": "g8rbm4y1q7",
           "characterId": "char_001",
-          "text": "你说的是那几次深夜应急灯乱闪？这种异常不会无缘无故。线索得从借阅记录和门禁日志找起。",
-          "emotion": "serious"
+          "text": "嘘！小声点！这里是图书馆，雨萱。我…我好像看到了一点不寻常的东西。",
+          "emotion": "cautious"
         },
         {
-          "id": "z3k4r77fjo",
+          "id": "8zmammxbb9",
           "characterId": "char_003",
-          "text": "他这语气像是知道什么又不肯说。行吧，先回宿舍整理线索，我把采访提纲写好，明天再试探他。",
-          "emotion": "determined"
-        },
-        {
-          "id": "o9705jswem",
-          "characterId": "char_001",
-          "text": "同意。今天先不冒进，回去把看到的细节都记下，明天再回来对证。",
-          "emotion": "resolved"
+          "text": "不寻常的东西？快给我看看！难道是图书馆闹鬼？还是有神秘社团在偷偷举行仪式？这可是大新闻啊！",
+          "emotion": "eager"
         }
       ],
-      "nextNodeId": "node_dorm_intro"
+      "nextNodeId": "SCENE_02"
     },
     {
-      "id": "node_dorm_intro",
+      "id": "SCENE_02",
       "type": "scene",
+      "isStart": false,
+      "isEnding": false,
       "position": {
         "x": 400,
         "y": 200
       },
-      "title": "宿舍里的调查计划",
-      "sceneName": "学生宿舍",
-      "backgroundId": "scene_003",
-      "narration": "宿舍里昏白的灯光忽明忽暗，插线板的电源指示灯时不时跳一下，像在呼吸。窗外走廊有风掠过，远处传来短促的测试音。桌面摊满了笔记、借书卡与录音笔，旧纸页透出潮味。在一堆资料旁，一本不合群的《校史年鉴·1999》露出书脊，夹缝里探出一角泛黄的索引卡。",
+      "title": "校园怪事频发",
+      "sceneName": "校园林荫道",
+      "backgroundId": "scene_002",
+      "narration": "阳光透过茂密的树叶，在林荫道上洒下斑驳的光影。然而，最近校园里流传的奇怪传闻，让这份初夏的宁静蒙上了一层不安的色彩。晓晨和雨萱正走在路上，雨萱兴奋的讨论声打破了沉默。",
       "dialogues": [
         {
-          "id": "8t1iih4e2f",
+          "id": "f94naw8ozh",
           "characterId": "char_003",
-          "text": "我把线索先整理一下：停电时的‘临时广播’，图书馆B区的可疑人影，还有老校史上被撕掉的索引页。",
-          "emotion": "focused"
+          "text": "晓晨晓晨！你听说了吗？今天早上，艺术系那边的石膏像，眼睛里竟然流出了红色的颜料，跟哭了一样！",
+          "emotion": "excited"
         },
         {
-          "id": "jcff7ksusv",
+          "id": "pg8a9di363",
           "characterId": "char_001",
-          "text": "我有两个假设——有人借电力异常改动档案；那段广播其实是在引导。还有，修远像是知道更多，但没说完。",
-          "emotion": "analytical"
+          "text": "嗯，不止这件。我刚听说，食堂后厨的冷藏室，昨天晚上自己跳闸了，所有食材都坏了，损失惨重。",
+          "emotion": "concerned"
         },
         {
-          "id": "q4msyn788k",
+          "id": "em6pw3fb5q",
           "characterId": "char_003",
-          "text": "别把修远神化，他要真知道，也不至于只提醒我们快走。先验证能摸到的。",
+          "text": "哇！真的假的？这比校报头条还有意思啊！我得赶紧去拍点照片，采访一下目击者！这不就是活生生的都市传说吗？",
+          "emotion": "enthusiastic"
+        },
+        {
+          "id": "8x5c0ktlh3",
+          "characterId": "char_001",
+          "text": "总觉得这些事，和那天图书馆那本书，有某种关联...",
+          "emotion": "thoughtful"
+        },
+        {
+          "id": "9375hsxkbn",
+          "characterId": "char_002",
+          "text": "有些被唤醒的尘埃，需要时间才能重新沉淀。",
           "emotion": "calm"
         },
         {
-          "id": "2bfrsei6ko",
+          "id": "kme7rjnd7u",
           "characterId": "char_001",
-          "text": "等等，这本《校史年鉴·1999》不该出现在我们理工书架上……里面夹着一张旧索引卡。",
+          "text": "啊？修远同学？你刚刚...是在和我们说话吗？",
           "emotion": "surprised"
         },
         {
-          "id": "ijmuqf2um3",
-          "characterId": "char_003",
-          "text": "卡上写的是‘旧藏/B-17——地下档案室’，这不是巧合，可能是传闻的源头。",
-          "emotion": "alert"
-        },
-        {
-          "id": "acnhoqiq3w",
-          "characterId": "char_001",
-          "text": "分工吧：你去广播站打探值班和插播流程，我去查B-17对应的平面图、准备手电和备用电池；明天白天各自行动，晚上在宿舍楼下会合。",
-          "emotion": "determined"
+          "id": "6o98l5yr87",
+          "characterId": "char_002",
+          "text": "只是有感而发。好奇心是求知的动力，但也可能是引火的源头。",
+          "emotion": "neutral"
         }
       ],
-      "nextNodeId": "node_path_meet"
+      "nextNodeId": "SCENE_03"
     },
     {
-      "id": "node_path_meet",
+      "id": "SCENE_03",
       "type": "scene",
+      "isStart": false,
+      "isEnding": false,
       "position": {
         "x": 400,
         "y": 350
       },
-      "title": "林荫道的隐喻与盲区",
-      "sceneName": "校园林荫道",
-      "backgroundId": "scene_002",
-      "narration": "傍晚的风穿过梧桐叶，斑驳的光影在石板路上浮动。图书馆的玻璃映出一层晃动的银光，电柜里传来低低的嗡鸣。路口公告牌上贴着“电力维护”的通知，日期被涂改得模糊；墙角的摄像头却偏着角度，对准树冠，留出一道刻意的阴影。修远提着书从光影里走来，镜片亮了一下，像把话提前收住。",
+      "title": "线索汇集",
+      "sceneName": "学生宿舍",
+      "backgroundId": "scene_003",
+      "narration": "宿舍里，台灯发出昏黄的光。桌上散落着几张写满笔记的纸，还有那本从图书馆借来的旧书。雨萱坐在床边，一脸焦急地看着正在沉思的晓晨。",
       "dialogues": [
         {
-          "id": "fhig25w5nz",
+          "id": "igqtbpn8f6",
           "characterId": "char_003",
-          "text": "你看那个摄像头，居然拍树冠，拍叶子也能打卡吗？",
-          "emotion": "playful"
+          "text": "喂，晓晨，快把你今天发现的都说出来！修远学长那句话，‘有时，最显眼的地方反而最容易被忽略’，到底是什么意思？",
+          "emotion": "eager"
         },
         {
-          "id": "seui3zfdkh",
+          "id": "xhr1xkxyfd",
           "characterId": "char_001",
-          "text": "不对，北侧这段路刚好是监控盲区，从门廊到地下通风口都看不到；而且维护记录被涂改了，同一天做了两次巡检，太怪。",
-          "emotion": "alert"
+          "text": "别急，让我想想。怪事发生的地点，总是在校园偏僻的角落，比如旧实验楼后面，或者是体育馆地下室的通风口附近。",
+          "emotion": "thoughtful"
         },
         {
-          "id": "24q0a46dfu",
-          "characterId": "char_002",
-          "text": "风能翻书，但有些章节最好别在夜里读。地下室的空气湿冷，年轻人去了容易着凉——别为了一张索引卡，把自己丢进书堆下面。",
-          "emotion": "mysterious"
-        },
-        {
-          "id": "9r2dv3ki00",
+          "id": "rt3jgrp4b2",
           "characterId": "char_003",
-          "text": "修远，你这是给我们下文学禁令吗？我们只是查资料，不是去探险。",
-          "emotion": "defensive"
+          "text": "对对！而且每次都伴随着一些莫名其妙的骚动，却又抓不到源头。",
+          "emotion": "intrigued"
         },
         {
-          "id": "hhf7oqm8jz",
-          "characterId": "char_002",
-          "text": "资料在架上，封存的索引不对外借。今晚图书馆会停电维护，黑暗里容易把影子当人。少走楼梯，多看目录，懂的人自然看得见。",
-          "emotion": "serious"
-        },
-        {
-          "id": "7bn5zh5c84",
+          "id": "jgp9rg875l",
           "characterId": "char_001",
-          "text": "维护记录对不上，盲区像是故意留的……谢谢提醒，我们会在阳光下找答案。",
+          "text": "如果把这些事件、图书馆那本《失落的传说》里提到的古老传说，再结合修远学长的话... ‘最显眼的地方’和‘最容易被忽略’... 它们并不矛盾。",
+          "emotion": "pensive"
+        },
+        {
+          "id": "k7x4ddg2un",
+          "characterId": "char_003",
+          "text": "你的意思是... 有一个地方，它平时就在我们眼前，却因为某种原因被我们忽略了它的异常？",
+          "emotion": "speculative"
+        },
+        {
+          "id": "qrvlh2e8d3",
+          "characterId": "char_001",
+          "text": "没错。我父亲以前说过，越是看似平常，越可能隐藏着不寻常。这些线索都指向一个地方，一个我们几乎不会注意到的——旧礼堂的废弃储藏室。",
           "emotion": "determined"
         }
       ],
-      "nextNodeId": "node_branch_first"
+      "nextNodeId": "SCENE_04"
     },
     {
-      "id": "node_branch_first",
-      "type": "branch",
+      "id": "SCENE_04",
+      "type": "scene",
+      "isStart": false,
+      "isEnding": false,
       "position": {
         "x": 400,
         "y": 500
       },
-      "title": "第一道选择：从技术切入还是从人证入手",
+      "title": "修远的警告",
       "sceneName": "图书馆阅览室",
       "backgroundId": "scene_001",
-      "narration": "傍晚的阅览室泛着纸墨的清凉气息，窗外的光线被云层压低。告示板上的“停电维护”字样被人用深色笔改过一笔，角落的监控在书架阴影里留出一块看不见的空白。空气仿佛被按下了静音键，只剩翻页声与远处细微的电流嗡鸣。选择，逼近了。",
+      "narration": "阅览室里，阳光透过落地窗洒在书架上，空气中弥漫着旧书特有的气息。晓晨深吸一口气，她在书桌的尽头找到了正在翻阅古籍的修远。",
       "dialogues": [
         {
-          "id": "dkx23ijh5q",
-          "characterId": "char_003",
-          "text": "你看这维护记录被动过手脚，肯定有故事。先找那个误刷门禁的人，我有校媒的通讯录，打两通电话也许就能套出来。",
-          "emotion": "excited"
-        },
-        {
-          "id": "yylpvccgg3",
+          "id": "5urlavhsdu",
           "characterId": "char_001",
-          "text": "监控盲区配合今晚停电，技术线更直接。去地下配电间附近蹲一下，能看到真实的操作流程。",
-          "emotion": "determined"
+          "text": "学长，打扰一下。我想问你关于旧礼堂废弃储藏室的事。",
+          "emotion": "eager"
         },
         {
-          "id": "fx5grvrk1y",
+          "id": "xsl3zzsrb3",
           "characterId": "char_002",
-          "text": "停电的时候，楼下不适合好奇心过盛的人。有些门，推开了就很难再关上。",
-          "emotion": "calm"
+          "text": "……那地方没什么好说的。",
+          "emotion": "neutral"
         },
         {
-          "id": "crj02istsz",
-          "characterId": "char_003",
-          "text": "我不怕探，但也不想把你惹毛。人证线安全、信息密度高，先跑一圈总不会错吧？",
-          "emotion": "conflicted"
-        },
-        {
-          "id": "q39hnuxfrj",
+          "id": "5esej0l23l",
           "characterId": "char_001",
-          "text": "时间卡在今晚。要么夜里盯电力异常，要么现在就去找那个人聊清楚。我们得选一个。",
-          "emotion": "serious"
-        }
-      ],
-      "choices": [
-        {
-          "id": "choice_power",
-          "text": "追查电力异常：夜探地下配电间边界",
-          "targetNodeId": "node_power_probe",
-          "condition": "需要夜探并触碰安全红线，可能激怒修远与引发风险。"
-        },
-        {
-          "id": "choice_access",
-          "text": "从人证入手：锁定“误入门禁”相关人员与证词",
-          "targetNodeId": "node_access_probe",
-          "condition": "从人情与证词切入，较易推进但可能被话术与流程带偏。"
-        }
-      ]
-    },
-    {
-      "id": "node_power_probe",
-      "type": "scene",
-      "position": {
-        "x": 150,
-        "y": 650
-      },
-      "title": "电力异常与隐门的指向",
-      "sceneName": "图书馆地下室",
-      "backgroundId": "scene_004",
-      "narration": "夜色压在地下室的低矮天花板上，配电柜的金属味夹着潮气与旧纸霉香。手电光扫过凌乱标号的断路器，几颗螺丝上亮着新鲜的划痕；一条新包胶的备用线悄然偏离图纸，沿着墙缝钻向档案排后面，那里的灰尘被擦出一条细窄的路径。电表日志里异常平滑的曲线像被人有意抹平，压住了真正的峰值。墙面回声空洞，藏着一道只有熟人会碰的窄门；远处隐约传来纸箱摩擦的细响，像有人刚刚经过。",
-      "dialogues": [
-        {
-          "id": "x5beifjojx",
-          "characterId": "char_001",
-          "text": "这颗螺丝有新划痕，断路器也被手动推过；备用线被绕过去了……有人在借电。",
-          "emotion": "alert"
-        },
-        {
-          "id": "wiwyavdmmz",
-          "characterId": "char_002",
-          "text": "你看得很准。新包胶的电缆不在图纸上，走向直指那排档案后面。夜探风险不小，别忘了。",
-          "emotion": "calm"
-        },
-        {
-          "id": "maoufghsfk",
-          "characterId": "char_003",
-          "text": "档案箱的灰被擦出一道手印，标签还被重新贴过——这不是自然位移，明显有人翻过。",
-          "emotion": "anxious"
-        },
-        {
-          "id": "a1y1pr69ag",
-          "characterId": "char_001",
-          "text": "电表日志被做了平滑处理，峰值被掩掉——典型的技术遮蔽。把人证藏起来，把电力藏得更深……这墙后面肯定有门。",
-          "emotion": "determined"
-        },
-        {
-          "id": "367h3p1qgn",
-          "characterId": "char_002",
-          "text": "别急着撬。锁芯有热痕，说明刚用过；人也许还在里头。先留证据，再选退路。",
-          "emotion": "cautious"
-        },
-        {
-          "id": "p3l3rwzeeq",
-          "characterId": "char_003",
-          "text": "我拍照、标时间和走线。要是现在不进去，他们可能马上转移——我们准备好就跟上。",
-          "emotion": "hesitant"
-        }
-      ],
-      "nextNodeId": "node_confront"
-    },
-    {
-      "id": "node_access_probe",
-      "type": "scene",
-      "position": {
-        "x": 650,
-        "y": 650
-      },
-      "title": "门禁误入者与旧索引",
-      "sceneName": "校园林荫道",
-      "backgroundId": "scene_002",
-      "narration": "晚风穿过树梢，林荫道的路灯一盏盏亮起。雨萱拎着采访本在学生群里穿梭，门禁偶尔发出短促的“滴”声。零碎的口供拼回了一条诡异的线：周二晚十点前后，几名同学的卡权限突然从“阅览”降为“访客”，门禁亮绿却不开；后台登录记录却同时显示他们“在阅览室”。收尾时，一张从卡套里滑出的纸条落在鞋边——上面写着“旧索引C-12”。灯影在地上拉长，纸条在指尖发硬，像一把小小的钥匙，指向密档与一条不该被学生触碰的调档流程。",
-      "dialogues": [
-        {
-          "id": "3w0p7x0hq9",
-          "characterId": "char_003",
-          "text": "三个口径几乎一致：周二晚、绿灯不响、权限从“阅览”变“访客”。更怪的是，系统记录他们都在阅览室，可人明明在宿舍。",
-          "emotion": "serious"
-        },
-        {
-          "id": "68yz5gndaw",
-          "characterId": "char_001",
-          "text": "像是有人用他们的卡“影子”登录，或者直接覆盖了位置数据。要么门禁规则被人临时改了。",
+          "text": "可是，我们发现了一些线索，觉得那里可能和最近学校的怪事有关。你是不是知道些什么？",
           "emotion": "curious"
         },
         {
-          "id": "s1dhf3opa8",
+          "id": "m5ogg6urb4",
           "characterId": "char_002",
-          "text": "“旧索引C-12”不是普通标签，那是密档的旧分类段，通常只在预编目清单里出现。涉及它的调档，不该留下任何学生端的痕迹。",
-          "emotion": "calm"
+          "text": "有些门，最好永远不要打开。有些秘密，也最好永远尘封。",
+          "emotion": "serious"
         },
         {
-          "id": "jky3ila1om",
-          "characterId": "char_003",
-          "text": "纸条是一个误入的小学妹卡套里掉出来的，她说有人让她把预约改成“旧索引”。她根本没资格预约密档，这就太不对了。",
-          "emotion": "alert"
-        },
-        {
-          "id": "lywgg25bix",
+          "id": "lwbqjkta1l",
           "characterId": "char_001",
-          "text": "我们去当面问门禁管理员，再查阅览室的调档流程。谁改权限、谁动索引——今晚就要个说法。",
-          "emotion": "determined"
+          "text": "你是指……那里有危险吗？",
+          "emotion": "concerned"
         },
         {
-          "id": "x3wvg7w9ec",
+          "id": "em3joto3tt",
           "characterId": "char_002",
-          "text": "问可以，但别夜里硬闯。提起旧索引，会让一些人比门更快把话题关上。准备好被“正常流程”挡回来的对策。",
-          "emotion": "cautious"
+          "text": "我只是建议，适可而止。好奇心……有时会带来不必要的麻烦。",
+          "emotion": "solemn"
         }
       ],
-      "nextNodeId": "node_confront"
+      "nextNodeId": "SCENE_05"
     },
     {
-      "id": "node_confront",
+      "id": "SCENE_05",
       "type": "scene",
+      "isStart": false,
+      "isEnding": false,
+      "position": {
+        "x": 400,
+        "y": 650
+      },
+      "title": "地下室入口",
+      "sceneName": "图书馆阅览室",
+      "backgroundId": "scene_001",
+      "narration": "晓晨和雨萱根据之前的线索，在图书馆废弃书籍堆积的角落里小心翼翼地搜寻着。终于，她们发现了一扇隐藏在书架后的金属门，上面落满了厚厚的灰尘。",
+      "dialogues": [
+        {
+          "id": "zzdgach96",
+          "characterId": "char_001",
+          "text": "找到了！雨萱，你看，这就是图纸上标注的地下室入口！",
+          "emotion": "excited"
+        },
+        {
+          "id": "pub5apd8o9",
+          "characterId": "char_003",
+          "text": "哇，好隐秘啊。上面这么多灰，平时根本不会有人注意到吧？看来我们找对地方了。",
+          "emotion": "curious"
+        },
+        {
+          "id": "1zw8qvmv4p",
+          "characterId": "char_001",
+          "text": "没错，这应该就是通往旧礼堂储藏室的秘密通道！我们进去看看！",
+          "emotion": "eager"
+        },
+        {
+          "id": "9xhrk32xp6",
+          "characterId": "u81kbzhl1m",
+          "text": "晓晨正准备伸手推开那扇锈迹斑斑的金属门，一道清冷的声音从她们身后传来。",
+          "emotion": "neutral"
+        },
+        {
+          "id": "ukw1460u5x",
+          "characterId": "char_002",
+          "text": "你们不能进去。",
+          "emotion": "calm_firm"
+        },
+        {
+          "id": "vrju9cgy4m",
+          "characterId": "char_001",
+          "text": "（吓了一跳，转过身）修远哥？你怎么会在这里？",
+          "emotion": "surprised"
+        },
+        {
+          "id": "7fi0mex4e3",
+          "characterId": "char_002",
+          "text": "我警告过你，有些地方不该碰。里面不是你们能处理的。",
+          "emotion": "serious"
+        },
+        {
+          "id": "pg6kvxacv6",
+          "characterId": "char_003",
+          "text": "（眉头微皱）修远同学，你这话说得太奇怪了吧？我们只是想查清楚一些事情。",
+          "emotion": "questioning"
+        }
+      ],
+      "nextNodeId": "BRANCH_06"
+    },
+    {
+      "id": "BRANCH_06",
+      "type": "branch",
+      "isStart": false,
+      "isEnding": false,
       "position": {
         "x": 400,
         "y": 800
       },
-      "title": "阅览室的第一次正面交锋",
-      "sceneName": "图书馆阅览室",
-      "backgroundId": "scene_001",
-      "narration": "深夜的阅览室只亮着几盏台灯，冷白的光把桌面切成清晰的岛屿。窗外风拂过树梢，纸页轻微作响。修远坐在靠窗的位置翻页，晓晨与雨萱推门而入，空气里混合着纸墨味与未说出口的紧张。",
+      "title": "如何应对修远的阻拦？",
+      "sceneName": "图书馆入口",
+      "narration": "图书馆地下室入口的微弱灯光下，修远的身影仿佛一堵无形的高墙，挡住了晓晨和雨萱的去路。他的眼神深邃，平静中带着不容置疑的坚决。",
       "dialogues": [
         {
-          "id": "0ngbru4t5f",
+          "id": "9wa757206z",
           "characterId": "char_002",
-          "text": "这么晚来阅览室做什么？地下室刚做过维护，线路调整是为了安全和隐私保护。馆藏目录显示的都是公开条目，你们别多想。",
-          "emotion": "calm"
+          "text": "你们不该到这里来。再往前一步，就是深渊。",
+          "emotion": "serious"
         },
         {
-          "id": "nfzy5jm9o",
-          "characterId": "char_003",
-          "text": "隐私保护也会把备用线改接到密门？还有《校史口述集》目录写着“在册”，书架却空，借阅记录是零。说说，这算哪种维护？",
-          "emotion": "skeptical"
-        },
-        {
-          "id": "m2u9ag4mvo",
+          "id": "ns8onwb26u",
           "characterId": "char_001",
-          "text": "我们在配电柜看到新换的胶带和指向地下室的标记。旧档案最近被挪动过，你的“维护”动了不该动的密档。",
-          "emotion": "determined"
+          "text": "深渊？修远学长，你到底知道些什么？为什么不肯告诉我们？",
+          "emotion": "frustrated"
         },
         {
-          "id": "mslv83wsi5",
+          "id": "ew5itdd3vn",
           "characterId": "char_002",
-          "text": "密档不对外，本来就不在公开书架。目录里的条目是占位符，避免引起注意。你们这样质问，会给我带来麻烦。",
-          "emotion": "defensive"
+          "text": "有些真相，远比你们想象的更残酷。知道得越多，危险就越大。",
+          "emotion": "warning"
         },
         {
-          "id": "p22mp276oq",
+          "id": "gex1i31ah7",
           "characterId": "char_003",
-          "text": "占位符也会写保管人缩写吗？卡片上有你的字母。有人让你改目录、动线，你在隐瞒。",
-          "emotion": "pressing"
+          "text": "可是，我们已经走到这里了。如果真有什么危险，难道我们不应该知道吗？也许我们可以帮你。",
+          "emotion": "pleading"
         },
         {
-          "id": "5nuclv2081",
-          "characterId": "char_001",
-          "text": "我们不是来闹，是来对质。地下室密档被动过这件事，今晚就要说明白。",
-          "emotion": "firm"
-        }
-      ],
-      "nextNodeId": "node_pressure"
-    },
-    {
-      "id": "node_pressure",
-      "type": "scene",
-      "position": {
-        "x": 400,
-        "y": 950
-      },
-      "title": "匿名线人与道德压力",
-      "sceneName": "学生宿舍",
-      "backgroundId": "scene_003",
-      "narration": "夜里，宿舍走廊的灯影在风里轻轻摇动，校论坛的热帖一条接一条地弹出提醒。窗外有同学压低嗓子谈论“地下室”和“密档”，潮湿的空气像把弦拧得更紧。屋里，三人围着雨萱的手机屏幕，每一次呼吸都透着克制——友情的线被拉得发涩，却还没断。",
-      "dialogues": [
-        {
-          "id": "24nhrff8r4",
-          "characterId": "char_003",
-          "text": "匿名线人刚给我发了语音，他说密档不只是借阅记录，牵涉校史黑幕，还有受害者隐私……让我们别轻易曝光。",
-          "emotion": "anxious"
-        },
-        {
-          "id": "0d3qzfq7gf",
-          "characterId": "char_001",
-          "text": "这更说明地下室被动过，藏的东西不干净。真相要是不挖，它就永远烂在那儿。",
-          "emotion": "determined"
-        },
-        {
-          "id": "ae20mdq5bu",
+          "id": "fe2az8f5og",
           "characterId": "char_002",
-          "text": "“黑幕”这种词很会吸引眼球。线人没被证实前，别把人当素材。隐私不是挡箭牌，但也是底线。",
-          "emotion": "calm"
-        },
-        {
-          "id": "vugv5o8382",
-          "characterId": "char_003",
-          "text": "我知道采访伦理。我可以约他见面，所有姓名遮盖，只核年份和事件。可你别再绕话了，好吗？",
-          "emotion": "assertive"
-        },
-        {
-          "id": "7ujtqfzq0k",
-          "characterId": "char_002",
-          "text": "我不会破规。但我可以验证线人的出处，和你们一起去老教学楼。条件是：涉及个人的部分一律不记录。你们守得住吗？",
+          "text": "这不是你们能解决的问题。听我的，离开这里，忘掉这一切。",
           "emotion": "firm"
         },
         {
-          "id": "l5dvsigxzc",
+          "id": "psuwvisxt7",
           "characterId": "char_001",
-          "text": "守。只要能迈出这一步。今晚就约——修远，我们信你，也需要你信我们。",
-          "emotion": "decisive"
-        }
-      ],
-      "nextNodeId": "node_branch_final"
-    },
-    {
-      "id": "node_branch_final",
-      "type": "branch",
-      "position": {
-        "x": 400,
-        "y": 1100
-      },
-      "title": "最终抉择：真相、秘密与外力",
-      "sceneName": "图书馆地下室",
-      "backgroundId": "scene_004",
-      "narration": "昏黄的日光灯在地下室顶上轻轻闪烁，潮气和旧纸的味道混在一起。匿名线人已经离开，只留下一只牛皮纸袋、几张被涂黑的复印件和一段被剪得支离的录音。走廊尽头传来若有若无的脚步声，仿佛提醒他们——时间正在被抹去。",
-      "dialogues": [
-        {
-          "id": "o00zdqvon4",
-          "characterId": "char_003",
-          "text": "录音只剩中段，关键名字都被处理掉了。要是现在发出去，很可能有人反咬我们不完整、不负责。",
-          "emotion": "纠结"
-        },
-        {
-          "id": "ugl8htgzxm",
-          "characterId": "char_001",
-          "text": "不完整也是真相的一部分。拖下去只会让更多人受伤——我们公开，逼制度正面回应。",
-          "emotion": "坚定"
-        },
-        {
-          "id": "r5y3u03yl1",
-          "characterId": "char_002",
-          "text": "公开意味着受害者可能被牵连，守秘者的名誉也会被撕碎。阶段性隐瞒，先保人，再换可验证的改革承诺，是更稳的路。",
-          "emotion": "冷静"
-        },
-        {
-          "id": "dg09qq36p7",
-          "characterId": "char_003",
-          "text": "还有一种——联系外部媒体或更大的力量。他们能把事放大，但我们可能被拿去做政治工具，真相会被改写成别人的版本。",
-          "emotion": "紧张"
-        },
-        {
-          "id": "9x5wg1gxfb",
-          "characterId": "char_001",
-          "text": "不想被操控，可我们也不能装作不知道。选哪条都会有人付出代价……只看我们愿意承担哪一种。",
-          "emotion": "沉重"
-        },
-        {
-          "id": "jqik3i5j15",
-          "characterId": "char_002",
-          "text": "线人说午夜前会有人来翻这里。现在决定，否则证据和人都可能没了。",
-          "emotion": "迫切"
+          "text": "不！我们不能退缩。一定有办法的。",
+          "emotion": "determined"
         }
       ],
       "choices": [
         {
-          "id": "choice_public",
-          "text": "立刻公开已核实的材料，接受风暴与制度对峙",
-          "targetNodeId": "node_ending_public",
-          "condition": "可能牵动受害者与守秘者名誉，引发制度震荡与个人代价。"
+          "id": "CHOICE_06_A",
+          "text": "晓晨：设法支开修远，强行进入地下室。",
+          "targetNodeId": "SCENE_07A",
+          "condition": "与修远的关系恶化，但可能更快触及真相。"
         },
         {
-          "id": "choice_secret",
-          "text": "暂时隐去敏感身份与细节，以保护受害者并换取校方书面改革承诺",
-          "targetNodeId": "node_ending_secret",
-          "condition": "阶段性隐瞒以换取改革与保护，需承担长期道德压力。"
+          "id": "CHOICE_06_B",
+          "text": "雨萱：尝试说服修远，寻求他的合作。",
+          "targetNodeId": "SCENE_07B",
+          "condition": "修远可能泄露部分信息，但提出条件。"
         },
         {
-          "id": "choice_mislead",
-          "text": "借助外部媒体或权力迅速放大事件，接受被操控与失真风险",
-          "targetNodeId": "node_ending_mislead",
-          "condition": "借助外部媒体或权力介入，风险不可控，可能被利用为政治工具。"
+          "id": "CHOICE_06_C",
+          "text": "两人：暂时撤退，从校外或网络寻找更多线索。",
+          "targetNodeId": "SCENE_07C",
+          "condition": "进展缓慢，但可能发现更广的关联。"
         }
       ]
     },
     {
-      "id": "node_ending_public",
-      "type": "ending",
-      "isEnding": true,
+      "id": "SCENE_07A",
+      "type": "scene",
+      "isStart": false,
+      "isEnding": false,
       "position": {
         "x": 150,
-        "y": 1250
+        "y": 950
       },
-      "title": "真相公开：改革与代价",
-      "sceneName": "校园林荫道",
-      "backgroundId": "scene_002",
-      "narration": "晚风穿过梧桐叶，林荫道的告示栏贴着加盖红章的“独立审查通告”。手机屏幕一条条推送闪过，操场那头人声被压低，像在等待某种回音。图书馆的旧门暂时封锁，门口的纸条写着“内部整顿”。他们在斑驳的灯影里并肩走着，每个人都知道，这不是终点，也不是逃路。",
+      "title": "强行突破",
+      "sceneName": "图书馆地下室",
+      "backgroundId": "scene_004",
+      "narration": "修远被晓晨巧妙地支开，地下室的门吱呀一声，露出了深不见底的黑暗。霉味和灰尘的气息扑面而来，仿佛时间在这里凝固了。两人打开手机手电筒，小心翼翼地走了进去。",
       "dialogues": [
         {
-          "id": "vpij7vhtpq",
+          "id": "sifiz62sup",
           "characterId": "char_003",
-          "text": "我的稿子上了校网头版，编辑给我打了三次电话，让我把“黑幕”改成“问题”。群里有人说我在炒作，有人直接把我拉黑。可我不撤稿。",
+          "text": "哇哦，这里简直是个废弃的世界。修远为什么不让我们进来啊？",
+          "emotion": "curious"
+        },
+        {
+          "id": "7aa18p2nuf",
+          "characterId": "char_001",
+          "text": "他肯定有他的理由，但我总觉得事有蹊跷。我们分头找找，看有没有什么特别的。",
           "emotion": "determined"
         },
         {
-          "id": "rczyjdd2g3",
+          "id": "sdnces7ojt",
+          "characterId": "char_003",
+          "text": "好！咦，这里有个上了锁的柜子。",
+          "emotion": "surprised"
+        },
+        {
+          "id": "per8l510y5",
+          "characterId": "char_001",
+          "text": "（她用发卡小心翼翼地拨弄着锁芯，咔哒一声，锁开了）找到了。这里面是…一些档案？",
+          "emotion": "focused"
+        },
+        {
+          "id": "5lpgpmz2d6",
+          "characterId": "char_003",
+          "text": "（凑近阅读）天啊，这些都是关于几年前那起失踪案的调查报告！还有些名字…和我们学校的学生对得上！",
+          "emotion": "shocked"
+        },
+        {
+          "id": "dsl5gqbdyu",
+          "characterId": "char_001",
+          "text": "这和修远说的完全不一样…这里面记录的信息，远比我们想象的要复杂和黑暗。",
+          "emotion": "serious"
+        }
+      ],
+      "nextNodeId": "SCENE_08"
+    },
+    {
+      "id": "SCENE_07B",
+      "type": "scene",
+      "isStart": false,
+      "isEnding": false,
+      "position": {
+        "x": 400,
+        "y": 950
+      },
+      "title": "有条件的合作",
+      "sceneName": "图书馆阅览室",
+      "backgroundId": "scene_001",
+      "narration": "阅览室里，阳光透过落地窗洒在布满灰尘的书架上，空气中弥漫着旧书特有的气息。修远将她们带到了一个偏僻的角落，脸色依旧平静，但眼神中多了一丝无奈。",
+      "dialogues": [
+        {
+          "id": "31ibxofhpe",
+          "characterId": "char_003",
+          "text": "修远同学，现在可以说了吧？地下室到底有什么？你为什么不让我们进去？",
+          "emotion": "eager"
+        },
+        {
+          "id": "ezpp4ymr3a",
           "characterId": "char_002",
-          "text": "处分是跑不掉的。守密人破了规矩，该受。只要档案不再被锁回地下，骂声我自己扛。你们，别把自己也锁起来。",
+          "text": "有些事情，你们最好不要知道。但既然你们执意如此...",
+          "emotion": "reluctant"
+        },
+        {
+          "id": "uw2lvjv7rk",
+          "characterId": "char_002",
+          "text": "地下室连接着一个被遗忘的区域，一个...不该被外界打扰的地方。它与最近学校里发生的一些传闻，确实有所关联。",
+          "emotion": "serious"
+        },
+        {
+          "id": "buhkzlyjus",
+          "characterId": "char_001",
+          "text": "不该被外界打扰？是指什么？和我们正在调查的‘奇怪事件’有关吗？",
+          "emotion": "curious"
+        },
+        {
+          "id": "eaufy3uw42",
+          "characterId": "char_002",
+          "text": "具体是什么，我现在不能说得太多。但我可以给你们提供一些帮助，前提是，你们必须答应我两个条件。",
           "emotion": "calm"
         },
         {
-          "id": "6w0jy225n4",
+          "id": "nghsqmn1sy",
+          "characterId": "char_003",
+          "text": "什么条件？快说！",
+          "emotion": "impatient"
+        },
+        {
+          "id": "g7fwkkbcbm",
+          "characterId": "char_002",
+          "text": "第一，无论你们发现了什么，都不能擅自行动，必须先告诉我。第二，务必确保你们自身的安全，因为那里确实有危险。",
+          "emotion": "caution"
+        },
+        {
+          "id": "1irhmgle8u",
           "characterId": "char_001",
-          "text": "我爸给我发了超长语音，第一句是“你越界了”，最后一句是“既然走到这一步，就别怕”。他希望我信程序，可你也知道，我们等不起。我还是觉得我们做对了。",
+          "text": "你为什么这么做？你到底知道多少？",
+          "emotion": "suspicious"
+        }
+      ],
+      "nextNodeId": "SCENE_08"
+    },
+    {
+      "id": "SCENE_07C",
+      "type": "scene",
+      "isStart": false,
+      "isEnding": false,
+      "position": {
+        "x": 650,
+        "y": 950
+      },
+      "title": "迂回调查",
+      "sceneName": "校园林荫道",
+      "backgroundId": "scene_002",
+      "narration": "午后，阳光透过林荫道的树叶，斑驳地洒在地面上。晓晨和雨萱坐在长椅上，手机和笔记本摊开在两人之间，空气中弥漫着压抑的兴奋。",
+      "dialogues": [
+        {
+          "id": "ydix1bo9z8",
+          "characterId": "char_003",
+          "text": "你看这个！我查了校报的旧档案，还有一些外部新闻媒体的报道。两年前那场实验室事故的调查报告，结尾被草草盖过，说只是学生操作失误！",
+          "emotion": "indignant"
+        },
+        {
+          "id": "7us5ia9lod",
+          "characterId": "char_001",
+          "text": "操作失误？但当时听说的可不是这样。修远之前警告我们，说有些事情牵扯太深，可能指的就是这个。你再看看财务记录。",
+          "emotion": "thoughtful"
+        },
+        {
+          "id": "sseoyiugjj",
+          "characterId": "char_003",
+          "text": "财务记录更可疑！你看，事故发生后不久，有一笔对外宣称用于“校园设施升级”的巨额资金，但具体用途语焉不详，而且经手人是好几个校领导。",
+          "emotion": "frustrated"
+        },
+        {
+          "id": "hfoplveay2",
+          "characterId": "char_001",
+          "text": "结合修远的警告和这份报告的蹊跷...这根本不是简单的意外。这笔资金，很可能就是用来堵住那些知道真相的人的嘴，或者掩盖更深层的丑闻。",
+          "emotion": "serious"
+        },
+        {
+          "id": "6axtn8lrim",
+          "characterId": "char_003",
+          "text": "所以，校方高层从一开始就介入了，而且还试图掩盖一切？这太恶劣了！我们该怎么办？",
+          "emotion": "angry"
+        },
+        {
+          "id": "65n22q7sdm",
+          "characterId": "char_001",
+          "text": "他们以为可以一手遮天，但蛛丝马迹总会留下。既然修远不肯直接说，那我们就自己把这些线索串起来。",
+          "emotion": "determined"
+        }
+      ],
+      "nextNodeId": "SCENE_08"
+    },
+    {
+      "id": "SCENE_08",
+      "type": "scene",
+      "isStart": false,
+      "isEnding": false,
+      "position": {
+        "x": 400,
+        "y": 1100
+      },
+      "title": "真相的重量",
+      "sceneName": "图书馆地下室",
+      "backgroundId": "scene_004",
+      "narration": "灰尘在昏暗的光线中飞舞，空气凝重得仿佛能滴出水来。那泛黄的档案袋里，记载着一个被刻意尘封多年的秘密，一个足以颠覆所有人心中的校园传说。",
+      "dialogues": [
+        {
+          "id": "t0y26njya3",
+          "characterId": "char_003",
+          "text": "这...这上面说的...竟然是真的？！当年的失踪案，根本不是意外，而是有人蓄意为之，甚至...被校方压了下来！",
+          "emotion": "shocked"
+        },
+        {
+          "id": "7x9q5sktij",
+          "characterId": "char_001",
+          "text": "那些受害者，那些被遗忘的名字...原来他们不是失踪，是牺牲。这份档案，简直是铁证！",
+          "emotion": "grave"
+        },
+        {
+          "id": "xxwmlwta3h",
+          "characterId": "char_003",
+          "text": "我受够了这些遮掩！这些肮脏的秘密必须被公之于众！我要把它们发到校报头版，让所有人都知道真相！",
+          "emotion": "furious"
+        },
+        {
+          "id": "hftsej36sm",
+          "characterId": "char_001",
+          "text": "等等，雨萱！这份真相的代价，可能会比我们想象的还要大。这牵扯到学校高层，甚至可能会毁了很多人...",
           "emotion": "conflicted"
         },
         {
-          "id": "e2wsa71b84",
-          "characterId": "char_003",
-          "text": "你看，改革通告出来了。我们可能会被记过、被人背后说，但至少有人开始翻校史的泥。新闻不是为了讨好，我要学会更硬一点。",
-          "emotion": "proud"
-        },
-        {
-          "id": "03iuezjrr2",
+          "id": "i3ea6c49kn",
           "characterId": "char_002",
-          "text": "真相不是锤子，是光。光到哪儿，尘到哪儿都会浮起来。这段时间会难受，但别让光熄。",
-          "emotion": "gentle"
+          "text": "你们果然还是找到了这里。",
+          "emotion": "calm"
         },
         {
-          "id": "oop6snxbl3",
+          "id": "8xbyuqgfj2",
+          "characterId": "char_003",
+          "text": "修远？！你怎么会在这里？你是不是也知道些什么？",
+          "emotion": "surprised"
+        },
+        {
+          "id": "bcue07ldgx",
+          "characterId": "char_002",
+          "text": "这份档案，从一开始就不应该被你们发现。有些真相，埋藏起来，对所有人来说，才是最好的结局。",
+          "emotion": "serious"
+        },
+        {
+          "id": "suiqrfqwbd",
           "characterId": "char_001",
-          "text": "等独立审查结果出来，我去找我爸喝茶，把证据一条一条摆给他看。然后我们继续查该查的、改该改的。不躲。",
+          "text": "不！修远哥，那不是最好的结局！那些被掩盖的痛苦，那些无辜的人，他们值得一个公道！",
           "emotion": "determined"
         }
-      ]
+      ],
+      "nextNodeId": "BRANCH_09"
     },
     {
-      "id": "node_ending_secret",
-      "type": "ending",
-      "isEnding": true,
+      "id": "BRANCH_09",
+      "type": "branch",
+      "isStart": false,
+      "isEnding": false,
       "position": {
         "x": 400,
         "y": 1250
       },
-      "title": "秘密延续：保护与承诺",
-      "sceneName": "学生宿舍",
-      "backgroundId": "scene_003",
-      "narration": "夜深，宿舍只留一盏台灯。窗外风吹动晾衣绳，阴影在墙上来回摆动。桌上摊着地下室带回的资料和一份薄薄的协议纸，手机屏幕倒计时的数字冷冷发光。电流的嗡鸣像压低声音的争论，空气有纸张的干涩和未说出口的重。三人围坐，小心把决定落在字里行间——秘密没有被终止，只是被按下了延时键。",
+      "title": "如何处理真相？",
+      "sceneName": "图书馆地下室",
+      "backgroundId": "scene_004",
+      "narration": "图书馆地下室的空气仿佛凝固了，潮湿与尘埃的气息中，三人的争执声格外刺耳。摆在他们面前的，是沉甸甸的真相和同样沉甸甸的抉择。",
       "dialogues": [
         {
-          "id": "sbm8a7ufip",
-          "characterId": "char_002",
-          "text": "协议我拟好了：一周内打通匿名保护通道，三个月内推动档案透明和申诉流程改革。证据分段加密，我来保管触发点。",
-          "emotion": "冷静"
-        },
-        {
-          "id": "3cgdre8l6h",
+          "id": "wndgdahqid",
           "characterId": "char_003",
-          "text": "我的稿子先封存，拆成三份放不同云盘，加时间戳。如果改革不到位，让倒计时自己说话。",
-          "emotion": "坚定"
+          "text": "这些档案就是铁证！我们不能坐视不理，必须把它公布出去，让所有人都知道！",
+          "emotion": "indignant"
         },
         {
-          "id": "3dok7z7zhv",
-          "characterId": "char_001",
-          "text": "可我们毕竟是在隐瞒……我爸总说，真相需要引路人，不是莽撞的英雄。我建议留下明线：地点、日期、责任人，每到节点我们就去核验。",
-          "emotion": "矛盾"
-        },
-        {
-          "id": "98120i0k0b",
+          "id": "3o00sqo3is",
           "characterId": "char_002",
-          "text": "保密不是遮盖，是避免二次伤害。我会把受害者的联络转进安全渠道，必要时接入校内法律援助的联系人，还有临时避险的方案。",
-          "emotion": "严肃"
+          "text": "曝光？你考虑过后果吗？你以为这只是简单的揭露？这背后牵扯的，远比你们想象中更深，更复杂。",
+          "emotion": "grave"
         },
         {
-          "id": "diwzdwgkbs",
-          "characterId": "char_003",
-          "text": "行，那就说好。修远，如果你反悔，我会把你的名字放在头版标题里——不是威胁，是承诺。",
-          "emotion": "认真"
-        },
-        {
-          "id": "qujrygeow2",
+          "id": "p5xdgx14su",
           "characterId": "char_001",
-          "text": "那我们也立个约定：每周回地下室对进度，对不上的那天，线索直接走公开通道。签字吧。",
-          "emotion": "坚定"
+          "text": "可是修远，如果我们就这样把真相掩埋，那和那些坏人又有什么区别？难道不正义吗？",
+          "emotion": "conflicted"
+        },
+        {
+          "id": "w7k50sa42g",
+          "characterId": "char_002",
+          "text": "正义不等于鲁莽。不计后果的曝光，可能只会引火烧身，让更多无辜的人受牵连。你们真的准备好承受这一切了吗？",
+          "emotion": "serious"
+        },
+        {
+          "id": "dvis7g13ii",
+          "characterId": "char_003",
+          "text": "我......我不能放弃！那些受害者，那些被蒙蔽的人们，他们有权知道！",
+          "emotion": "determined"
+        },
+        {
+          "id": "vgbv86ftev",
+          "characterId": "char_001",
+          "text": "（看着眼前堆积如山的档案，和面前争执不休的两人，她深吸一口气）",
+          "emotion": "resolved"
+        }
+      ],
+      "choices": [
+        {
+          "id": "CHOICE_09_A",
+          "text": "雨萱：全面曝光，让所有人都知道真相！",
+          "targetNodeId": "ENDING_A",
+          "condition": "学校陷入危机，个人付出巨大代价。"
+        },
+        {
+          "id": "CHOICE_09_B",
+          "text": "晓晨：揭露部分关键信息，保护无辜者和学校声誉。",
+          "targetNodeId": "ENDING_B",
+          "condition": "在平衡中寻求脆弱的和解。"
+        },
+        {
+          "id": "CHOICE_09_C",
+          "text": "修远：彻底封存秘密，让一切归于沉寂。",
+          "targetNodeId": "ENDING_C",
+          "condition": "真相被掩埋，友情面临考验。"
         }
       ]
     },
     {
-      "id": "node_ending_mislead",
+      "id": "ENDING_A",
       "type": "ending",
+      "isStart": false,
+      "isEnding": true,
+      "position": {
+        "x": 150,
+        "y": 1400
+      },
+      "title": "真相的代价：校史震荡",
+      "sceneName": "校园林荫道",
+      "backgroundId": "scene_002",
+      "narration": "秋风萧瑟，卷起地上枯黄的落叶。曾经充满欢声笑语的林荫道，此刻却弥漫着沉重的寂静。三人并肩而立，却感受不到丝毫往日的亲密，只有一道无法逾越的鸿沟。",
+      "dialogues": [
+        {
+          "id": "pg2qnuamw8",
+          "characterId": "char_001",
+          "text": "我们...真的做对了吗？揭露了一切，可看看现在...",
+          "emotion": "regretful"
+        },
+        {
+          "id": "vs53bxgxq3",
+          "characterId": "char_003",
+          "text": "校报的头条轰动了整个教育界，所有人都知道了青云大学的丑闻。可我...我却高兴不起来。",
+          "emotion": "somber"
+        },
+        {
+          "id": "giss29mf3q",
+          "characterId": "char_002",
+          "text": "真相，并非总是带来解脱。有些伤疤，一旦揭开，便再也无法愈合。",
+          "emotion": "resigned"
+        },
+        {
+          "id": "3e37ruectx",
+          "characterId": "char_001",
+          "text": "我们的友谊...也成了代价，是吗？",
+          "emotion": "sad"
+        },
+        {
+          "id": "9m5f0cyq9l",
+          "characterId": "char_003",
+          "text": "（她别过脸，眼眶泛红）我只是...想追求真相。",
+          "emotion": "guilty"
+        },
+        {
+          "id": "0yshbqildp",
+          "characterId": "char_002",
+          "text": "（他只是静静地看着远方，没有回答，仿佛在看一段已经逝去的往事）",
+          "emotion": "melancholy"
+        }
+      ]
+    },
+    {
+      "id": "ENDING_B",
+      "type": "ending",
+      "isStart": false,
+      "isEnding": true,
+      "position": {
+        "x": 400,
+        "y": 1400
+      },
+      "title": "平衡的艺术：脆弱的和解",
+      "sceneName": "图书馆阅览室",
+      "backgroundId": "scene_001",
+      "narration": "阳光透过阅览室的落地窗，柔和地洒在书架和桌面。空气中弥漫着旧书特有的淡香，比地下室的潮湿冷清多了几分暖意。失踪案的余波渐渐平息，但留下的痕迹，仍在三人心头。",
+      "dialogues": [
+        {
+          "id": "j70imtbmnz",
+          "characterId": "char_003",
+          "text": "所以，这就是我们能做到的最好结果了吗？一部分真相公之于众，学校也做了些表面功夫...",
+          "emotion": "frustrated"
+        },
+        {
+          "id": "cw5z1u2ke0",
+          "characterId": "char_001",
+          "text": "至少，那些不为人知的角落被照亮了一点。而且，学校承诺会加强管理，虽然只是有限的整改，但总比什么都不做好。",
+          "emotion": "thoughtful"
+        },
+        {
+          "id": "nm25g3okqc",
+          "characterId": "char_002",
+          "text": "世上的事，本就很难非黑即白。真相是一把双刃剑，完全的揭露有时会带来更大的混乱。我们选择了让更多人得以警醒，同时避免了对更多无辜者的伤害。",
+          "emotion": "calm"
+        },
+        {
+          "id": "xkxsr654ew",
+          "characterId": "char_003",
+          "text": "道理我都懂...只是觉得，那些被遗忘的，真的就能这样被放下吗？",
+          "emotion": "melancholy"
+        },
+        {
+          "id": "r185asc8v8",
+          "characterId": "char_001",
+          "text": "我们无法改变过去，但我们可以确保未来不再重蹈覆辙。而且，我们三个...至少关系比以前更深了，对吧？",
+          "emotion": "hopeful"
+        },
+        {
+          "id": "xzz6p363kt",
+          "characterId": "char_002",
+          "text": "是的。共同经历过这一切，便是我们各自成长的一部分。平衡的艺术，在于妥协与坚守之间，找到那条脆弱却真实的线。",
+          "emotion": "pensive"
+        }
+      ]
+    },
+    {
+      "id": "ENDING_C",
+      "type": "ending",
+      "isStart": false,
       "isEnding": true,
       "position": {
         "x": 650,
-        "y": 1250
+        "y": 1400
       },
-      "title": "误导反噬：舆论风暴与理想坍塌",
-      "sceneName": "图书馆阅览室",
-      "backgroundId": "scene_001",
-      "narration": "夜色压在阅览室的窗上，白色荧光灯像冷水，偶尔轻微闪烁。桌上的资料被盖上鲜红的封条，编号冷冷注视着他们的手。市里的工作组刚抬走了他们拼出的证据，统一的口径把调查变成了“整顿风气”的谈点。手机屏幕里，被剪碎的采访在热搜上翻滚，标题像鱼钩，一次次钩住他们的名字。门口摄像头的红点一闪一闪，仿佛在记录这场沉默与裂缝——最终，没有谁再伸手去撕开封条，三人背向彼此，走向不同的出口。",
+      "title": "沉寂的档案：秘密的守护",
+      "sceneName": "学生宿舍",
+      "backgroundId": "scene_003",
+      "narration": "夜幕低垂，宿舍里只剩下台灯昏黄的光。失踪案的喧嚣早已平息，仿佛一切从未发生。但对于晓晨、雨萱和修远而言，那晚在图书馆地下室做出的抉择，如同沉重的石块，压在各自的心底，留下了一道无法愈合的裂痕。",
       "dialogues": [
         {
-          "id": "lmv4cdmwrr",
-          "characterId": "char_003",
-          "text": "我只是想把真相推到更大的平台……可他们把我的稿子剪得面目全非。现在所有人都在骂我们炒作。",
-          "emotion": "自责"
-        },
-        {
-          "id": "wn0cpgc376",
-          "characterId": "char_002",
-          "text": "新闻是一面镜子，也是一把刀。你把它递出去，就不再由你握着。他们要的不是事实，是风向。",
-          "emotion": "冷静"
-        },
-        {
-          "id": "6di5y1mth9",
+          "id": "lyuncfynbp",
           "characterId": "char_001",
-          "text": "我爸总说证据会说话，可它现在被封在盒子里，封条像胶带，把它的嘴贴死了。我们是为了真相的啊。",
-          "emotion": "沮丧"
+          "text": "我们真的……就这样把一切都埋葬了吗？",
+          "emotion": "regretful"
         },
         {
-          "id": "8k14uq0mbq",
+          "id": "ehd1wd9bgh",
           "characterId": "char_003",
-          "text": "你别把锅都丢给我！修远，你一直知道谁在背后运作吧？你为什么不早说？我们才不会被动到这种地步！",
-          "emotion": "愤怒"
+          "text": "校报的头条本可以是真相大白，现在却只剩下无关痛痒的社团活动……我感觉自己像个背叛者。",
+          "emotion": "guilty"
         },
         {
-          "id": "8mnm4o1599",
+          "id": "7mnd0sg46k",
           "characterId": "char_002",
-          "text": "我说与不说，结局都一样——他们需要一个故事，而我们只是其中的素材。你以为能掌舵，结果只是帆被撕开。",
-          "emotion": "无奈"
+          "text": "有些秘密，被守护比被揭露，能带来更小的伤害。这是我们共同的选择。",
+          "emotion": "calm"
         },
         {
-          "id": "0vow4oz2w7",
+          "id": "bi6xfrni7w",
           "characterId": "char_001",
-          "text": "我们连彼此都开始怀疑了……那我还拿什么去相信‘真相’？",
-          "emotion": "绝望"
+          "text": "可是……那份正义呢？那些被遗忘的人，他们就真的只能沉寂了吗？",
+          "emotion": "distressed"
+        },
+        {
+          "id": "01rigk2h0z",
+          "characterId": "char_003",
+          "text": "我总觉得，我们牺牲了太多……比想象的还要多。",
+          "emotion": "heavyhearted"
+        },
+        {
+          "id": "n8qo2ue42g",
+          "characterId": "char_002",
+          "text": "历史自有其修正的方式。而我们，只是选择了当下最不坏的路径。",
+          "emotion": "resigned"
         }
       ]
     }
