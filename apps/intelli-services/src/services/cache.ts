@@ -119,9 +119,18 @@ export function getProject<T>(projectId: string): T | null {
 }
 
 /**
- * 获取所有项目列表
+ * 获取所有项目列表（包含封面和统计信息）
  */
-export function listProjects(): Array<{ id: string; title: string; savedAt: string }> {
+export function listProjects(): Array<{
+    id: string;
+    title: string;
+    description: string;
+    coverImage?: string;
+    savedAt: string;
+    characterCount: number;
+    sceneCount: number;
+    nodeCount: number;
+}> {
     try {
         const files = readdirSync(PROJECTS_DIR).filter(f => f.endsWith('.json'));
         const projects = [];
@@ -129,10 +138,17 @@ export function listProjects(): Array<{ id: string; title: string; savedAt: stri
         for (const file of files) {
             const data = readFileSync(join(PROJECTS_DIR, file), 'utf-8');
             const saved = JSON.parse(data);
+            const project = saved.project;
+            
             projects.push({
-                id: saved.project.id,
-                title: saved.project.title,
+                id: project.id,
+                title: project.title,
+                description: project.description || '',
+                coverImage: project.coverImage,
                 savedAt: saved.savedAt,
+                characterCount: project.characters?.length || 0,
+                sceneCount: project.backgrounds?.length || 0,
+                nodeCount: project.script?.length || 0,
             });
         }
         

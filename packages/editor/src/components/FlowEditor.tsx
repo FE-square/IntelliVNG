@@ -16,7 +16,7 @@ import ReactFlow, {
     Panel,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Button } from '@vng/ui';
+import { Button, useConfirmDialog, ConfirmDialog } from '@vng/ui';
 import { ZoomIn, ZoomOut, Maximize2, AlertCircle, Plus, Undo, Redo } from 'lucide-react';
 import type { GameProject, StoryNode, Scene } from '@vng/core';
 import { StoryNodeComponent } from './StoryNodeComponent';
@@ -35,6 +35,7 @@ interface FlowEditorProps {
 
 export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }: FlowEditorProps) {
     const { zoomIn, zoomOut, fitView, getViewport } = useReactFlow();
+    const { confirm, DialogComponent } = useConfirmDialog();
     
     const storyNodes: StoryNode[] = useMemo(() => {
         if (!project.script || project.script.length === 0) {
@@ -205,43 +206,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                     saveHistory(newProject);
                     setSelectedEdge(null);
                 } else if (selectedNode) {
-                    const nodeToDelete = storyNodes.find(n => n.id === selectedNode.id);
-                    if (!nodeToDelete) return;
-                    
-                    const startNodes = storyNodes.filter(n => n.isStart);
-                    if (nodeToDelete.isStart && startNodes.length === 1) {
-                        alert('⚠️ 不能删除唯一的开始节点!');
-                        return;
-                    }
-                    
-                    const incomingConnections = storyNodes.filter(n => 
-                        n.nextNodeId === selectedNode.id || 
-                        n.choices?.some(c => c.targetNodeId === selectedNode.id)
-                    );
-                    
-                    let confirmMessage = `确定要删除节点「${nodeToDelete.title}」吗?`;
-                    if (incomingConnections.length > 0) {
-                        confirmMessage += `\n\n⚠️ 有 ${incomingConnections.length} 个节点连接到此节点,删除后这些连接将断开。`;
-                    }
-                    
-                    if (!confirm(confirmMessage)) return;
-                    
-                    const newScript = project.script
-                        .filter(n => n.id !== selectedNode.id)
-                        .map(node => ({
-                            ...node,
-                            nextNodeId: node.nextNodeId === selectedNode.id ? undefined : node.nextNodeId,
-                            choices: node.choices?.filter(c => c.targetNodeId !== selectedNode.id),
-                        }));
-                    
-                    const newProject = {
-                        ...project,
-                        script: newScript,
-                    };
-                    
-                    onUpdate?.(newProject);
-                    saveHistory(newProject);
-                    setSelectedNode(null);
+                    handleDeleteNode(selectedNode.id);
                 }
             }
         };
@@ -447,15 +412,23 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
         }, 100);
         
         setShowAddNodeMenu(false);
+        
+        return newNodeId;
     }, [project, onUpdate, storyNodes, onSelectNode, getViewport, saveHistory]);
 
-    const handleDeleteNode = useCallback((nodeId: string) => {
+    const handleDeleteNode = useCallback(async (nodeId: string) => {
         const nodeToDelete = storyNodes.find(n => n.id === nodeId);
         if (!nodeToDelete) return;
         
         const startNodes = storyNodes.filter(n => n.isStart);
         if (nodeToDelete.isStart && startNodes.length === 1) {
-            alert('⚠️ 不能删除唯一的开始节点!');
+            await confirm({
+                title: '无法删除',
+                message: '不能删除唯一的开始节点！',
+                variant: 'danger',
+                confirmText: '知道了',
+                cancelText: '',
+            });
             return;
         }
         
@@ -464,12 +437,20 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
             n.choices?.some(c => c.targetNodeId === nodeId)
         );
         
-        let confirmMessage = `确定要删除节点「${nodeToDelete.title}」吗?`;
+        let message = `确定要删除节点「${nodeToDelete.title}」吗？`;
         if (incomingConnections.length > 0) {
-            confirmMessage += `\n\n⚠️ 有 ${incomingConnections.length} 个节点连接到此节点,删除后这些连接将断开。`;
+            message += `\n\n⚠️ 有 ${incomingConnections.length} 个节点连接到此节点，删除后这些连接将断开。`;
         }
         
-        if (!confirm(confirmMessage)) return;
+        const confirmed = await confirm({
+            title: '删除节点',
+            message,
+            variant: 'danger',
+            confirmText: '删除',
+            cancelText: '取消',
+        });
+        
+        if (!confirmed) return;
         
         const newScript = project.script
             .filter(n => n.id !== nodeId)
@@ -490,7 +471,13 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
         if (selectedNode?.id === nodeId) {
             setSelectedNode(null);
         }
-    }, [project, onUpdate, storyNodes, selectedNode, saveHistory]);
+    }, [project, onUpdate, storyNodes, selectedNode, saveHistory, confirm]);
+
+    // 从选项创建新节点
+    const handleCreateNodeFromChoice = useCallback(async (type: 'scene' | 'branch' | 'ending'): Promise<string> => {
+        const newNodeId = handleAddNode(type, false);
+        return newNodeId || '';
+    }, [handleAddNode]);
 
     const scenes: Scene[] = (project.backgrounds || []).map(bg => ({
         id: bg.id,
@@ -631,38 +618,38 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                             </Button>
                         </div>
                         
-                        <Button
-                            size="sm"
-                            variant={showIssues ? 'default' : 'outline'}
-                            onClick={() => setShowIssues(!showIssues)}
-                            className="w-full gap-2"
-                            title="逻辑检查"
-                        >
-                            <AlertCircle className="w-4 h-4" />
-                            逻辑检查
-                        </Button>
-                    </div>
-                </Panel>
-                
-                {showIssues && (
-                    <Panel position="top-right">
-                        <div className="bg-white rounded-lg shadow-lg p-3 max-w-xs">
-                            <h4 className="font-semibold text-sm mb-2 flex items-center gap-1">
-                                <AlertCircle className="w-4 h-4 text-amber-600" />
-                                逻辑检查结果
-                            </h4>
-                            {checkIssues().length === 0 ? (
-                                <p className="text-xs text-green-600">✔ 没有发现问题</p>
-                            ) : (
-                                <ul className="text-xs text-amber-700 space-y-1">
-                                    {checkIssues().map((issue, idx) => (
-                                        <li key={idx}>⚠️ {issue}</li>
-                                    ))}
-                                </ul>
+                        <div className="relative">
+                            <Button
+                                size="sm"
+                                variant={showIssues ? 'default' : 'outline'}
+                                onClick={() => setShowIssues(!showIssues)}
+                                className="w-full gap-2"
+                                title="逻辑检查"
+                            >
+                                <AlertCircle className="w-4 h-4" />
+                                逻辑检查
+                            </Button>
+                            
+                            {showIssues && (
+                                <div className="absolute left-full top-0 ml-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 p-3 z-50">
+                                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-1">
+                                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                                        逻辑检查结果
+                                    </h4>
+                                    {checkIssues().length === 0 ? (
+                                        <p className="text-xs text-green-600">✔ 没有发现问题</p>
+                                    ) : (
+                                        <ul className="text-xs text-amber-700 space-y-1">
+                                            {checkIssues().map((issue, idx) => (
+                                                <li key={idx}>⚠️ {issue}</li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
                             )}
                         </div>
-                    </Panel>
-                )}
+                    </div>
+                </Panel>
             </ReactFlow>
 
             {selectedNode && (
@@ -674,9 +661,13 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                     onClose={() => setSelectedNode(null)}
                     onGenerateImage={onGenerateImage}
                     onDelete={handleDeleteNode}
+                    onCreateNodeFromChoice={handleCreateNodeFromChoice}
                     allNodes={storyNodes}
                 />
             )}
+            
+            {/* 确认对话框 */}
+            {DialogComponent}
         </div>
     );
 }

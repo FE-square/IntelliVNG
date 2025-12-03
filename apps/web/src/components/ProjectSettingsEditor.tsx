@@ -57,6 +57,54 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
         <div className="space-y-6">
             <h3 className="text-lg font-semibold text-slate-800 border-b pb-2">📝 基本信息</h3>
             
+            {/* 封面图 */}
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">🖼️ 项目封面</label>
+                <div className="flex gap-3">
+                    <input
+                        type="text"
+                        className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        value={editingProject.coverImage || ''}
+                        onChange={(e) => setEditingProject({ ...editingProject, coverImage: e.target.value })}
+                        placeholder="输入封面图URL或使用AI生成"
+                    />
+                    {onGenerateImage && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                                if (!editingProject.title) {
+                                    toast.warning('请先填写项目名称');
+                                    return;
+                                }
+                                try {
+                                    const prompt = `${editingProject.title}, ${editingProject.description || ''}, 视觉小说封面, 横版, 高质量, 精美文字排版, 动漫风格`;
+                                    const imageUrl = await onGenerateImage('cover', prompt);
+                                    setEditingProject({ ...editingProject, coverImage: imageUrl });
+                                    toast.success('封面生成成功 ✨');
+                                } catch (error) {
+                                    // 错误已在onGenerateImage中处理
+                                }
+                            }}
+                            className="gap-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
+                        >
+                            <Wand2 className="w-3 h-3" />
+                            AI生成封面
+                        </Button>
+                    )}
+                </div>
+                {editingProject.coverImage && (
+                    <div className="mt-3">
+                        <img 
+                            src={editingProject.coverImage} 
+                            alt="封面预览" 
+                            className="w-full max-w-md mx-auto rounded-lg shadow-lg object-cover" 
+                            style={{ aspectRatio: '16 / 9' }}
+                        />
+                    </div>
+                )}
+            </div>
+            
             <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">项目名称</label>
                 <input

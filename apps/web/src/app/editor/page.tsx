@@ -207,14 +207,22 @@ function EditorPageContent() {
         
         setIsSaving(true);
         try {
-            const success = await saveProject(project);
+            // 更新项目的updatedAt时间戳
+            const updatedProject = {
+                ...project,
+                updatedAt: new Date().toISOString(),
+            };
+            
+            const success = await saveProject(updatedProject);
             
             if (success) {
+                // 更新本地project状态
+                setProject(updatedProject);
                 setLastSaveTime(new Date());
                 setShowSaveNoteDialog(false);
                 setSaveNote('');
                 clearDraft(projectId);  // 清除草稿
-                toast.success('保存成功', '项目已保存 🎉');
+                toast.success('保存成功', '项目已保存到我的项目 🎉');
             } else {
                 toast.error('保存失败', '请重试');
             }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Globe, MessageCircle } from 'lucide-react';
 import { LocaleSwitcher } from './LocaleSwitcher';
 import { I18N } from '@/i18n/client';
@@ -16,6 +16,11 @@ const i18nMap = {
  */
 export function FloatingToolbar() {
   const [showLocaleMenu, setShowLocaleMenu] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[9999] flex flex-col gap-3">
@@ -24,8 +29,8 @@ export function FloatingToolbar() {
         <button
           onClick={() => setShowLocaleMenu(!showLocaleMenu)}
           className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center group hover:scale-110 active:scale-95"
-          title={I18N[i18nMap.switchLanguage] || '切换语言'}
-          aria-label={I18N[i18nMap.switchLanguage] || '切换语言'}
+          title={mounted ? (I18N[i18nMap.switchLanguage] || '切换语言') : '切换语言'}
+          aria-label={mounted ? (I18N[i18nMap.switchLanguage] || '切换语言') : '切换语言'}
         >
           <Globe className="w-5 h-5 md:w-6 md:h-6 text-indigo-600 group-hover:text-indigo-700" />
         </button>
@@ -37,8 +42,8 @@ export function FloatingToolbar() {
       {/* 文档问答机器人按钮 (TODO) */}
       <button
         className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center group hover:scale-110 active:scale-95 opacity-50 cursor-not-allowed"
-        title={I18N[i18nMap.documentQa] || '工具问答机器人 (即将推出)'}
-        aria-label={I18N[i18nMap.documentQa] || '工具问答机器人'}
+        title={mounted ? (I18N[i18nMap.documentQa] || '工具问答机器人 (即将推出)') : '工具问答机器人 (即将推出)'}
+        aria-label={mounted ? (I18N[i18nMap.documentQa] || '工具问答机器人') : '工具问答机器人'}
         disabled
       >
         <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-purple-600 group-hover:text-purple-700" />

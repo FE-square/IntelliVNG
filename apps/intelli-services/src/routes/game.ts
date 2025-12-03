@@ -281,7 +281,7 @@ gameRoutes.get('/projects/:id', async (c) => {
     });
 });
 
-// PUT /api/game/projects/:id - 更新项目
+// PUT /api/game/projects/:id - 更新或创建项目（upsert）
 gameRoutes.put('/projects/:id', async (c) => {
     const projectId = c.req.param('id');
     const body = await c.req.json();
@@ -290,25 +290,35 @@ gameRoutes.put('/projects/:id', async (c) => {
         return c.json({ success: false, error: 'Project ID is required' }, 400);
     }
     
-    // 验证项目存在
+    // 检查项目是否存在
     const existing = getProject(projectId);
-    if (!existing) {
-        return c.json({ success: false, error: 'Project not found' }, 404);
+    
+    let result;
+    if (existing) {
+        // 项目存在，合并更新
+        result = {
+            ...existing,
+            ...body,
+            id: projectId, // 确保 ID 不被覆盖
+            updatedAt: new Date().toISOString(),
+        };
+        console.log(`[GameRoute] 更新项目: ${projectId}`);
+    } else {
+        // 项目不存在，创建新项目
+        result = {
+            ...body,
+            id: projectId,
+            createdAt: body.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+        console.log(`[GameRoute] 创建新项目: ${projectId}`);
     }
     
-    // 更新项目（合并数据）
-    const updated = {
-        ...existing,
-        ...body,
-        id: projectId, // 确保 ID 不被覆盖
-        updatedAt: new Date().toISOString(),
-    };
-    
-    saveProject(updated);
+    saveProject(result);
     
     return c.json({
         success: true,
-        data: updated,
+        data: result,
     });
 });
 

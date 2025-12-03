@@ -26,19 +26,19 @@ export async function getAllProjects(): Promise<ProjectMetadata[]> {
         }
         const data = await response.json();
         
-        // 转换为 ProjectMetadata 格式
-        return (data.data || []).map((p: GameProject) => ({
+        // 后端已返回完整的元数据，直接使用
+        return (data.data || []).map((p: any) => ({
             id: p.id,
             title: p.title,
             description: p.description || '',
-            coverImage: p.backgrounds?.[0]?.imageUrl,
+            coverImage: p.coverImage,
             createdAt: p.createdAt,
             updatedAt: p.updatedAt,
-            genre: p.meta?.genre,
-            artStyle: p.meta?.artStyle,
-            characterCount: p.characters?.length || 0,
-            sceneCount: p.backgrounds?.length || 0,
-            nodeCount: p.script?.length || 0,
+            genre: p.genre,
+            artStyle: p.artStyle,
+            characterCount: p.characterCount || 0,
+            sceneCount: p.sceneCount || 0,
+            nodeCount: p.nodeCount || 0,
         }));
     } catch (error) {
         console.error('[ProjectStorage] 获取项目列表失败:', error);
@@ -69,6 +69,9 @@ export async function getProject(projectId: string): Promise<GameProject | null>
  */
 export async function saveProject(project: GameProject): Promise<boolean> {
     try {
+        console.log('[ProjectStorage] 开始保存项目:', project.id);
+        console.log('[ProjectStorage] 后端URL:', BACKEND_URL);
+        
         const response = await fetch(`${BACKEND_URL}/api/game/projects/${project.id}`, {
             method: 'PUT',
             headers: {
@@ -77,8 +80,12 @@ export async function saveProject(project: GameProject): Promise<boolean> {
             body: JSON.stringify(project),
         });
         
+        console.log('[ProjectStorage] 响应状态:', response.status);
+        
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            const errorText = await response.text();
+            console.error('[ProjectStorage] 保存失败响应:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
         
         console.log('[ProjectStorage] 项目保存成功:', project.id);

@@ -77,6 +77,7 @@ export default function DashboardPage() {
         setLoading(true);
         try {
             const allProjects = await getAllProjects();
+            console.log('[Dashboard] 加载的项目数据:', allProjects);
             setProjects(allProjects);
         } catch (error) {
             console.error('Failed to load projects:', error);
