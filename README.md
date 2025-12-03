@@ -1,7 +1,5 @@
-# 🎮 IntelliVNG Studio
-
 <div align="center">
-
+![Banner](./notes/banner.png)
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green.svg)
 
@@ -9,9 +7,7 @@
 
 *输入一句创意，即刻生成个性化且完整的视觉小说游戏*
 
-[快速开始](#-快速开始) · [开发指南](#-新手开发教程) · [架构文档](./ARCHITECTURE.md) · [开发进度](#-开发进度)
-
-![Banner](./notes/banner.png)
+[快速开始](#-快速开始) · [开发指南](#-新手开发教程) · [架构文档](./notes/1202_5-AGENTS_SYSTEM_ARTICLE.md) · [开发进度](#-开发进度)
 
 </div>
 
@@ -148,7 +144,7 @@ cd IntelliVNG
 
 ### 2. 安装依赖
 
-> 本项目使用 pnpm 进行多包管理
+> 本项目使用 pnpm 进行多包管理, 需要先安装 pnpm 噢
 
 ```bash
 pnpm install
@@ -162,7 +158,7 @@ pnpm install
 # OpenAI 配置 (或兼容 API)
 OPENAI_API_KEY=your-api-key-here
 OPENAI_BASE_URL=https://api.openai.com/v1   # 可选，默认为 OpenAI
-OPENAI_MODEL_NAME=gpt-4-turbo               # 可选，默认为 gpt-4-turbo
+OPENAI_MODEL_NAME=gpt-5               # 可选，默认为 gpt-5，推荐使用 GPT 系列 以支持严格 Schema 的工具调用
 
 # 服务端口
 PORT=4000
@@ -193,7 +189,7 @@ pnpm dev:web
 1. 打开浏览器访问 `http://localhost:3000`
 2. 在输入框中输入你的故事创意（例如：「咖啡店邂逅的浪漫故事」）
 3. 点击「Generate Magic ✨」开始生成剧本
-   - TODO 微调角色与故事背景, 允许用户介入，重新生成
+   - 微调角色与故事背景, 允许用户介入，重新生成
 4. 等待 AI 生成完成后，自动进入编辑器查看和编辑剧本
 5. 切换到「Preview Game」预览游戏效果
 
