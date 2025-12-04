@@ -138,7 +138,7 @@ AI逻辑跟随能力 20分 • AI逻辑严谨程度
 
 这是你们区别于传统工具的**杀手锏**！以下是分层的AI能力设计：
 
-### 🧠 Level 1: AI 辅助生成（基础能力）
+### 🧠 Level 1: AI 辅助生成（基础能力, 不一定全都要，但剧情生成是必须的）
 
 | 功能 | 技术实现 | 亮点 |
 |------|---------|------|
@@ -149,7 +149,7 @@ AI逻辑跟随能力 20分 • AI逻辑严谨程度
 | **AI配音** | TTS（Edge TTS/Fish Audio） | 角色台词→语音 |
 | **AI BGM** | 音乐生成（Suno API） | 情绪标签→背景音乐 |
 
-### 🎯 Level 2: Agent 工作流（技术深度）
+### 🎯 Level 2: Agent 工作流（技术深度，必须是真实自主的 Agents 而不是 LLM API 调用与包装）
 
 这是**最能体现技术创新**的部分！设计一个多Agent协作系统：
 
@@ -223,33 +223,7 @@ const VNG_MCP_TOOLS = {
 
 ### 💬 Level 4: 交互式AI创作（用户体验）
 略
----
 
-## 🎯 四、推荐的技术栈与架构
-
-```
-前端 (核心展示层)
-├── React/Vue 3 + TypeScript
-├── React Flow / Vue Flow (节点式剧本编辑)
-├── Zustand/Pinia (状态管理)
-├── Monaco Editor (脚本编辑)
-├── PixiJS / Konva (舞台渲染预览)
-└── Framer Motion (动画效果)
-
-AI层 (核心能力层)
-├── LangChain / LangGraph (Agent编排)
-├── 通义千问/GLM/Qwen (LLM)
-├── Stable Diffusion API (图像生成)
-├── Edge TTS / Fish Audio (语音合成)
-└── MCP Server (工具协议)
-
-后端 (轻量支撑)
-├── Python FastAPI / Node.js
-├── SQLite / 浏览器IndexedDB (项目存储)
-└── 文件导出服务
-```
-
----
 
 ## 🏆 五、竞赛得分策略
 
@@ -263,18 +237,6 @@ AI层 (核心能力层)
 | **工具链复用 (20分)** | MCP Tools 模块化、Prompt模板开源 |
 | **加分项** | GitHub开源(+5)、教育价值(+5)、多语言(+2) |
 
-# Question 2:
-这个设计太完整了，我们要适当地取舍。比如不需要特效、不需要配音、BGM、不一定要允许用户自然语言调用工具等
-我需要一个3天以内 vibe coding 即可完成的版本
-
-# Answer 2:
-这是一个非常务实的决策！在 Hackathon 中，**"完成度 > 完美度"**。
-
-既然要 **Vibe Coding** (靠 Prompt 和 Spec 快速生成) 且只有 **3天**，我们需要把核心聚焦在 **“从创意到可玩游戏的端到端自动化”** 上。
-
-舍弃细枝末节，保留最核心的骨架。我们将打造一个 **"AI 视觉小说生成器 (AI Visual Novel Generator)"**。
-
----
 
 ### 🚀 极简版 VNG 架构 (3-Day Hackathon Edition)
 
@@ -320,7 +282,7 @@ interface ScriptNode {
 }
 ```
 
-#### 2. 只有三个核心页面 (The "Skeleton")
+#### 2. 只有三个核心部分 (The "Skeleton")
 
 不需要复杂的路由，只需要三个状态：
 
@@ -391,14 +353,6 @@ interface ScriptNode {
 
 # Answer 3:
 好问题！在动手之前先做技术调研是非常明智的。让我帮你搜一下现有的开源方案。
-
-[3 tools called]
-
-让我再深入搜一下 AI 结合的具体项目：
-
-[7 tools called]
-
----
 
 ## 📊 开源项目调研结果
 
@@ -525,10 +479,11 @@ interface ScriptNode {
 
 ---
 
-好，就用方案C
+我们就用方案C
+
 TS语言，monorepo架构，把创作向导主界面、剧本编辑器、游戏播放器、剧本创作Agent等模块拆分到不同的子包中（按需可能还要涉及微前端）
 前端基于React、React-flow
-Agent引擎可以使用Mastra (https://github.com/mastra-ai/mastra)
+
+AI Agent 引擎使用 Mastra (https://github.com/mastra-ai/mastra) 保障全栈编程语言统一为 TypeScript
 
 有一个初步设计在 ARCHITECTURE_DESIGN.md 中，你可以先不看它！
-因为它似乎缺失设定确认编辑阶段，然后 Agent 的设计也不太完善

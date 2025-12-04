@@ -1,49 +1,216 @@
 <div align="center">
+
 ![Banner](./notes/banner.png)
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+
+![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)
 
-**AI 驱动的视觉小说游戏氛围创作工具**
 
-*输入一句创意，即刻生成个性化且完整的视觉小说游戏*
+**IntelliVNG Studio · 基于 AI 多智能体的视觉小说创作工坊**
 
-[快速开始](#-快速开始) · [开发指南](#-新手开发教程) · [架构文档](./notes/1202_5-AGENTS_SYSTEM_ARTICLE.md) · [开发进度](#-开发进度)
+“多 Agent 协作 + 可视化交互编辑 → 从一个模糊想法走到一部可玩的多结局视觉小说游戏”
+
+[快速开始](#-快速开始) · [多智能体架构](#-多智能体系统设计) · [技术栈](#-技术栈)
 
 </div>
 
 ---
 
-## 📖 项目介绍
+## ✨ 核心特性
 
-**IntelliVNG Studio** 是一个 AI 驱动的视觉小说氛围创作 (Vibe Scripting) 工具，旨在让用户只需输入创意，即可自动生成完整的视觉小说游戏。
+### 🤖 多智能体协作创作
 
-### 🎯 核心价值主张
+不是简单的"大模型 API 包装/串联"，而是**真正的多智能体系统**：
+
+- **Story Planner** (故事规划)：采用 Tree-of-Thoughts 探索多种叙事方向，评估后选择最优
+- **Node Writer** (节点写手)：基于 Few-Shot CoT 并行撰写各节点对话与旁白
+- **Story Reviewer** (故事审阅)：使用 ReAct 模式 + 工具调用，检测结构错误、客观分析剧本质量
+
+### 📝 可视化剧本编辑
+
+- 支持交互拖拽链接的节点式编辑器
+- 直观展示故事分支结构和对话
+- 支持实时整体预览、局部预览
+- 可对 AI 生成内容进行精细微调
+
+### 🎬 即时预览与导出
+
+- **所见即所得** 的游戏预览
+- 支持导出为**单 HTML 文件**，可独立运行
+- 支持内嵌图片资源的**完全离线**导出
+
+### 🎨 AI 素材生成
+
+- 集成**通义万相**文生图能力
+- 支持多种画风：动漫、写实、像素、水墨等
+- 自动生成角色立绘与场景背景
+
+### 🌐 国际化支持
+
+- 界面多语言支持 (locale: zh-CN/zh-HK/en-US)
+- AI 生成内容根据用户语言自动本地化
+
+## 🧩 端到端体验流程
+
+1. **Idea Input**：用户输入一句故事主题，自动开始设定创作；也支持高级模式，允许填写人物设定、世界观等表单，随时支持“AI 自动补全”。
+2. **Agents System Generation**：显示 Tree-of-Thoughts 结构规划、分层写作并行任务、ReAct 审阅数据，伴随立绘/背景/音轨生成的实时预览。
+3. **Editor & Player**：
+   - 节点式剧本编辑器，可拖拽节点、修改台词、为选项设置条件变量。
+   - 实时 GamePlayer，支持即时试玩、回退、分支路径预览。
+4. **Export**：可导出单 HTML 微站、或仅导出 JSON+资产供外部引擎导入使用；
 
 ```
-用户输入创意 → AI 生成剧本+素材 → 可视化编辑微调 → 一键导出可玩游戏
+
+一句话创意
+   ↓
+Director / Writer / Reviewer Agents 串-并行协作
+   ↓
+结构化 JSON 剧本 + AI 立绘/背景/语音
+   ↓
+可视化分支编辑 & GamePlayer 试玩
+   ↓
+单 HTML / MCP API / Web 项目导出
 ```
 
-### ✨ 主要特性
+### ✨ 作品亮点
 
-- **🤖 AI Agents 创作**：输入创意即可让多个智能体构思规划完整的故事设定、任务角色和剧本
-- **📝 可视化编辑**：基于可视化交互的节点式剧本编辑器，可视化故事线的同时允许个性化调整
-- **🎬 实时预览**：所见即所得，即刻预览游戏效果
-- **🎨 多种风格**：支持中国风、写实、像素、水彩等画风人物、背景
-- **📦 Monorepo 架构**：模块化设计，代码可复用
+IntelliVNG Studio 为 **AI+互动游戏挑战赛·AI游戏创作工具赛道** 打造的作品。
+我们瞄准“降低门槛、普惠创作”，提供一个 **0→1 自动生成 + 可视化编辑 + 一键导出** 的视觉小说游戏制作平台。
 
-### 🛠️ 技术栈
+> - **技术创新性 (40%)**：Tree-of-Thoughts + ReAct + Few-shot CoT 的多智能体协作系统、AI 自动补全表单、设定生图、故事线可视化交互编辑
+> - **工具链完成度 (20%)**：输入 → 实时仪表盘 → 故事线编辑器 → 预览播放器 → DSL/单体游戏导出  
+> - **AI逻辑跟随 (20%)**：SSE 可视化工作流 + MCP 工具调用 + Schema 校验  
+> - **工具链复用 (20%)**：Mastra 落地多种 Agents 设计范式 + Prompts 集中式管理机制 + Agent Tools
+> - **加分项**：完全开源、支持多语言
 
-| 层级 | 技术选型 |
-|------|---------|
-| **包管理** | pnpm workspace + Turborepo |
-| **语言** | TypeScript 5.x |
-| **前端框架** | React 18 + Next.js 14 (App Router) |
-| **后端服务** | Hono + Node.js |
-| **状态管理** | Zustand |
-| **流程图编辑** | React Flow |
-| **UI 样式** | Tailwind CSS |
-| **AI Agent** | Mastra |
-| **AI 模型** | OpenAI GPT / Qwen (可配置) |
+
+- **零门槛创作**：世界观、角色、场景均可自动补全，可选模板化提示。
+- **生成过程可视化**：Generation Dashboard 逐阶段展示 ToT 规划、节点并行写作、ReAct 审阅的实时日志与进度。
+- **所见即所得编辑器**：Flow 节点式剧本图谱 + 剧情节点编辑面板。
+- **资源一键生成**：立绘、背景、BGM 允许在任意阶段生成补充，完善的异常处理与重试机制。
+- **导出即运行**：提供单文件 HTML、Web 项目模板，也支持 DSL JSON 导出与导入项目。
+
+---
+
+## 🧠 多智能体系统设计
+
+IntelliVNG Studio 采用 **3 Agent + 1 Orchestrator** 的协同模式，利用 Mastra 的 Agent 工作流与 MCP 工具能力，将学术界的 ToT / ReAct / Few-shot CoT 落地为真实可观测的工程系统。
+
+| Agent | 人类角色 | 核心职责 | 技术模式 |
+|-------|---------|---------|---------|
+| **Story Planner** | 总编剧 | 设计故事骨架、分支结构 | Tree-of-Thoughts (ToT) |
+| **Node Writer** | 场景写手 | 撰写对话、旁白、选项 | Few-Shot Chain-of-Thought |
+| **Story Reviewer** | 责任编辑 | 质量审核、问题定位 | ReAct (Reasoning + Acting) |
+| **Orchestrator** | 项目经理 | 流程调度、状态管理 | Plan-and-Execute 状态机 |
+
+### 为什么是多智能体？
+
+| 维度 | 单一 LLM 调用 | 多智能体系统 |
+|------|-------------|-------------|
+| **可控性** | 无法干预生成过程 | 支持阶段性干预、重试 |
+| **可解释性** | 黑盒输出，难以追溯 | 每个决策都有推理链 |
+| **上下文压力** | 需同时处理全局与细节 | 各司其职，专注自身任务 |
+| **错误恢复** | 出错只能重新开始 | 可只重试特定 Agent |
+| **扩展性** | 所有逻辑压缩在一个 Prompt | 模块化，易于添加新能力 |
+
+> 📚 详细的技术设计文档请参考：[多智能体系统设计](https://fe-square.feishu.cn/wiki/OEbVwhnZtiyI8pkhzEQcYPirnxi)
+
+### 1. Tree-of-Thoughts 故事规划
+
+Story Planner 不急于得出结论，而是**探索多种可能性**后再选择：
+
+```
+Round 1: 生成 3 个候选叙事方向
+         ├── 冲突型: "一个关于误解与和解的故事"
+         ├── 成长型: "一个关于自我发现的故事"  
+         └── 悬疑型: "一个关于真相追寻的故事"
+
+Round 2: 多维度评估（戏剧性、角色契合度、分支潜力、主题深度）
+         → 选择最优方向
+
+Round 3: 展开完整的节点骨架
+```
+
+### 2. ReAct 工具驱动审阅
+
+Story Reviewer 通过**调用工具收集证据**，再**基于证据推理**：
+
+```
+Thought: "让我先检查故事结构是否完整..."
+Action:  validate-structure(nodes)
+Observation: { valid: false, deadEnds: ["scene-3"] }
+
+Thought: "发现 scene-3 是死胡同，这是结构性问题。继续检查..."
+Action:  analyze-paths(nodes)  
+Observation: { totalPaths: 3, diversityScore: 0.72 }
+
+Final Answer: { shouldRegenerate: true, targetNodeIds: ["scene-3"] }
+```
+
+### 3. 拓扑并行写作
+
+Node Writer 按**依赖关系分层**，同一层的节点**并行生成**，效率提升 2-3 倍：
+
+```
+Layer 0: [start]                    ← 先写
+Layer 1: [scene-1]                  
+Layer 2: [branch-1]                 
+Layer 3: [scene-2a, scene-2b]       ← 可并行！
+Layer 4: [ending-a, ending-b]       ← 可并行！
+```
+
+### 4. Orchestrator 状态机
+
+```
+INIT → PLANNING → PLAN_VALIDATION → WRITING → REVIEWING
+           ↑                           │
+           └────────── REWRITING ◄─────┤ (critical issue)
+                               │
+                          FINALIZING → DONE
+```
+
+每个阶段都会将阶段信息、提示语、日志及指标通过 Server-Sent Events 推到前端，用户清楚知道系统“正在思考什么”。
+
+#### MCP 工具接口
+
+```typescript
+const VNG_TOOLS = {
+  "vng_create_project": { /* 初始化 GameProject */ },
+  "vng_add_scene": { /* 添加场景节点 */ },
+  "vng_add_dialogue": { /* 写入角色对话 */ },
+  "vng_generate_background": { /* 调用生图 API */ },
+  "vng_preview_scene": { /* 触发播放器预览 */ },
+  "vng_export_game": { /* 打包导出 */ },
+  "validate-structure": { /* BFS 检查孤立节点 */ },
+  "analyze-paths": { /* DFS 统计分支多样性 */ },
+  "analyze-dialogue-quality": { /* 对话长度分布 */ }
+};
+```
+
+所有工具输入输出都由 Zod Schema 定义，天然兼容 OpenAI Function Calling、Mastra Structured Output，以及我们自研的导出格式。
+
+### 5. Schema 驱动的数据流
+
+所有 Agent 之间的数据交换通过 **Zod Schema** 定义，确保类型安全、自文档化。
+
+---
+
+## 技术栈
+
+| 层级 | 技术 / 说明 |
+|------|-------------|
+| 包管理 | pnpm workspace + Turborepo |
+| 语言 | TypeScript 5.x (全栈统一)  |
+| 前端 | Next.js 14 (App Router) + React 18 + Tailwind CSS |
+| 状态 | Zustand + TanStack Query |
+| 可视化 | React Flow |
+| 后端 | Hono (Edge Ready) Node.js |
+| Agent | Mastra (Agents & Workflow) + MCP 工具 |
+| LLM | OpenAI GPT-4.1 / Qwen-Plus / 阿里通义百炼兼容 |
+| 媒体生成 | 通义万相 / Fish Audio |
+| 数据契约 | Zod Schema + DSL 导出 |
 
 ---
 
@@ -53,76 +220,35 @@
 IntelliVNG/
 ├── apps/                           # 应用层
 │   ├── web/                        # 主 Web 应用 (Next.js)
-│   │   ├── src/
-│   │   │   ├── app/                # Next.js App Router
-│   │   │   │   ├── page.tsx        # 首页 - 创意输入
-│   │   │   │   ├── dashboard/      # 生成进度页面
-│   │   │   │   ├── editor/         # 剧本编辑器页面
-│   │   │   │   └── api/            # API Routes
-│   │   │   └── ...
-│   │   └── package.json
+│   │   └── src/
+│   │       ├── app/                # 页面路由
+│   │       │   ├── page.tsx        # 首页 - 创意输入
+│   │       │   ├── setup/          # 游戏设定向导
+│   │       │   ├── dashboard/      # 生成进度看板
+│   │       │   └── editor/         # 剧本编辑器
+│   │       ├── components/         # React 组件
+│   │       ├── stores/             # Zustand 状态
+│   │       └── i18n/               # 国际化资源
 │   │
-│   └── intelli-services/           # 后端 API 服务 (Hono + Mastra)
-│       ├── src/
-│       │   ├── index.ts            # 服务入口
-│       │   ├── routes/             # API 路由
-│       │   │   └── game.ts         # 游戏生成相关路由
-│       │   └── services/           # 业务逻辑
-│       │       ├── image-generator.ts   # 生图服务
-│       │       ├── game-generator.ts   # 游戏生成器 LLM 版本
-│       │       ├── game-generator-agent.ts   # 游戏生成 Agents 版本
-│       │       ├── form-autocomplete.ts   # 表单自动填充服务
-│       │       └── cache.ts        # 缓存服务
-│       └── package.json
+│   └── intelli-services/           # 后端 AI 服务 (Hono + Mastra)
+│       └── src/
+│           ├── agents/             # 🤖 多智能体定义
+│           │   ├── storyPlanner.ts # Story Planner Agent
+│           │   ├── nodeWriter.ts   # Node Writer Agent
+│           │   └── storyReviewer.ts# Story Reviewer Agent
+│           ├── workflows/           # 🔀 工作流编排
+│           ├── prompts/            # Prompt 模板管理
+│           ├── routes/             # API 路由
+│           └── services/           # 业务服务
 │
 ├── packages/                       # 功能包层
-│   ├── core/                       # 核心数据结构与类型定义
-│   │   ├── src/
-│   │   │   ├── types/              # TypeScript 类型
-│   │   │   │   ├── game.ts         # 游戏项目类型
-│   │   │   │   ├── script.ts       # 剧本节点类型
-│   │   │   │   ├── character.ts    # 角色类型
-│   │   │   │   └── background.ts   # 背景类型
-│   │   │   ├── constants/          # 常量定义
-│   │   │   └── utils/              # 工具函数
-│   │   └── package.json
-│   │
-│   ├── editor/                     # 剧本编辑器包
-│   │   ├── src/
-│   │   │   ├── components/
-│   │   │   │   ├── ScriptCanvas.tsx    # React Flow 画布
-│   │   │   │   └── nodes/              # 自定义节点组件
-│   │   │   │       ├── DialogueNode.tsx
-│   │   │   │       └── ChoiceNode.tsx
-│   │   │   └── store/
-│   │   │       └── editorStore.ts      # Zustand 状态管理
-│   │   └── package.json
-│   │
-│   ├── player/                     # 游戏播放器包
-│   │   ├── src/
-│   │   │   ├── components/
-│   │   │   │   ├── GamePlayer.tsx      # 主播放器组件
-│   │   │   │   └── DialogueBox.tsx     # 对话框组件
-│   │   │   └── engine/
-│   │   │       └── GameEngine.ts       # 游戏引擎核心
-│   │   └── package.json
-│   │
+│   ├── core/                       # 核心类型与常量
+│   ├── editor/                     # 剧本编辑器组件
+│   ├── player/                     # 游戏播放器引擎
 │   └── ui/                         # 共享 UI 组件库
-│       ├── src/
-│       │   ├── components/
-│       │   │   ├── Button.tsx
-│       │   │   ├── Card.tsx
-│       │   │   └── Input.tsx
-│       │   └── styles/
-│       │       └── globals.css
-│       └── package.json
 │
-├── package.json                    # 根配置
-├── pnpm-workspace.yaml             # pnpm workspace 配置
-├── turbo.json                      # Turborepo 配置
-├── tsconfig.base.json              # 共享 TypeScript 配置
-├── ARCHITECTURE.md                 # 架构设计文档
-└── README.md                       # 本文件
+├── agents_design.md                # 📚 多智能体系统设计文档
+└── notes/                          # 开发笔记与调研
 ```
 
 ---
@@ -131,282 +257,152 @@ IntelliVNG/
 
 ### 环境要求
 
-- **Node.js** >= 18
-- **pnpm** >= 8.0.0
-- **OpenAI API Key** (或兼容的 API)
+- Node.js ≥ 18
+- pnpm ≥ 8
+- OpenAI 兼容 API Key（支持阿里通义/百炼、Azure OpenAI 等，推荐使用 GPT 系列以获得最佳 Schema 支持）
 
-### 1. 克隆项目
+### 安装
 
 ```bash
 git clone https://github.com/your-org/IntelliVNG.git
 cd IntelliVNG
-```
-
-### 2. 安装依赖
-
-> 本项目使用 pnpm 进行多包管理, 需要先安装 pnpm 噢
-
-```bash
 pnpm install
 ```
 
-### 3. 配置环境变量
+### 配置
 
-在 `apps/intelli-services/` 目录下创建 `.env` 文件，主要用于 LLM 服务：
+在 `apps/intelli-services/.env` 中写入：
 
 ```env
-# OpenAI 配置 (或兼容 API)
-OPENAI_API_KEY=your-api-key-here
-OPENAI_BASE_URL=https://api.openai.com/v1   # 可选，默认为 OpenAI
-OPENAI_MODEL_NAME=gpt-5               # 可选，默认为 gpt-5，推荐使用 GPT 系列 以支持严格 Schema 的工具调用
-
-# 服务端口
+OPENAI_API_KEY=sk-xxxx
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL_NAME=gpt-4.1
+TONGYI_API_BASE=sk-xxxx
 PORT=4000
 ```
 
-> 💡 **提示**：也支持使用阿里云通义千问等兼容 OpenAI 接口的模型
-
-### 4. 启动开发服务器
-
-**方式一：同时启动前端和后端**
+### 本地运行
 
 ```bash
+# 同时启动
 pnpm dev
+
+# 或分进程启动
+pnpm dev:serv   # 端口 4000，暴露 /api/generate, /api/export
+pnpm dev:web    # 端口 3000，Next.js 前端
 ```
 
-**方式二：分别启动（推荐，便于区分输出）**
-
-```bash
-# 终端 1 - 启动后端服务 (端口 4000)
-pnpm dev:serv
-
-# 终端 2 - 启动前端应用 (端口 3000)
-pnpm dev:web
-```
-
-### 5. 开始使用
-
-1. 打开浏览器访问 `http://localhost:3000`
-2. 在输入框中输入你的故事创意（例如：「咖啡店邂逅的浪漫故事」）
-3. 点击「Generate Magic ✨」开始生成剧本
-   - 微调角色与故事背景, 允许用户介入，重新生成
-4. 等待 AI 生成完成后，自动进入编辑器查看和编辑剧本
-5. 切换到「Preview Game」预览游戏效果
+打开 `http://localhost:3000`，输入例如“失忆少女未来都市冒险故事”，选择创作模式，即可看到多智能体实时协作并生成游戏。
 
 ---
 
-## 👩‍💻 开发教程
+## 🧪 开发与调试指南
 
-### 项目架构概览
-
-IntelliVNG 采用 **Monorepo** 架构，使用 pnpm workspace 管理多个包：
-
-```
-                    ┌─────────────┐
-                    │   apps/web  │  (主应用)
-                    └──────┬──────┘
-                           │
-          ┌────────────────┼────────────────┐
-          │                │                │
-          ▼                ▼                ▼
-    ┌──────────┐    ┌──────────┐    ┌────────────┐
-    │  editor  │    │  player  │    |  services  │  
-    └────┬─────┘    └────┬─────┘    └────────────┘
-         │               │               
-         └───────────────┼───────────────┘
-                         │
-                         ▼
-                   ┌──────────┐
-                   │   core   │  (类型定义)
-                   └────┬─────┘
-                        │
-                        ▼
-                   ┌──────────┐
-                   │    ui    │  (UI组件)
-                   └──────────┘
-```
+- **日志追踪**：Agent 服务默认输出 ToT/CoT/ReAct 的 Thought/Action/Observation，可在 `apps/intelli-services/src/logger.ts` 中切换详细级别。
+- **Mock 模式**：前端在无 `projectId` 时会加载 `packages/core/mocks/romance.json`，便于 UI 调试。
+- **SSE 检测**：在浏览器 Network 面板观察 `/api/progress` 流即可复现实况。
+- **二次开发建议**：  
+  1. 通过 `packages/agents/prompts/*.md` 自定义提示词或引入新 Agent；  
+  2. 在 `packages/core/src/schema/*.ts` 扩展数据结构，自动同步到前端与导出逻辑；  
+  3. MCP 工具可以独立部署，供外部 Agent/Assistants 使用。
 
 ### 核心数据结构
 
-#### GameProject - 游戏项目
-
 ```typescript
+// 游戏项目
 interface GameProject {
   id: string;
   title: string;
-  description: string;
-  meta: {
-    author: string;
-    version: string;
-    genre: GameGenre;      // 'romance' | 'mystery' | 'fantasy' ...
-    artStyle: ArtStyle;    // 'anime' | 'realistic' | 'pixel' ...
-  };
-  characters: Character[];  // 角色列表
-  backgrounds: Background[]; // 背景列表
-  script: ScriptNode[];     // 剧本节点
-  settings: GameSettings;
+  meta: { author: string; genre: GameGenre; artStyle: ArtStyle };
+  characters: Character[];
+  backgrounds: Background[];
+  script: ScriptNode[];
 }
-```
 
-#### ScriptNode - 剧本节点
+// 剧本节点
+type ScriptNode = DialogueNode | ChoiceNode | NarrationNode;
 
-```typescript
-// 对话节点
 interface DialogueNode {
   id: string;
   type: 'dialogue';
   characterId: string;
   text: string;
   nextNodeId: string | null;
-  position: { x: number; y: number };
 }
 
-// 选择分支节点
 interface ChoiceNode {
   id: string;
   type: 'choice';
   prompt?: string;
-  choices: Choice[];
-  position: { x: number; y: number };
+  choices: { text: string; targetNodeId: string }[];
 }
 ```
 
-### 添加新功能示例
-
-#### 示例 1：添加新的节点类型
-
-1. **定义类型** (`packages/core/src/types/script.ts`)
+### 添加新的 Agent 工具
 
 ```typescript
-export interface NarrationNode extends BaseNode {
-  type: 'narration';
-  text: string;
-  nextNodeId: string | null;
-}
-```
+// apps/intelli-services/src/agents/tools/myTool.ts
+import { createTool } from "@mastra/core";
+import { z } from "zod";
 
-2. **创建组件** (`packages/editor/src/components/nodes/NarrationNode.tsx`)
-
-```tsx
-import { memo } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
-
-export const NarrationNode = memo(({ data, selected }: NodeProps) => {
-  return (
-    <div className={`px-4 py-3 rounded-lg bg-gray-100 ${selected ? 'ring-2' : ''}`}>
-      <Handle type="target" position={Position.Top} />
-      <p className="text-sm italic">{data.text}</p>
-      <Handle type="source" position={Position.Bottom} />
-    </div>
-  );
+export const myAnalysisTool = createTool({
+  id: "my-analysis",
+  description: "执行自定义分析",
+  inputSchema: z.object({
+    nodes: z.array(z.object({ id: z.string() })),
+  }),
+  execute: async ({ context }) => {
+    // 实现工具逻辑
+    return { result: "analysis complete" };
+  },
 });
 ```
-
-3. **注册节点** (`packages/editor/src/components/ScriptCanvas.tsx`)
-
-```typescript
-import { NarrationNode } from './nodes/NarrationNode';
-
-const nodeTypes: NodeTypes = {
-  dialogue: DialogueNode,
-  choice: ChoiceNode,
-  narration: NarrationNode,  // 添加新节点
-};
-```
-
-#### 示例 2：修改 AI 生成逻辑
-
-AI 生成逻辑位于 `apps/intelli-services/src/services/game-generator.ts`
-
-```typescript
-// 修改系统提示词
-const DIRECTOR_SYSTEM_PROMPT = `你是一位视觉小说游戏设计师...`;
-
-// 修改生成参数
-const response = await this.openai.chat.completions.create({
-  model: this.modelName,
-  temperature: 0.8,  // 调整创意度
-  max_tokens: 10000,
-});
-```
-
-### 调试技巧
-
-1. **查看后端日志**：后端服务会在控制台输出详细日志
-2. **使用 React DevTools**：检查组件状态和 props
-3. **检查 Network**：查看 API 请求和响应
-4. **使用 Mock 数据**：编辑器页面支持无 projectId 时使用 Mock 数据
 
 ---
 
-## 📊 开发进度
+## 📊 当前能力矩阵
 
-### ✅ 已完成
-
-| 模块 | 功能 | 状态 |
+| 模块 | 说明 | 状态 |
 |------|------|------|
-| **基础架构** | Monorepo (pnpm + turborepo) | ✅ 完成 |
-| **@vng/core** | 核心类型定义 (GameProject, Character, ScriptNode 等) | ✅ 完成 |
-| **@vng/ui** | 基础 UI 组件 (Button, Card, Input, Toast) | ✅ 完成 |
-| **@vng/editor** | React Flow 画布集成与交互 | ✅ 完成 |
-| **@vng/editor** | 节点属性编辑面板 (对话、旁白、场景设置) | ✅ 完成 |
-| **@vng/editor** | 节点图片生成集成 (立绘、背景) | ✅ 完成 |
-| **@vng/player** | GameEngine 游戏引擎核心 | ✅ 完成 |
-| **@vng/player** | GamePlayer 播放器组件 | ✅ 完成 |
-| **apps/web** | Dashboard 与项目管理 | ✅ 完成 |
-| **apps/web** | 游戏设定管理 (世界观、角色、场景、背景) | ✅ 完成 |
-| **apps/web** | 国际化支持 (I18n + Locale机制) | ✅ 完成 |
-| **intelli-services** | Hono 后端服务框架 | ✅ 完成 |
-| **intelli-services** | Mastra Agent 框架集成 | ✅ 完成 |
-| **intelli-services** | Director Agent (故事规划/StoryPlanner) | ✅ 完成 |
-| **intelli-services** | Writer Agent (剧本编写/NodeWriter) | ✅ 完成 |
-| **intelli-services** | 图像生成服务 (通义万相, 文生图/图生图) | ✅ 完成 |
-| **intelli-services** | 统一 Prompt 管理与多语言注入系统 | ✅ 完成 |
-
-### 🚧 进行中
-
-| 模块 | 功能 | 进度 |
-|------|------|------|
-| **@vng/agent** | Agent 协作工作流 (StoryGeneration Workflow) | 🚧 优化中 |
-| **导出功能** | 提供单 HTML 播放器 + DSL (允许用户用HTML+JSON离线运行) | ✅ 完成 |
-| **导出功能** | 内嵌图片资源的单 HTML 导出 (完全离线) | ✅ 完成 |
-| **导出功能** | 播放器 DSL 打包优化 | 🟡 中 |
-| **@vng/editor** | 变量系统与条件分支节点 | 🟡 中 |
-| **apps/web** | 用户账号系统 | 🟢 低 |
-| **apps/web** | 社区分享与发布平台 | 🟢 低 |
+| Monorepo 基础设施 | pnpm + Turborepo + CI lint | ✅ |
+| Tree-of-Thoughts Story Planner | 3 轮探索/评估/展开 + 打分可视化 | ✅ |
+| Few-shot CoT Node Writer | 拓扑分层并行生成 30+ 节点 | ✅ |
+| ReAct Story Reviewer | 结构/路径/对话工具链 + 问题定位 | ✅ |
+| Generation Dashboard | 阶段化日志 + 资产生成状态 | ✅ |
+| 剧情 Flow 编辑器 | 节点/连线/属性面板/变量系统 | ✅ |
+| 资源生成引擎 | 立绘/背景/BGM 批量生成 | ✅ |
+| Export Kit | 单 HTML、DSL JSON | ✅ |
+| 用户账号 & 云同步 | 多人协作、作品库 | 🟡 规划 |
 
 ---
 
 ## 🗺️ Roadmap
 
-### Phase 1: 核心功能与 MVP (已完成)
+**Phase 1 · MVP 完成 ✅**  
+AI Multi-Agent System、基础编辑器、播放器、通用导出链路完成。
 
-- [x] 基础编辑器与播放器引擎
-- [x] 角色、场景、世界观管理
-- [x] 集成 Mastra 实现 AI 辅助创作 (规划与写作)
-- [x] 集成通义万相实现角色与背景生成
-- [x] 多语言架构支持 (前端 + AI生成)
+**Phase 2 · 体验与鲁棒性（进行中）**
+- [ ] 资产生成一致性调优（图生图）
+- [ ] Reviewer 工具扩展：情感弧线 / 敏感词检测
+- [ ] 分支变量系统
 
-### Phase 2: 体验优化与工作流 (当前)
+**Phase 3 · 生态与商业化**
+- [ ] 云端作品库 & 多人协作
+- [ ] 国际化运营：英文/日文/多语模型切换
+- [ ] PMF 验证：开放 MCP 工具，接入外部 Agent 网络
 
-- [x] 实现单 HTML 文件导出，支持独立部署 (已完成基础与内嵌图片模式)
-- [ ] 优化 Agent 协作工作流，提升长篇故事的一致性
-- [x] 增强编辑器交互，支持更复杂的剧情分支逻辑
-- [x] 完善项目导入导出功能，支持数据迁移
-- [ ] 提升图像生成的稳定性和风格一致性 (图生图优化)
+---
 
-### Phase 3: 发布与生态
+## 🤝 关于我们
 
-- [ ] 优化播放器性能与移动端适配
-- [ ] (可选) 用户账户与云端同步
-- [ ] (可选) 游戏作品分享社区
+IntelliVNG Team 来自 FE Square，致力于结合 **AI Agent + 互动叙事 + Web 工程化** 的新一代游戏创作工具。项目将持续开源，欢迎 Issues / PR / 竞赛合作。
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by IntelliVNG Team: FE Square**
+**Made with ❤️ by FE Square Team**
+
+[GitHub](https://github.com/your-org/IntelliVNG) · [Specification](https://fe-square.feishu.cn/wiki/Ki4hwhwOeieN9ykDk71cvGFznle) · [Documentation](https://fe-square.feishu.cn/wiki/OEbVwhnZtiyI8pkhzEQcYPirnxi)
 
 </div>
-
-
