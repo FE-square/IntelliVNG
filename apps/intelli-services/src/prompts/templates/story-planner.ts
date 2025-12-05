@@ -31,7 +31,12 @@ export const storyPlannerPrompts: Record<string, PromptTemplate> = {
 - description: 一句话描述这个方向的特点
 - premise: 故事前提（"一个关于...的故事"）
 - centralConflict: 核心冲突
-- potentialEndings: 可能的结局类型列表（2-3 个）`,
+- potentialEndings: 可能的结局类型列表（2-4 个）
+- **earlyBranchingOpportunities**: 在故事前半段可以设置的分支点描述（至少2个）
+  * 例如："第一幕结束时，玩家可以选择独自调查还是寻求帮助，这会导向完全不同的第二幕"
+  * 例如："主角发现真相后，可以选择信任谁，不同信任对象会带来不同的信息和视角"
+
+每个方向都必须考虑如何设计**真正的非线性叙事**，而不是"一条主线 + 结局分叉"。好的非线性叙事应该从故事早期就开始分化出不同的故事线。`,
     variables: ['worldBible', 'characterDB', 'styleGuide'],
   },
 
@@ -65,7 +70,7 @@ export const storyPlannerPrompts: Record<string, PromptTemplate> = {
 
   'story-planner.expand': {
     user: `## 任务
-基于选定的叙事方向，展开为完整的故事节点骨架。
+基于选定的叙事方向，展开为完整的**非线性**故事节点骨架。
 
 ## 选定的叙事方向
 - 名称: {{selectedPathName}}
@@ -89,6 +94,25 @@ export const storyPlannerPrompts: Record<string, PromptTemplate> = {
 
 ---
 
+## 非线性叙事
+
+真正的非线性叙事不是"一条主线 + 结局前分叉"，而是**从故事早期就开始分化的多条故事线**。
+
+### Bad cases（伪非线性）
+\`\`\`
+start → scene1 → scene2 → scene3 → branch1 → [ending1, ending2, ending3]
+                                     ↑ 只在结局前有一个分支
+\`\`\`
+
+### Good cases（真正的非线性）
+\`\`\`
+start → scene1 → branch1 → [选择A → scene2a → branch2 → [scene3a → ending1, scene3b → ending2]
+                            选择B → scene2b → scene3c → branch3 → [ending2, ending3]]
+          ↑ 第一幕就开始分支    ↑ 分支后的路线各自独立发展    ↑ 不同路线可能汇合到相同结局
+\`\`\`
+
+---
+
 ## 输出要求
 
 请设计完整的节点骨架，包含：
@@ -99,28 +123,67 @@ export const storyPlannerPrompts: Record<string, PromptTemplate> = {
 - thematicArc: 主题弧线
 
 ### nodes 部分
-设计 10-15 个节点，包含：
+设计 12-18 个节点，包含：
 
 1. **START 节点** (唯一, isStart: true, type: "scene")
    - functionTag: "setup"
    - 建立世界观和主角
 
-2. **发展节点** (SCENE 类型, 5-8 个)
+2. **发展节点** (SCENE 类型, 6-10 个)
    - functionTag: "rising" 或 "conflict" 或 "twist" 或 "climax" 或 "falling"
    - 通过 nextNodeId 连接
+   - 不同分支路线尽量分配不同的 scene
 
-3. **分支节点** (BRANCH 类型, 2-3 个)
-   - functionTag: 通常是 "conflict" 或 "climax"
-   - choicesMeta 包含 2-3 个选项，每个选项有：
-     * id: 选项唯一ID
-     * leadsTo: 目标节点ID
-     * emotionalWeight: "轻松" | "沉重" | "痛苦抉择"
-     * consequenceHint: 暗示后果（不剧透）
-     * pathType: "通向好结局" | "通向坏结局" | "中立路线"
+3. **分支节点** (BRANCH 类型, **4-6 个**) 
+   
+   #### 分支分布要求
+   - **第一幕分支** (1-2个): 在 setup 或 rising 阶段，影响故事走向
+     * 例如：选择调查方向、选择信任谁、选择如何回应初始事件
+   - **第二幕分支** (2-3个): 在 conflict 或 twist 阶段，决定角色关系和剧情发展
+     * 例如：选择立场、选择是否揭露真相、选择帮助谁
+   - **第三幕分支** (1个): 在 climax 阶段，决定最终结局（不强求，按照前序剧情合理性设计）
+     * 例如：最终对决时的选择
+   
+   #### 分支类型设计（choicesMeta 中的 branchType 字段）：
+   - **路线分支** (route): 选择导向完全不同的故事线，后续场景和遭遇不同
+   - **关系分支** (relationship): 选择影响与特定角色的关系发展
+   - **信息分支** (information): 选择决定玩家获得什么信息/视角
+   - **结局分支** (ending): 选择直接决定走向哪个结局
+   
+   #### choicesMeta 结构：
+   - id: 选项唯一ID
+   - leadsTo: 目标节点ID
+   - emotionalWeight: "轻松" | "沉重" | "痛苦抉择"
+   - consequenceHint: 暗示后果（不剧透）
+   - branchType: "route" | "relationship" | "information" | "ending"
+   - impactDescription: 简述这个选择如何影响后续剧情
 
-4. **结局节点** (ENDING 类型, 2-3 个, isEnding: true)
+4. **结局节点** (ENDING 类型, 2-4 个, isEnding: true)
    - functionTag: "resolution"
-   - 不同选择导向不同结局
+   - 不同选择组合导向不同结局
+   - ⚠️ 结局应该是多个分支路线的自然延续，而不是最后一个分支的简单分叉
+
+---
+
+## 故事结构示例
+
+假设一个校园悬疑故事，正确的非线性结构应该是：
+
+\`\`\`
+[start: 发现异常]
+       ↓
+[branch-1: 选择调查方向] ← 第一幕分支 (route类型)
+    ├→ [选择A: 独自调查] → scene-2a → branch-2 → ...
+    └→ [选择B: 寻求帮助] → scene-2b → branch-3 → ...
+                              ↓
+                    [branch-3: 信任谁] ← 第二幕分支 (relationship类型)
+                        ├→ [信任学姐] → scene-4a → ...
+                        └→ [信任老师] → scene-4b → ...
+
+不同路线有各自独立的场景和发展，最终汇聚到 2-4 个不同结局
+\`\`\`
+
+---
 
 ### 布局规则
 - position: { x, y } 按从上到下、从左到右布局

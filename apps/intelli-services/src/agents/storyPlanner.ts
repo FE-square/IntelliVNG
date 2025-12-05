@@ -32,6 +32,7 @@ const CandidatePathSchema = z.object({
   premise: z.string(),
   centralConflict: z.string(),
   potentialEndings: z.array(z.string()),
+  earlyBranchingOpportunities: z.array(z.string()).optional().describe("故事前半段可设置的分支点描述"),
 });
 
 /** 候选方向列表 */

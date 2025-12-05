@@ -31,6 +31,8 @@ export const PlanNodeSchema = z.object({
     emotionalWeight: z.string().optional(),
     consequenceHint: z.string().optional(),
     pathType: z.string().optional(),
+    branchType: z.enum(["route", "relationship", "information", "ending"]).optional().describe("分支类型：路线/关系/信息/结局"),
+    impactDescription: z.string().optional().describe("选择如何影响后续剧情"),
   }).passthrough()).optional().describe("分支选项元信息"),
   choices: z.array(z.any()).optional(), 
   position: z.object({ 
@@ -57,6 +59,8 @@ export const PlanNodeSchema = z.object({
       emotionalWeight: c.emotionalWeight || '中等',
       consequenceHint: c.consequenceHint || c.text || '',
       pathType: c.pathType || '中立',
+      branchType: c.branchType || 'route', // 新增：分支类型，默认为路线分支
+      impactDescription: c.impactDescription || '', // 新增：影响描述
     })),
     position: data.position || { x: 0, y: 0 },
   };
@@ -125,7 +129,7 @@ export type ChoiceDraft = z.infer<typeof ChoiceDraftSchema>;
 
 // 原始 Issue schema（宽松版本，允许字段缺失）
 const IssueSchemaRaw = z.object({
-  type: z.enum(["structure", "logic", "character", "dialogue", "branch"]).optional(),
+  type: z.enum(["structure", "logic", "character", "dialogue", "branch", "branch-distribution"]).optional(),
   category: z.string().optional(), // 某些模型可能使用 category 代替 type
   severity: z.enum(["minor", "major", "critical"]).optional(),
   level: z.string().optional(), // 某些模型可能使用 level 代替 severity
@@ -141,16 +145,19 @@ const IssueSchemaRaw = z.object({
 // 转换后的标准化 Issue schema
 export const IssueSchema = IssueSchemaRaw.transform((data) => {
   // 推断 type
-  const typeMap: Record<string, "structure" | "logic" | "character" | "dialogue" | "branch"> = {
+  const typeMap: Record<string, "structure" | "logic" | "character" | "dialogue" | "branch" | "branch-distribution"> = {
     'structure': 'structure',
     'logic': 'logic',
     'character': 'character',
     'dialogue': 'dialogue',
     'branch': 'branch',
+    'branch-distribution': 'branch-distribution',
+    'branchDistribution': 'branch-distribution',
     'plot': 'logic',
     'story': 'logic',
     'consistency': 'character',
     'flow': 'structure',
+    'pacing': 'branch-distribution', // 节奏问题可能与分支分布相关
   };
   
   let type = data.type;
@@ -194,6 +201,7 @@ const CriticReportSchemaRaw = z.object({
     characterConsistency: z.number().optional().describe("角色一致性"),
     dialogueQuality: z.number().optional().describe("对话质量"),
     branchMeaningfulness: z.number().optional().describe("分支有意义程度"),
+    branchDistribution: z.number().optional().describe("分支分布合理性 - 检测是否为伪非线性"),
     pacing: z.number().optional().describe("节奏"),
   }).passthrough().optional(),
   overallScore: z.number().optional().describe("综合评分"),
@@ -229,6 +237,7 @@ export const CriticReportSchema = CriticReportSchemaRaw.transform((data) => {
       characterConsistency: scores.characterConsistency ?? 70,
       dialogueQuality: scores.dialogueQuality ?? 70,
       branchMeaningfulness: scores.branchMeaningfulness ?? 70,
+      branchDistribution: scores.branchDistribution ?? 70, // 新增：分支分布合理性
       pacing: scores.pacing ?? 70,
     },
     overallScore,
