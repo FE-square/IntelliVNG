@@ -41,6 +41,7 @@ export const planStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   execute: async ({ inputData, mastra }) => {
     const agent = mastra.getAgent("story-planner");
@@ -58,6 +59,7 @@ export const planStep = createStep({
       worldBible: inputData.worldBible,
       characterDB: inputData.characterDB,
       styleGuide: inputData.styleGuide || {},
+      locale: (inputData.locale as Locale) || DEFAULT_LOCALE,
     };
   },
 });
@@ -70,6 +72,7 @@ export const writeStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   outputSchema: z.object({
     plan: NarrativePlanSchema,
@@ -77,6 +80,7 @@ export const writeStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   execute: async ({ inputData, mastra }) => {
     const agent = mastra.getAgent("node-writer");
@@ -152,6 +156,7 @@ export const reviewStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   execute: async ({ inputData, mastra }) => {
     const agent = mastra.getAgent("story-reviewer");
@@ -193,7 +198,7 @@ export const reviewStep = createStep({
     const report = response.object as z.infer<typeof CriticReportSchema>;
     console.log(`[ReviewStep] 审阅完成，综合评分: ${report.overallScore}`);
 
-    return { plan, drafts, report, worldBible, characterDB, styleGuide };
+    return { plan, drafts, report, worldBible, characterDB, styleGuide, locale };
   },
 });
 

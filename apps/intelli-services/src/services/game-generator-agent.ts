@@ -11,7 +11,7 @@
 import { getMastra, getStoryWorkflow } from "../mastra";
 import type { NarrativePlan, NodeDraft, CriticReport, WorkflowInput } from "../agents/schemas";
 import { NarrativePlanSchema, NodeDraftSchema, CriticReportSchema } from "../agents/schemas";
-import { generateNarrativePlanWithToT, storyPlannerAgent } from "../agents/storyPlanner";
+import { generateNarrativePlanWithToT, storyPlannerAgent, ToTRound } from "../agents/storyPlanner";
 import { reviewStory, storyReviewerAgent } from "../agents/storyReviewer";
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { ProgressEmitter, createProgressEmitter, type ProgressStage } from "./progress-emitter";
@@ -825,8 +825,23 @@ export class GameGeneratorAgent {
               drafts[nodeId] = rewrittenDraft;
             } catch (error) {
               console.warn(`[GameGeneratorAgent] 重写节点 ${nodeId} 失败，使用默认草稿:`, error instanceof Error ? error.message : error);
+              const planNode =
+                plan?.nodes?.find(n => n.id === nodeId) || {
+                  id: nodeId,
+                  type: 'scene' as const,
+                  isStart: false,
+                  isEnding: false,
+                  title: '临时节点',
+                  brief: issue?.suggestion || '自动补全的节点',
+                  functionTag: 'setup' as const,
+                  sceneName: workflowInput.worldBible?.scenes?.[0]?.name || workflowInput.worldBible?.name || '默认场景',
+                  nextNodeId: undefined,
+                  choicesMeta: [],
+                  position: { x: 0, y: 0 },
+                };
+
               drafts[nodeId] = this.buildFallbackNodeDraft(
-                plan.nodes.find(n => n.id === nodeId) || { id: nodeId, type: 'scene' },
+                planNode,
                 workflowInput,
                 issue?.suggestion
               );
@@ -981,7 +996,14 @@ export class GameGeneratorAgent {
     locale: Locale,
     progressEmitter: ProgressEmitter
   ): Promise<NarrativePlan> {
-    const stageMeta = {
+    const stageMeta: Partial<Record<ToTRound, {
+      stage: ProgressStage;
+      startAction: string;
+      startMessage: string;
+      completeAction: string;
+      formatMessage: (payload: any) => string;
+      formatDetails: (payload: any) => Record<string, unknown>;
+    }>> = {
       round1: {
         stage: "planning_round1" as ProgressStage,
         startAction: "Round 1：生成候选方向",
@@ -1026,10 +1048,12 @@ export class GameGeneratorAgent {
     return generateNarrativePlanWithToT(agent, workflowInput, locale, {
       onRoundStart: (round) => {
         const meta = stageMeta[round];
+        if (!meta) return;
         progressEmitter.stageStart(meta.stage, meta.startAction, meta.startMessage);
       },
       onRoundComplete: (round, payload) => {
         const meta = stageMeta[round];
+        if (!meta) return;
         progressEmitter.stageComplete(
           meta.stage,
           meta.completeAction,
@@ -1076,15 +1100,17 @@ export class GameGeneratorAgent {
       emotion: 'neutral',
     };
 
+    const nodeName = (node as any)?.name as string | undefined;
+
     const choices =
       node.type === 'branch'
         ? (node.choicesMeta || []).slice(0, 2).map((choice, idx) => ({
             id: choice.id || createId(),
-            text: choice.text || `选择 ${idx + 1}`,
-            targetNodeId: choice.leadsTo || createId(),
+            text: (choice as any).text || `选择 ${idx + 1}`,
+            targetNodeId: choice.leadsTo || (choice as any).targetNodeId || createId(),
             meta: {
-              emotionalWeight: choice.emotionalWeight || '中立',
-              consequenceHint: choice.consequenceHint || '继续故事',
+              emotionalWeight: (choice as any).emotionalWeight || '中立',
+              consequenceHint: (choice as any).consequenceHint || '继续故事',
             },
           }))
         : undefined;
@@ -1092,13 +1118,13 @@ export class GameGeneratorAgent {
     return {
       id: node.id,
       type: (node.type || 'scene') as NodeDraft['type'],
-      title: node.title || node.name || '未命名节点',
+      title: node.title || nodeName || '未命名节点',
       sceneName,
       narration: node.brief || previousSummary || '系统自动生成的节点描述',
       dialogues: [defaultDialogue],
       choices,
       nextNodeId: node.nextNodeId,
-      summary: node.brief || node.title || node.name,
+      summary: node.brief || node.title || nodeName,
     };
   }
 

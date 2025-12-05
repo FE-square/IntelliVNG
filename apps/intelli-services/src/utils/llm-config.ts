@@ -1,4 +1,8 @@
-import type { AgentModel } from "@mastra/core/agent";
+type AgentModel = {
+  id: `${string}/${string}`;
+  url?: string;
+  apiKey?: string;
+};
 
 export type LLMProfile = 'primary' | 'backup';
 
@@ -47,7 +51,7 @@ export function resolveLLMConfig(profile: LLMProfile = 'primary'): Required<EnvC
 
   return {
     apiKey: primary.apiKey,
-    baseURL: primary.baseURL || readEnvConfig('primary').baseURL,
+    baseURL: primary.baseURL || readEnvConfig('primary').baseURL || "https://api.openai.com/v1",
     modelName: fallbackModelName,
   };
 }

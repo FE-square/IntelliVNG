@@ -14,7 +14,7 @@ import { promptManager } from '../prompts';
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { generateStructuredOutput } from '../utils/structured-output-helper';
 
-export type ToTRound = 'round1' | 'round2' | 'round3' | 'round4';
+export type ToTRound = 'round1' | 'round2' | 'round3';
 
 export interface ToTProgressCallbacks {
   onRoundStart?: (round: ToTRound, payload?: Record<string, any>) => void;
@@ -273,10 +273,13 @@ function createFallbackPlan(input: WorkflowInput, selectedPath: any): NarrativeP
       {
         id: branchId,
         type: 'branch',
+        isStart: false,
+        isEnding: false,
         title: '关键抉择',
         brief: '主角面临选择，决定故事走向',
         functionTag: 'conflict',
         sceneName,
+        nextNodeId: undefined,
         choicesMeta: [
           { id: 'choice-a', leadsTo: endingA, text: '接受规则' },
           { id: 'choice-b', leadsTo: endingB, text: '冲破规则' },
@@ -286,23 +289,27 @@ function createFallbackPlan(input: WorkflowInput, selectedPath: any): NarrativeP
       {
         id: endingA,
         type: 'ending',
+        isStart: false,
         isEnding: true,
         title: '顺从结局',
         brief: '主角选择守护现状，付出自我',
         functionTag: 'resolution',
         sceneName,
         choicesMeta: [],
+        nextNodeId: undefined,
         position: { x: -150, y: 350 },
       },
       {
         id: endingB,
         type: 'ending',
+        isStart: false,
         isEnding: true,
         title: '反抗结局',
         brief: '主角冲破系统，开启新的秩序',
         functionTag: 'resolution',
         sceneName,
         choicesMeta: [],
+        nextNodeId: undefined,
         position: { x: 150, y: 350 },
       },
     ],
