@@ -1,9 +1,9 @@
 {
-  "id": "1e2pyrfrtp",
-  "title": "一个关于学生记者、业余侦探与神秘管理员共同卷入校园真相攻防战的故事",
-  "description": "一个关于学生记者、业余侦探与神秘管理员共同卷入校园真相攻防战的故事\n\n核心冲突: 雨萱主导的校报记者团试图打破信息封锁，校方以门禁与规章维持控制，修远被迫在守秘与良知间站位；晓晨在策略、风险与伦理之间寻找突破，冲突蔓延至全校舆论场。",
-  "createdAt": "2025-12-03T06:15:58.140Z",
-  "updatedAt": "2025-12-03T06:15:58.140Z",
+  "id": "kyp31v5pel",
+  "title": "2025年12月，青云大学遭遇连续七日无风静音气象——空气凝滞、声波衰减、电子设备频发微扰。大三学生",
+  "description": "2025年12月，青云大学遭遇连续七日无风静音气象——空气凝滞、声波衰减、电子设备频发微扰。大三学生刘晓晨在图书馆阅览室整理旧刊时，发现1953年《青云学报》第4期被整页撕去，而借阅登记卡背面浮现一行用紫外线可见的铅笔字：‘静音第七日，铜盒开口’。她由此踏入对已被校史抹除的‘青云学潮’的追索——但每份浮现的‘新线索’（泛黄手稿、锈蚀徽章、AI复原录音）都经不起交叉验证，实为精心设计的误导性证据链。真相不在档案终点，而在辨伪动作本身：谁在设局？为何设局？设局者如何确保‘辨伪’成为唯一被允许的抵达方式？\n\n核心冲突: 晓晨重建历史的每一次‘确证’，都是他人预设的‘误判锚点’；她越接近所谓‘完整时间链’，越深陷于修远家族以伦理为界、以静默为盾的三代守护机制中——真相本身即暴力，而辨伪过程才是唯一的非暴力接口。",
+  "createdAt": "2025-12-05T20:27:33.534Z",
+  "updatedAt": "2025-12-05T20:27:33.534Z",
   "meta": {
     "author": "IntelliVNG Multi-Agent System",
     "version": "2.0.0",
@@ -78,19 +78,10 @@
       "defaultSpriteId": ""
     },
     {
-      "id": "rlweczu8b7",
-      "name": "陈主任",
-      "displayName": "陈主任",
-      "description": "AI生成的角色: 陈主任",
-      "avatarUrl": "",
-      "sprites": [],
-      "defaultSpriteId": ""
-    },
-    {
-      "id": "8v124gnua2",
-      "name": "校方代表",
-      "displayName": "校方代表",
-      "description": "AI生成的角色: 校方代表",
+      "id": "9w1wcfo45d",
+      "name": "narration",
+      "displayName": "narration",
+      "description": "AI生成的角色: narration",
       "avatarUrl": "",
       "sprites": [],
       "defaultSpriteId": ""
@@ -124,754 +115,546 @@
   ],
   "script": [
     {
-      "id": "START",
+      "id": "node_START",
       "type": "scene",
       "isStart": true,
-      "isEnding": false,
       "position": {
         "x": 400,
         "y": 50
       },
-      "title": "序章：图书馆里的窃窃私语",
-      "sceneName": "图书馆阅览室",
-      "backgroundId": "scene_001",
-      "narration": "夏日午后的图书馆，空气中弥漫着旧书和木头的混合气味。学生们埋首书本，只有翻页的沙沙声偶尔打破沉寂。然而，今天这份平静中似乎多了一些不同寻常的低语。",
+      "title": "静音第一日·撕页",
+      "sceneName": "图书馆阅览室·午后",
+      "narration": "午后的阳光斜切过高窗，在积尘的空气里凝成一道淡金光柱。晓晨蹲在旧刊架前，指尖拂过泛黄纸页，纸边微卷、脆如蝉翼。整层阅览室安静得异常——连翻书声都像被什么吸走一半，只余下自己心跳的回响。",
       "dialogues": [
         {
-          "id": "06y4y9jy2g",
-          "characterId": "char_003",
-          "text": "晓晨，你听说了吗？",
-          "emotion": "excited"
-        },
-        {
-          "id": "28t0r71r3f",
+          "id": "ezoft4mqe3",
           "characterId": "char_001",
-          "text": "什么？你又挖到什么独家猛料了？别又是关于隔壁系那个校草的八卦啊。",
+          "text": "咦？1953年第4期……怎么空着？",
           "emotion": "curious"
         },
         {
-          "id": "ifhcxw4b8z",
-          "characterId": "char_003",
-          "text": "当然不是！这次可是正经事！最近学校里有些不太对劲，你没发现吗？",
-          "emotion": "serious"
-        },
-        {
-          "id": "qteasczzst",
+          "id": "w4bfz9cxy5",
           "characterId": "char_001",
-          "text": "嗯？怎么说？除了食堂的饭菜越来越难吃，我倒是没察觉到什么异样。",
-          "emotion": "thoughtful"
+          "text": "借阅卡还在……可卡背面……这字是后来写的？",
+          "emotion": "focused"
         },
         {
-          "id": "p0evo3jb6z",
-          "characterId": "char_003",
-          "text": "嘘——小声点。我听新闻系的前辈说，最近校报接到了好多奇怪的投稿，都是关于后山禁区的。说是晚上总能听到奇怪的声响，还有人说看到...看到了一些不该出现的东西。",
-          "emotion": "mysterious"
-        },
-        {
-          "id": "9jr1qb7yns",
+          "id": "arj10hfehj",
           "characterId": "char_001",
-          "text": "奇怪的声响？不该出现的东西？这可有意思了...",
-          "emotion": "intrigued"
+          "text": "‘静音第七日，铜盒开口’……什么铜盒？谁写的？",
+          "emotion": "uneasy"
+        },
+        {
+          "id": "7sc4wg53te",
+          "characterId": "char_001",
+          "text": "（小声自语）这字迹……是铅笔，很轻，但用力压过两次……像是怕人看不见，又怕被人看见。",
+          "emotion": "intense"
         }
       ],
-      "nextNodeId": "S1"
+      "nextNodeId": "node_BRANCH_01"
     },
     {
-      "id": "S1",
-      "type": "scene",
-      "isStart": false,
-      "isEnding": false,
+      "id": "node_BRANCH_01",
+      "type": "branch",
       "position": {
         "x": 400,
         "y": 200
       },
-      "title": "初探疑云：线索与直觉",
-      "sceneName": "学生宿舍",
-      "backgroundId": "scene_003",
-      "narration": "宿舍里，台灯发出柔和的光，照亮了堆满零食和书籍的桌面。晓晨和雨萱相对而坐，空气中弥漫着一股紧张而兴奋的氛围，仿佛一场秘密行动即将拉开序幕。",
+      "title": "你盯着那行字——先查什么？",
+      "sceneName": "图书馆古籍阅览室角落",
+      "narration": "窗外天色灰白，连风都停了。晓晨指尖还沾着旧纸屑，手机屏幕在昏光里亮得刺眼——两条未读消息像两粒微小的火种，在寂静中噼啪作响。",
       "dialogues": [
         {
-          "id": "s4g1d1ljvk",
+          "id": "kbamxthsza",
           "characterId": "char_001",
-          "text": "所以，雨萱，我们现在怎么办？那个后山禁区听起来就疑点重重！",
+          "text": "静音第七日……铜盒开口？这到底是什么意思……",
+          "emotion": "puzzled"
+        },
+        {
+          "id": "3arwr6guzi",
+          "characterId": "char_001",
+          "text": "（点开雨萱的消息）鬼鬼祟祟？我明明只是在翻借阅卡……",
+          "emotion": "irritated"
+        },
+        {
+          "id": "bp9p5atfa3",
+          "characterId": "char_001",
+          "text": "（放大修远发来的照片）B-7区……锈迹？可1953年校徽……怎么会在通风口上？",
+          "emotion": "uneasy"
+        },
+        {
+          "id": "pvwil45xmh",
+          "characterId": "char_001",
+          "text": "（低声自语）一个问得轻飘，一个拍得沉重……该信谁的‘第一反应’？",
+          "emotion": "tense"
+        }
+      ],
+      "choices": [
+        {
+          "id": "choice_01a",
+          "text": "回雨萱：‘刚发现一期学报不见了！你帮我查查论坛有没有人提过1953年铜盒？’",
+          "targetNodeId": "node_SCENE_02a",
+          "condition": "快速获得表层线索，但错过关键矛盾信号"
+        },
+        {
+          "id": "choice_01b",
+          "text": "锁屏，抓起外套——现在就去B-7，亲眼看看那扇‘生锈的嘴’",
+          "targetNodeId": "node_SCENE_02b",
+          "condition": "直面物理空间的异常，但触发监控盲区外的‘第二双眼睛’"
+        }
+      ]
+    },
+    {
+      "id": "node_SCENE_02a",
+      "type": "scene",
+      "position": {
+        "x": 200,
+        "y": 350
+      },
+      "title": "宿舍里的‘复原录音’",
+      "sceneName": "scene_003",
+      "narration": "傍晚的宿舍弥漫着泡面香气和雨后微潮的凉意。笔记本电脑屏幕泛着幽蓝光，1953年老式广播的杂音在耳机里沙沙作响——但那声细微、规律、带着现代电子设备特有的‘嗡…嗡…’，像一根针，猝不及防扎进晓晨的耳膜。",
+      "dialogues": [
+        {
+          "id": "485nsy59oa",
+          "characterId": "char_003",
+          "text": "快听！我用新装的声纹AI把这段残片‘复活’了！1953年春，文学院学生代表在校务会上直接质问财政账目——够炸吧？",
           "emotion": "excited"
         },
         {
-          "id": "ma0qcu4hw5",
-          "characterId": "char_003",
-          "text": "别急，侦探小姐。这种事情不能硬闯，得从外围摸清情况。我打算从校报社团那边打听一下，他们对学校的各种传闻最清楚不过了。",
-          "emotion": "thoughtful"
-        },
-        {
-          "id": "rswnz5uq7s",
+          "id": "zlcwvauw06",
           "characterId": "char_001",
-          "text": "嗯，好主意！那我就负责在校园里转转，看看能不能从学生们的日常对话里捕捉到什么蛛丝马迹。那些小道消息往往比官方说法更接近真相。",
-          "emotion": "determined"
+          "text": "等等……你把音轨拉到47秒再听一次背景底噪。",
+          "emotion": "focused"
         },
         {
-          "id": "80uqi3vs00",
+          "id": "kayyrs346e",
           "characterId": "char_003",
-          "text": "小心点，晓晨。这种事情有时候比你想象的要复杂。别太冒失，知道吗？",
-          "emotion": "concerned"
+          "text": "（拖动进度条，皱眉）……咦？这‘嗡’声……怎么像我们楼新换的变频空调？可1953年哪来的变频器啊？",
+          "emotion": "confused"
         },
         {
-          "id": "jyex0jppd6",
+          "id": "5t680991rm",
           "characterId": "char_001",
-          "text": "放心吧！我可是从小跟着我爸看刑侦剧长大的！你就等我的好消息吧！",
-          "emotion": "confident"
+          "text": "不是‘像’……就是。频率、谐波失真特征都对得上。这录音……根本没穿越时间。",
+          "emotion": "unsettled"
+        },
+        {
+          "id": "qgxmqggriq",
+          "characterId": "char_003",
+          "text": "（忽然笑起来，眨眨眼）修远说，真档案早烧了。这是他给我们的……练习题。",
+          "emotion": "playful-but-knowing"
         }
       ],
-      "nextNodeId": "S2"
+      "nextNodeId": "node_BRANCH_02"
     },
     {
-      "id": "S2",
+      "id": "node_SCENE_02b",
       "type": "scene",
-      "isStart": false,
-      "isEnding": false,
       "position": {
-        "x": 400,
+        "x": 600,
         "y": 350
       },
-      "title": "神秘管理员的警告",
-      "sceneName": "图书馆阅览室",
-      "backgroundId": "scene_001",
-      "narration": "图书馆阅览室里，只剩下书页翻动的轻微声响。修远一如既往地坐在角落，戴着眼镜，沉浸在泛黄的古籍中。晓晨深吸一口气，鼓足勇气走上前去。",
+      "title": "地下室B-7区的假锈",
+      "sceneName": "地下室B-7区",
+      "narration": "手电光在潮湿的砖墙上跳动，空气里弥漫着铁锈与陈年纸张混合的微酸气味。通风口边缘的‘锈迹’在硬币刮擦下簌簌剥落——底下竟是泛着冷光的崭新不锈钢。角落那只灰扑扑的档案箱静默伫立，标签字迹工整：‘1953-补档（丙）’。",
       "dialogues": [
         {
-          "id": "iw0f8csyf3",
+          "id": "wm5hdq2fgi",
           "characterId": "char_001",
-          "text": "修远同学，打扰了。我...我是刘晓晨，有些事情想请教你。",
-          "emotion": "nervous"
+          "text": "……这锈是刷上去的？",
+          "emotion": "confused"
         },
         {
-          "id": "76gfmy8o56",
-          "characterId": "char_002",
-          "text": "......",
-          "emotion": "calm"
-        },
-        {
-          "id": "6c2ypom2a3",
+          "id": "wp1zh3nd60",
           "characterId": "char_001",
-          "text": "我听说你对学校里的一些传闻很了解，特别是关于后山禁区的...我想知道那里面究竟有什么？",
-          "emotion": "curious"
+          "text": "1953年？可这金属连划痕都是新的……",
+          "emotion": "uneasy"
         },
         {
-          "id": "hik5s8oqe5",
-          "characterId": "char_002",
-          "text": "有些地方，光是好奇...就足够引来麻烦。",
-          "emotion": "serious"
-        },
-        {
-          "id": "ndwwud80lo",
+          "id": "s5yop0hkbb",
           "characterId": "char_001",
-          "text": "可是，我觉得这很重要。这可能和之前发生的一些不寻常的事情有关，甚至和那些突然消失的学生...",
-          "emotion": "determined"
+          "text": "（掀开箱盖）空白牛皮纸？连一张纸屑都没有……",
+          "emotion": "disbelieving"
         },
         {
-          "id": "s7806yz8dj",
-          "characterId": "char_002",
-          "text": "不该问的别问，不该看的别看。禁区有它的秘密，也有它的代价。记住...过去，总会纠缠不清。你，还太稚嫩。",
-          "emotion": "grave"
+          "id": "ef31ey9so9",
+          "characterId": "char_001",
+          "text": "等等……徽章？青云中学……1953届？",
+          "emotion": "startled"
+        },
+        {
+          "id": "880it4hgws",
+          "characterId": "char_001",
+          "text": "（指尖轻触徽章背面）这二维码……怎么还带激光蚀刻？",
+          "emotion": "intense"
         }
       ],
-      "nextNodeId": "B1"
+      "nextNodeId": "node_BRANCH_02"
     },
     {
-      "id": "B1",
+      "id": "node_BRANCH_02",
       "type": "branch",
-      "isStart": false,
-      "isEnding": false,
       "position": {
         "x": 400,
         "y": 500
       },
-      "title": "校报风波：发声的艺术",
-      "sceneName": "校报编辑部",
-      "narration": "校报编辑部里气氛凝重，陈主任那张不苟言笑的脸，让空气都仿佛凝固了。桌上的稿件，标题赫然写着关于‘后山禁区异闻’的字样。",
+      "title": "你向谁求证这枚徽章？",
+      "sceneName": "图书馆阅览室二楼回廊",
+      "narration": "窗外雨声渐密，玻璃幕墙蒙着薄雾。晓晨指尖还捏着那枚冰凉的铜质徽章，二维码在手机屏上泛着幽蓝微光；广播录音最后三秒的蜂鸣仍在耳膜里嗡嗡震颤。修远站在二十米外的玻璃幕墙后，没戴眼镜，目光沉静如深潭——仿佛早已等这一刻。",
       "dialogues": [
         {
-          "id": "mpxvrpp679",
-          "characterId": "rlweczu8b7",
-          "text": "方同学，这篇关于后山禁区和所谓‘失踪学生’的稿件...内容过于敏感，不适合刊登。校方需要维护学校的声誉和稳定。",
-          "emotion": "stern"
+          "id": "5axueaygvm",
+          "characterId": "char_001",
+          "text": "……修远前辈，这枚徽章，为什么指向基建处？可录音里的AI痕迹，又和你调音时用的降噪协议完全一致。",
+          "emotion": "conflicted"
         },
         {
-          "id": "l1pzs4irxk",
-          "characterId": "char_003",
-          "text": "主任，我们作为校报，有责任报道真相！这些都是学生们高度关注的焦点，校方不应选择一味压制，而是应该正视问题！",
+          "id": "lu5m1spzg",
+          "characterId": "char_001",
+          "text": "还有……雨萱刚发来消息：1953届，只有你祖父‘刘砚生’的名字后面，干干净净——没照片、没去向、连借书卡号都查不到。",
+          "emotion": "tense"
+        },
+        {
+          "id": "jvilj4l5ru",
+          "characterId": "char_001",
+          "text": "你们到底在保护什么？还是……在修正什么？",
           "emotion": "resolute"
-        },
-        {
-          "id": "zzhotd9aaf",
-          "characterId": "rlweczu8b7",
-          "text": "有些‘真相’，其本身就是谣言的温床。校方已经有明确指示，关于禁区和类似事件，一律不予报道。这是为了保护学生，也是为了大局着想。",
-          "emotion": "authoritative"
-        },
-        {
-          "id": "q6tfi7s0cl",
-          "characterId": "char_003",
-          "text": "保护学生？还是掩盖什么？我们只是想通过新闻，引起更多关注，也许能找到线索！",
-          "emotion": "frustrated"
-        },
-        {
-          "id": "y241sc4d3f",
-          "characterId": "rlweczu8b7",
-          "text": "我理解你的热忱，方同学。但记者要有大局观，不要做一些...不必要的冒险。校报的资源是有限的，希望你明白轻重，否则后果自负。",
-          "emotion": "warning"
         }
       ],
       "choices": [
         {
-          "id": "B1C1",
-          "text": "暂时退让，寻找其他突破口（表面顺从，暗中调查）",
-          "targetNodeId": "S3a",
-          "condition": "暂时规避了风险，但真相依旧扑朔迷离。"
+          "id": "choice_02a",
+          "text": "走上前，当面问修远——真相不该隔着一层玻璃",
+          "targetNodeId": "node_SCENE_03a",
+          "condition": "获得修远亲述的‘伦理契约’雏形，但失去雨萱的信任"
         },
         {
-          "id": "B1C2",
-          "text": "坚持立场，公开发声（即便面临处分）",
-          "targetNodeId": "S3b",
-          "condition": "引发了小范围关注，但也带来了校方的严厉打压。"
+          "id": "choice_02b",
+          "text": "退回楼梯口，立刻回拨雨萱电话——‘我们得黑进那个IP，现在就做’",
+          "targetNodeId": "node_SCENE_03b",
+          "condition": "掌握技术反制手段，但激活校方预警机制"
         }
       ]
     },
     {
-      "id": "S3a",
+      "id": "node_SCENE_03a",
       "type": "scene",
-      "isStart": false,
-      "isEnding": false,
       "position": {
-        "x": 275,
+        "x": 200,
         "y": 650
       },
-      "title": "曲线策略：暗流涌动",
-      "sceneName": "学生宿舍",
-      "backgroundId": "scene_003",
-      "narration": "学生宿舍里，夜幕低垂。台灯发出柔和的光，将两张床铺前的书桌映得明亮。雨萱把校报的审稿意见书揉成一团，扔进了垃圾桶。虽然表面上接受了校方的审查，但她眼底的火焰并未熄灭，反而燃烧得更加隐蔽。",
+      "title": "阅览室二楼的虹膜疤痕",
+      "sceneName": "图书馆馆长室密柜前",
+      "narration": "阅览室二楼尽头，一扇不起眼的橡木门无声滑开。空气里浮着旧纸与樟脑混杂的微涩气味。顶灯昏黄，光晕在修远镜片上凝成两枚小小的、晃动的圆。他指尖悬停于胶卷盒盖沿，未掀开，却已像掀开了三十年前的一道旧痂。",
       "dialogues": [
         {
-          "id": "sukq0pb6rk",
-          "characterId": "char_003",
-          "text": "哼，‘报道失实’，‘煽动情绪’？这些冠冕堂皇的理由，无非是不想我们触碰禁区罢了。",
-          "emotion": "annoyed"
-        },
-        {
-          "id": "8hu5urkb37",
+          "id": "f1hclhv7cm",
           "characterId": "char_001",
-          "text": "那...我们真的要就这么算了？后山禁区的事情，肯定有猫腻！",
-          "emotion": "disappointed"
+          "text": "这盒子……怎么是空的？",
+          "emotion": "困惑"
         },
         {
-          "id": "xvyine5bh2",
-          "characterId": "char_003",
-          "text": "当然不会算了。只是，硬碰硬不行，咱们得曲线救国。表面上乖乖听话，私底下...照查不误。",
-          "emotion": "determined"
+          "id": "efrhur57ef",
+          "characterId": "char_002",
+          "text": "不是空的。它装过时间——刚好卡在1953年12月6日。",
+          "emotion": "低沉而克制"
         },
         {
-          "id": "xau6lnhi54",
+          "id": "xe4w673nac",
           "characterId": "char_001",
-          "text": "太棒了！我就知道你不会轻易放弃的！那我们下一步怎么做？上次我们找到的那些线索...",
-          "emotion": "excited"
+          "text": "……12月6日？今天也是12月6日。",
+          "emotion": "呼吸微滞"
         },
         {
-          "id": "cnim3hdp60",
-          "characterId": "char_003",
-          "text": "嘘！小点声。现在校方肯定盯着我们呢。以后讨论这些，都要小心。先从校外图书馆和旧报纸开始，绕开学校的视线。",
-          "emotion": "cautious"
+          "id": "ge835b91if",
+          "characterId": "char_002",
+          "text": "你父亲调过比对报告。指纹匹配的，是我祖父。时任校长。三天后，他在校长室吞下氰化物——就在这张借书卡被归还前五分钟。",
+          "emotion": "平静中带着金属般的冷"
         },
         {
-          "id": "qvx21hnz07",
+          "id": "7h6stdmg0x",
           "characterId": "char_001",
-          "text": "明白！秘密行动，化整为零！放心吧，我保证不露马脚！",
-          "emotion": "resolute"
+          "text": "……他借的什么书？",
+          "emotion": "声音发紧"
+        },
+        {
+          "id": "7rj3w2ccxb",
+          "characterId": "char_002",
+          "text": "卡面空白。没有书名。只有血指印，淡得像一道虹膜疤痕。",
+          "emotion": "目光垂落，停在卡角那抹几不可察的褐红上"
         }
       ],
-      "nextNodeId": "S4"
+      "nextNodeId": "node_BRANCH_03"
     },
     {
-      "id": "S3b",
+      "id": "node_SCENE_03b",
       "type": "scene",
-      "isStart": false,
-      "isEnding": false,
       "position": {
-        "x": 525,
+        "x": 600,
         "y": 650
       },
-      "title": "舆论萌芽：星星之火",
-      "sceneName": "校园林荫道",
-      "backgroundId": "scene_002",
-      "narration": "初秋的阳光透过林荫道斑驳地洒下，树叶沙沙作响。雨萱独自走着，她的脸上带着一丝疲惫，却又掩不住眼底的几分激动。",
+      "title": "林荫道上的数据流",
+      "sceneName": "校园西区林荫道",
+      "narration": "梧桐叶尖悬着将落未落的雨滴，空气微凉。雨萱蹲在树根旁，便携信号分析仪蓝光幽幽闪烁，屏幕滚动着频谱波纹与密密麻麻的解码日志。晓晨站在她身后，徽章在掌心发烫，而远处图书馆穹顶的玻璃反着冷光——修远正站在三楼阅览室窗边，静静望着这边。",
       "dialogues": [
         {
-          "id": "fd0yvuavp7",
-          "characterId": "char_001",
-          "text": "雨萱！你怎么一个人在这里发呆？校报的会议结束了吗？",
-          "emotion": "curious"
-        },
-        {
-          "id": "ue7nuli43d",
+          "id": "s3iybxowih",
           "characterId": "char_003",
-          "text": "结束了，也…‘结束’了。我的报道，被撤下来了。",
-          "emotion": "frustrated"
+          "text": "你听这个——慢速播放，去掉混响……听出是谁的声音了吗？",
+          "emotion": "紧张中带着兴奋"
         },
         {
-          "id": "ww8nidgr2z",
+          "id": "ldmduyns1s",
           "characterId": "char_001",
-          "text": "什么？！真的被撤了？太过分了！那篇报道明明写得那么好！",
-          "emotion": "angry"
+          "text": "1953年的学生宣言……可这声线……怎么像我爸年轻时说话的顿挫感？",
+          "emotion": "震惊、声音微颤"
         },
         {
-          "id": "7qg8tpq0g7",
+          "id": "z9fzpm8hcn",
           "characterId": "char_003",
-          "text": "是啊，他们说‘影响不好’。不过…你知道吗，晓晨？虽然校报没发，但我昨晚在校园论坛上匿名发了个帖子，揭露了这件事，现在已经炸锅了！",
-          "emotion": "excited"
+          "text": "不是‘像’——是建模源文件直接用了你爷爷1951年演讲的喉部运动数据，但语调节奏……完全复刻了你爸2003年退休座谈的录像帧率。",
+          "emotion": "压低声音，指尖划过屏幕上的双轨比对图"
         },
         {
-          "id": "bxy0yyayud",
+          "id": "ujrdhx9h0a",
           "characterId": "char_001",
-          "text": "哇！论坛炸锅了？！快给我看看！我就说嘛，真相是藏不住的！",
-          "emotion": "eager"
+          "text": "……所以这不是录音回放。是有人用两代人的声音，拼出了第三种‘真实’？",
+          "emotion": "喃喃自语，目光扫向图书馆方向"
         },
         {
-          "id": "u60u7nu4la",
+          "id": "fw0u7h09cc",
           "characterId": "char_003",
-          "text": "嗯。虽然只是星星之火，但至少有人关注了。我觉得…我们离真相又近了一步。",
-          "emotion": "determined"
+          "text": "而且基站藏在百年梧桐的树洞里……修远上周申请过古树养护权限哦。",
+          "emotion": "意味深长地眨眼，把分析仪收进背包"
         }
       ],
-      "nextNodeId": "S4"
+      "nextNodeId": "node_BRANCH_03"
     },
     {
-      "id": "S4",
-      "type": "scene",
-      "isStart": false,
-      "isEnding": false,
+      "id": "node_BRANCH_03",
+      "type": "branch",
       "position": {
         "x": 400,
         "y": 800
       },
-      "title": "密谋：地下室探险",
-      "sceneName": "图书馆阅览室",
-      "backgroundId": "scene_001",
-      "narration": "图书馆阅览室里，阳光透过落地窗洒在书架上，空气中弥漫着淡淡的书香。晓晨和雨萱找到了坐在角落里看书的修远，两人眼中都带着不容置疑的坚定。",
+      "title": "静音第六日·暴雨将至",
+      "sceneName": "图书馆B座天台入口",
+      "narration": "风在通风管里呜咽，像一截没剪断的磁带。晓晨攥着手机站在锈蚀的铁门前，屏幕还亮着修远的短信和雨萱未挂断的语音——背景音里传来校媒中心键盘敲击的密集脆响。远处云层翻涌如铅，气象台红色预警在手机顶部无声闪烁：‘静音状态解除倒计时：02:17:43’。",
       "dialogues": [
         {
-          "id": "ssyd09hlcu",
+          "id": "keejjkexwv",
           "characterId": "char_001",
-          "text": "修远，我们知道你一定了解些什么。关于图书馆地下室，你到底知道多少？",
-          "emotion": "determined"
+          "text": "……铜盒在夹墙？第三页？我爸那本泛黄的《1987年城东纵火案卷》……他从没让我碰过第三页。",
+          "emotion": "tense"
         },
         {
-          "id": "3iel675k11",
+          "id": "69113aeaof",
           "characterId": "char_002",
-          "text": "两位同学，有些地方，不是你们想去就能去的。更何况，那里已经封闭了很久。",
+          "text": "（轻推眼镜，镜片反着天光）你父亲当年比对指纹时，用的是同一支红蓝铅笔——蓝线标疑点，红线划终止。第三页背面，有他画的三道横线。",
           "emotion": "calm"
         },
         {
-          "id": "ui0a769znr",
+          "id": "zzpl11papx",
           "characterId": "char_003",
-          "text": "但那里可能是我们找到真相的唯一线索！校方不让我们去后山，我们就只能另辟蹊径了。",
-          "emotion": "earnest"
-        },
-        {
-          "id": "abfy20hwsi",
-          "characterId": "char_001",
-          "text": "我们已经决定了。就算再危险，也要把事情查清楚。你帮我们，还是不帮？",
-          "emotion": "insistent"
-        },
-        {
-          "id": "797tyepsgc",
-          "characterId": "char_002",
-          "text": "唉... 看来是拦不住你们了。好吧，我可以告诉你们一些事情，甚至可以带你们进去...",
-          "emotion": "resigned"
-        },
-        {
-          "id": "jt5ou2zk5k",
-          "characterId": "char_002",
-          "text": "但你们必须明白，那地方远比你们想象的危险。一旦踏入那里，就没人能保证你们的安全。考虑清楚，这可不是儿戏。",
-          "emotion": "serious"
-        }
-      ],
-      "nextNodeId": "S5"
-    },
-    {
-      "id": "S5",
-      "type": "scene",
-      "isStart": false,
-      "isEnding": false,
-      "position": {
-        "x": 400,
-        "y": 950
-      },
-      "title": "禁区：尘封的档案",
-      "sceneName": "图书馆地下室",
-      "backgroundId": "scene_004",
-      "narration": "潮湿而冰冷的空气扑面而来，地下室深邃的黑暗被手电筒的光束艰难地撕裂。霉味和纸张腐朽的气息混杂在一起，四周堆满了落满灰尘的旧书架和蒙着白布的神秘箱子。",
-      "dialogues": [
-        {
-          "id": "fntp4dgp7c",
-          "characterId": "char_002",
-          "text": "这里是禁区。记住我的话，不要碰不该碰的东西。",
-          "emotion": "calm"
-        },
-        {
-          "id": "ywtt5v6i8w",
-          "characterId": "char_003",
-          "text": "哇...这里简直是恐怖电影场景啊！那些箱子里不会装着什么可怕的东西吧？",
-          "emotion": "nervous"
-        },
-        {
-          "id": "ecjk18efdj",
-          "characterId": "char_001",
-          "text": "我们来这里不是为了找刺激，雨萱。是来找真相的。修远，那些档案在哪里？",
-          "emotion": "determined"
-        },
-        {
-          "id": "zo595f82a6",
-          "characterId": "char_002",
-          "text": "大部分都被封存了。那里，也许有你们想知道的。",
-          "emotion": "mysterious"
-        },
-        {
-          "id": "bk7wk2gec0",
-          "characterId": "char_001",
-          "text": "（推开一个生锈的铁柜，尘土飞扬，露出泛黄的卷宗）这些是...学校早期的学生记录？还有，这是什么？关于...异常事件的报告？",
-          "emotion": "shocked"
-        },
-        {
-          "id": "8zvnjb3iy7",
-          "characterId": "char_003",
-          "text": "天哪，这些...这些不都是我们学校几十年前发生过，但是被压下来的传闻吗？！",
-          "emotion": "disbelieving"
-        },
-        {
-          "id": "0ayhi6fn99",
-          "characterId": "char_001",
-          "text": "等等，这份报告上提到了'那个人'，还有近期发生的失踪案...这之间，有着某种可怕的关联！",
-          "emotion": "realizing"
-        }
-      ],
-      "nextNodeId": "B2"
-    },
-    {
-      "id": "B2",
-      "type": "branch",
-      "isStart": false,
-      "isEnding": false,
-      "position": {
-        "x": 400,
-        "y": 1100
-      },
-      "title": "最终抉择：真相的代价",
-      "sceneName": "图书馆地下室",
-      "backgroundId": "scene_004",
-      "narration": "图书馆地下室的灯光忽明忽暗，空气中弥漫着尘土和旧书的味道。就在他们刚刚翻开那些尘封的档案，将学校隐藏的秘密公诸于世的前一刻，一阵急促的脚步声从楼梯口传来，打破了地下室的沉寂。紧接着，手电筒的光束晃动着扫过墙壁，几名校方保安的身影出现在入口处，他们的脸上带着警惕与严肃。",
-      "dialogues": [
-        {
-          "id": "06nrs6l9rg",
-          "characterId": "char_002",
-          "text": "糟了，他们来了。我们被发现了。",
-          "emotion": "urgent"
-        },
-        {
-          "id": "rdwfo5elzb",
-          "characterId": "char_001",
-          "text": "这些...这些证据不能落到他们手里！我们必须...",
-          "emotion": "determined"
-        },
-        {
-          "id": "mdpj77yuhv",
-          "characterId": "char_003",
-          "text": "可是晓晨，现在怎么办？我们被堵在这里了！",
+          "text": "（电话杂音中突然拔高）晓晨！我刚查了档案馆后台——所有‘1953’编号条目，访问记录全是空白！连调阅权限都没开过……可引文页码、段落编号，写得比教科书还准！",
           "emotion": "panicked"
         },
         {
-          "id": "yqwt0xfceu",
+          "id": "g333e54naw",
           "characterId": "char_001",
-          "text": "这些关系到好多人的命运，我们不能白费力气！",
-          "emotion": "resolute"
+          "text": "……所以不是档案被删了，是根本没人见过它。它只活在我们写的句子里。",
+          "emotion": "numb"
         },
         {
-          "id": "zjbo523sga",
+          "id": "s3gaq6ihvv",
           "characterId": "char_002",
-          "text": "证据已经到手，现在是决定如何使用它的时候。",
-          "emotion": "serious"
+          "text": "静音结束那一刻，雷会先劈中顶楼避雷针。而B-7区的电磁脉冲，会擦掉硬盘里所有未加密的‘1953’文本——包括你U盘里那版校对稿，也包括雨萱刚发出去的标题。",
+          "emotion": "quietly urgent"
         }
       ],
       "choices": [
         {
-          "id": "B2C1",
-          "text": "坚持曝光，不惜一切代价（将证据公之于众）",
-          "targetNodeId": "S6a",
-          "condition": "你的勇气将引发巨大的波澜，但个人命运也难以预测。"
+          "id": "choice_03a",
+          "text": "转身回宿舍——烧掉全部笔记，让1953永远停在第六日",
+          "targetNodeId": "node_SCENE_04a",
+          "condition": "亲手终结调查，但保全三人关系与伦理契约"
         },
         {
-          "id": "B2C2",
-          "text": "争取谈判，寻求妥协（以证据为筹码，争取开放机制）",
-          "targetNodeId": "S6b",
-          "condition": "你试图在各方利益间寻找平衡点，结果可能不尽如人意但能避免最坏结果。"
+          "id": "choice_03b",
+          "text": "冲向校媒中心——哪怕只剩三分钟，也要拦下那篇稿子",
+          "targetNodeId": "node_SCENE_04b",
+          "condition": "引爆舆论，但真相载体被证实为AI幻觉"
         },
         {
-          "id": "B2C3",
-          "text": "销毁证据，保护自己和修远（放弃曝光，全身而退）",
-          "targetNodeId": "E2",
-          "condition": "你逃过了眼前的危机，但真相也随之被掩埋。"
+          "id": "choice_03c",
+          "text": "推开天台铁门——去见修远，接过那只刻着字的U盘",
+          "targetNodeId": "node_SCENE_04c",
+          "condition": "接受叙事主权让渡，成为真相的编辑者而非发现者"
         }
       ]
     },
     {
-      "id": "S6a",
+      "id": "node_SCENE_04a",
       "type": "scene",
-      "isStart": false,
-      "isEnding": false,
-      "position": {
-        "x": 150,
-        "y": 1250
-      },
-      "title": "真相大白：舆论风暴",
-      "sceneName": "校园林荫道",
-      "backgroundId": "scene_002",
-      "narration": "微风吹拂着林荫道，往日宁静的校园此刻却像被投入了一颗巨石的湖面。学生们三五成群地议论着，手中的报纸和手机屏幕上，赫然是他们揭露的证据。真相的浪潮，正席卷着这座校园。",
-      "dialogues": [
-        {
-          "id": "fz09eea9md",
-          "characterId": "char_003",
-          "text": "简直是史无前例！校报的头版都爆了，连市里的媒体都在争相报道！我们真的做到了，把那些肮脏的秘密全都公之于众了！",
-          "emotion": "excited"
-        },
-        {
-          "id": "a97zgfnwgq",
-          "characterId": "char_001",
-          "text": "我没想到会引起这么大的轰动...看着大家议论纷纷的样子，我既觉得松了口气，又有点...不知所措。",
-          "emotion": "overwhelmed"
-        },
-        {
-          "id": "axabki88gw",
-          "characterId": "char_002",
-          "text": "舆论是一把双刃剑。我们揭露了真相，也必然要承担随之而来的代价。这并非终点，而是一个新的开始。",
-          "emotion": "calm"
-        },
-        {
-          "id": "t8l55l00my",
-          "characterId": "char_003",
-          "text": "代价？能让那些曾经作恶的人受到惩罚，能让被蒙蔽的人看到真相，我觉得这代价，值！",
-          "emotion": "resolute"
-        },
-        {
-          "id": "qv4fx3ttza",
-          "characterId": "char_001",
-          "text": "是啊... 至少，那些被掩盖的声音，终于能被听到了。这比什么都重要。",
-          "emotion": "relieved"
-        }
-      ],
-      "nextNodeId": "E1"
-    },
-    {
-      "id": "S6b",
-      "type": "scene",
-      "isStart": false,
-      "isEnding": false,
-      "position": {
-        "x": 400,
-        "y": 1250
-      },
-      "title": "艰难谈判：制度的边缘",
-      "sceneName": "图书馆阅览室",
-      "backgroundId": "scene_001",
-      "narration": "图书馆阅览室的空气凝重得仿佛能拧出水来，阳光透过高大的窗户，却无法驱散谈判桌上的冰冷。校方代表，一位身着深色西装的中年男子，面色严肃，他面前堆叠着晓晨他们带来的证据。",
-      "dialogues": [
-        {
-          "id": "r14hkygc8v",
-          "characterId": "char_001",
-          "text": "我们希望校方能正视这些问题，并给出明确的解决方案。这些证据，足以说明学校在某些事件处理上的失职。",
-          "emotion": "determined"
-        },
-        {
-          "id": "t463h5n8lp",
-          "characterId": "8v124gnua2",
-          "text": "刘同学，请冷静。学校一直以维护学生利益为重，任何问题我们都会严谨调查。但这种方式...未免有些过于激烈。",
-          "emotion": "calm_stern"
-        },
-        {
-          "id": "qaseotcwry",
-          "characterId": "char_003",
-          "text": "激烈？难道要等到事情闹大了，无法收场，才算引起重视吗？我们需要的不是敷衍，而是一个能真正保障学生权益的透明机制！",
-          "emotion": "indignant"
-        },
-        {
-          "id": "nr8okcgbw6",
-          "characterId": "char_002",
-          "text": "建立健全的反馈和处理机制，公开透明地运作，对学校的声誉和长远发展，都是利大于弊。我们希望看到的是改变的诚意，而非一味地压制。",
-          "emotion": "calm_reasoning"
-        },
-        {
-          "id": "l38lmpfuw0",
-          "characterId": "8v124gnua2",
-          "text": "......你们的要求，我们已经清楚。但任何制度的改革，都需要深思熟虑，并报请上级批准。这需要时间，以及......你们的配合。",
-          "emotion": "hesitant_cautious"
-        },
-        {
-          "id": "wex8hva7wx",
-          "characterId": "char_001",
-          "text": "我们的配合，建立在你们的行动之上。",
-          "emotion": "firm"
-        }
-      ],
-      "nextNodeId": "E3"
-    },
-    {
-      "id": "E1",
-      "type": "ending",
-      "isStart": false,
       "isEnding": true,
       "position": {
         "x": 150,
-        "y": 1400
+        "y": 950
       },
-      "title": "结局一：舆论的胜利",
-      "sceneName": "校园林荫道",
-      "backgroundId": "scene_002",
-      "narration": "阳光透过林荫道，在青石板上落下斑驳的光影。事件已过去数周，那篇掀起轩然大波的报道，终于改变了一些什么。",
+      "title": "灰烬与合影",
+      "sceneName": "宿舍洗手间",
+      "narration": "水槽边缘残留着未干的墨迹，纸灰在漩涡中打着旋，像一场微缩的葬礼。最后一片焦边沉入排水口时，一粒铜锈缓缓浮起，在昏黄灯光下泛着陈年血锈般的暗红。窗外，梧桐叶轻颤，第一滴雨落下——‘嗒’，清脆得如同时间重启的提示音。",
       "dialogues": [
         {
-          "id": "7lds2d21et",
-          "characterId": "char_003",
-          "text": "看！校方果然发布了声明，还承诺会进行内部整改！我们的报道真的起到作用了！",
-          "emotion": "excited"
-        },
-        {
-          "id": "us56m3at5s",
+          "id": "r062ql8h6o",
           "characterId": "char_001",
-          "text": "是啊...这下，那些不为人知的秘密，总算能重见天日一部分了。感觉心头的大石终于放下了。",
-          "emotion": "relieved"
+          "text": "1953……1987……2025。原来不是巧合，是锚点。",
+          "emotion": "quiet"
         },
         {
-          "id": "bk3q6gjza4",
-          "characterId": "char_002",
-          "text": "变革的开始，总是伴随着阵痛。有些东西浮出水面，自然会触及某些人的利益。",
-          "emotion": "calm"
-        },
-        {
-          "id": "76flpf9e7j",
-          "characterId": "char_003",
-          "text": "怕什么！我们是正义的！他们还能把我们怎么样？",
-          "emotion": "confident"
-        },
-        {
-          "id": "6umsdgxaih",
-          "characterId": "char_002",
-          "text": "正义总是要付出代价的，尤其当它挑战到根深蒂固的权力时。这或许只是一个开始。",
-          "emotion": "serious"
-        },
-        {
-          "id": "wxt5iiivkp",
+          "id": "ps66h0s440",
           "characterId": "char_001",
-          "text": "修远说得对，但至少，我们让一些人开始思考了。我们做到了。",
-          "emotion": "resolved"
-        }
-      ]
-    },
-    {
-      "id": "E2",
-      "type": "ending",
-      "isStart": false,
-      "isEnding": true,
-      "position": {
-        "x": 650,
-        "y": 1250
-      },
-      "title": "结局二：真相的埋葬",
-      "sceneName": "图书馆地下室",
-      "backgroundId": "scene_004",
-      "narration": "图书馆地下室的空气异常沉重，潮湿的霉味混杂着尘土的气息，如同笼罩在他们心头的阴霾。关键证据被校方收走，一切努力仿佛都化为了泡影。他们坐在冰冷的水泥地上，只有微弱的灯光映照出彼此疲惫的面容。",
-      "dialogues": [
-        {
-          "id": "5ije7hhtet",
-          "characterId": "char_001",
-          "text": "所以... 就这样了吗？我们拼尽全力找到的真相，就这样被掩埋了？",
-          "emotion": "frustrated"
-        },
-        {
-          "id": "ip7wx7dbtk",
-          "characterId": "char_003",
-          "text": "校方态度很强硬，甚至暗示如果再追究下去，会对我们学业有影响... 我被取消了校报实习资格。",
-          "emotion": "defeated"
-        },
-        {
-          "id": "vwfcjdk1yq",
-          "characterId": "char_002",
-          "text": "我的职位也被调动了，去了档案室最偏僻的角落。他们不会让任何不利于学校声誉的事情浮出水面。",
+          "text": "修远没骗我……他只是把钥匙藏在了火里。",
           "emotion": "resigned"
         },
         {
-          "id": "vajfu8boy7",
+          "id": "wucs7f3p3z",
           "characterId": "char_001",
-          "text": "对不起... 如果不是我坚持要查，也许你们就不会受到牵连。",
-          "emotion": "guilty"
+          "text": "雨萱的电话还在口袋里震——可这一次，我不想接了。",
+          "emotion": "calm"
         },
         {
-          "id": "mob2cc0moz",
-          "characterId": "char_003",
-          "text": "别这么说，晓晨。我们都相信正义。只是... 有些时候，现实比我们想象的更残酷。",
-          "emotion": "sad"
-        },
-        {
-          "id": "5m1l0354k8",
-          "characterId": "char_002",
-          "text": "这次的失败，并非毫无意义。我们知道了他们的底线，也看清了他们的手段。下次，会更谨慎。",
-          "emotion": "thoughtful"
+          "id": "4wnqbozrmj",
+          "characterId": "char_001",
+          "text": "（低头凝视铜锈，轻声）爸，这次换我，把真相锁进静音里。",
+          "emotion": "tender"
         }
       ]
     },
     {
-      "id": "E3",
-      "type": "ending",
-      "isStart": false,
+      "id": "node_SCENE_04b",
+      "type": "scene",
       "isEnding": true,
       "position": {
         "x": 400,
-        "y": 1400
+        "y": 950
       },
-      "title": "结局三：艰难的妥协",
-      "sceneName": "图书馆阅览室",
-      "backgroundId": "scene_001",
-      "narration": "谈判室外的阳光透过阅览室的窗户，显得有些刺眼。空气中弥漫着尘埃和旧书的气息，也夹杂着一丝未能尽兴的沉闷。我们做出了妥协，这是一个艰难的决定。",
+      "title": "反转风暴",
+      "sceneName": "校园咖啡角·雨夜窗边",
+      "narration": "暴雨未歇，咖啡角只剩一盏暖黄壁灯。手机屏幕冷光映在晓晨脸上——热搜第一的标题刺眼如刀：#青云学潮#。窗外闪电劈落，刹那照亮她手中那张已被雨水洇湿的密信残页。",
       "dialogues": [
         {
-          "id": "0a13d80f25",
+          "id": "7o6xilss6q",
           "characterId": "char_001",
-          "text": "所以，这就是我们争取到的结果吗？透明机制，但关键档案却暂时封存……",
-          "emotion": "disappointed"
+          "text": "……不是1953年的事。是今年写的。",
+          "emotion": "numb"
         },
         {
-          "id": "kvhiepauqp",
-          "characterId": "char_003",
-          "text": "哎，至少校方迈出了第一步。独立审查小组是很大的进步，只是这个档案封存…感觉像留了一手。",
-          "emotion": "thoughtful"
-        },
-        {
-          "id": "x1gak0vg3n",
+          "id": "dczbx8cx8c",
           "characterId": "char_002",
-          "text": "妥协，是所有利益博弈的必然结果。权力不会轻易放手，这已是现有条件下最好的方案。",
+          "text": "（轻推眼镜，镜片反着手机微光）你父亲校庆那天说的每一句话，都被AI记住了。",
           "emotion": "calm"
         },
         {
-          "id": "ftc611tdi1",
+          "id": "plcyjt6brx",
           "characterId": "char_001",
-          "text": "可是，那些真相呢？那些被掩盖的事情，还会再次被尘封吗？",
-          "emotion": "worried"
+          "text": "所以……我们追查的‘历史’，从一开始就是回声？",
+          "emotion": "dazed"
         },
         {
-          "id": "em12pl618i",
+          "id": "e8r1tcyk59",
           "characterId": "char_002",
-          "text": "水滴石穿，需要时间。我们已经打开了一道缝隙，剩下的，是持续的监督与追问。",
-          "emotion": "wise"
+          "text": "不。是我们把回声，当成了墓志铭。",
+          "emotion": "quietly sorrowful"
         },
         {
-          "id": "yfczl41n3b",
-          "characterId": "char_003",
-          "text": "说得对！校报虽然不能直接报道，但我手里的这些证据，总有一天能派上用场。我们不会让他们懈怠的！",
-          "emotion": "determined"
+          "id": "iaggjt18h3",
+          "characterId": "char_001",
+          "text": "……雨萱呢？",
+          "emotion": "soft, hesitant"
+        },
+        {
+          "id": "gfmc3qch7l",
+          "characterId": "char_002",
+          "text": "（低头划开一条新推送）她头像灰了。但评论区第723条写着：‘谢谢你们，让我第一次看清自己多想相信一个故事。’",
+          "emotion": "gentle"
+        }
+      ]
+    },
+    {
+      "id": "node_SCENE_04c",
+      "type": "scene",
+      "isEnding": true,
+      "position": {
+        "x": 650,
+        "y": 950
+      },
+      "title": "校史定稿日",
+      "sceneName": "图书馆古籍修复室",
+      "narration": "窗外暴雨如注，闪电撕裂天幕的刹那，修复室顶灯忽明忽暗。晓晨指尖悬在回车键上方，呼吸轻得像怕惊扰百年纸页的沉睡。U盘插口泛着幽蓝微光，屏幕上的C版叙事静静浮现——没有推诿，没有粉饰，只有一场暴雨里的集体抉择。",
+      "dialogues": [
+        {
+          "id": "0ruybad8ib",
+          "characterId": "char_001",
+          "text": "……‘留存精神而非权责’……原来不是逃避，是选择把火种，烧成光。",
+          "emotion": "awed"
+        },
+        {
+          "id": "hpy4io4cox",
+          "characterId": "char_001",
+          "text": "（轻声）修远爷爷……您一直都知道，对吗？",
+          "emotion": "quietly emotional"
+        },
+        {
+          "id": "49neh2lfde",
+          "characterId": "9w1wcfo45d",
+          "text": "她伸手抚过打印页右下角那枚墨色签名——笔锋顿挫如旧书页折痕，与借书卡上‘刘砚之’三字分毫不差。窗外，一道惊雷轰然劈落，震得窗框嗡鸣。",
+          "emotion": "solemn"
+        },
+        {
+          "id": "jgrr4b6lhu",
+          "characterId": "char_001",
+          "text": "（微笑，眼眶微热）雨萱说新闻要抢时效……可有些真相，等了七十二年，才刚刚开始呼吸。",
+          "emotion": "resolute"
+        }
+      ]
+    },
+    {
+      "id": "node_SCENE_05",
+      "type": "scene",
+      "isEnding": true,
+      "position": {
+        "x": 400,
+        "y": 1100
+      },
+      "title": "夹墙与指纹",
+      "sceneName": "图书馆B-7区坍塌夹墙",
+      "narration": "暴雨如注，敲打着图书馆斑驳的玻璃穹顶。B-7区东侧墙体在电磁脉冲余波与雨水长期渗透下轰然内陷，露出一道幽暗窄缝——像大地突然裂开的一道沉默唇线。潮湿的霉味混着铁锈气息扑面而来。晓晨攥着手电，光束颤抖着刺入黑暗，照亮了墙缝尽头那只蒙尘的青铜小盒。",
+      "dialogues": [
+        {
+          "id": "4p2x3blvcy",
+          "characterId": "char_001",
+          "text": "……这盒子……没锁？",
+          "emotion": "bewildered"
+        },
+        {
+          "id": "s9yw9ro7l1",
+          "characterId": "char_001",
+          "text": "（轻声）借书卡？可上面……什么字都没有……",
+          "emotion": "dawning_horror"
+        },
+        {
+          "id": "hvf70yigpq",
+          "characterId": "char_001",
+          "text": "等等……这指纹……是我今早按在修远桌上的那枚！",
+          "emotion": "shocked"
+        },
+        {
+          "id": "0cinu7yl7o",
+          "characterId": "char_001",
+          "text": "‘2025.12.6，静音终了。’……今天……就是今天？",
+          "emotion": "numb"
         }
       ]
     }
