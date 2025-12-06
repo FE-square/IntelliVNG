@@ -1,22 +1,37 @@
-# syntax=docker/dockerfile:1.6
-
 ################################################################################
 # 基础镜像：提供 Node.js + corepack（pnpm）
+# 使用最小化的 Alpine 镜像
+# 
+# 如果遇到 Docker Hub 速率限制（429 Too Many Requests），
+# 可以通过构建参数指定镜像源，例如：
+# docker build --build-arg BASE_IMAGE=registry.cn-hangzhou.aliyuncs.com/library/node:20-alpine .
+# 
+# 或者在构建环境配置 Docker 镜像加速器（推荐）：
+# 编辑 /etc/docker/daemon.json，添加：
+# {
+#   "registry-mirrors": [
+#     "https://your-id.mirror.aliyuncs.com",
+#     "https://mirror.ccs.tencentyun.com"
+#   ]
+# }
 ################################################################################
-FROM node:20-bookworm-slim AS base
+ARG BASE_IMAGE=node:20-alpine
+FROM ${BASE_IMAGE} AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
 WORKDIR /app
-RUN corepack enable
+# 启用 corepack 并准备指定版本的 pnpm
+RUN corepack enable && \
+    corepack prepare pnpm@10.24.0 --activate
 
 ################################################################################
 # 依赖安装阶段：仅复制 package 元数据提升缓存命中率
 ################################################################################
 FROM base AS deps
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
 COPY apps/intelli-services/package.json apps/intelli-services/
 COPY apps/web/package.json apps/web/
 COPY packages/core/package.json packages/core/
@@ -39,7 +54,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PUBLIC_INTELLI_SERVICES_URL=${PUBLIC_SERVICES_PATH}
 
 RUN pnpm run build
-RUN pnpm prune --prod && rm -rf apps/web/.next/cache
+RUN rm -rf apps/web/.next/cache
 
 ################################################################################
 # 运行阶段：包含 Node.js、pnpm、Nginx 与构建产物
@@ -58,12 +73,11 @@ ENV HOSTNAME=0.0.0.0
 ENV INTELLI_SERVICES_URL=http://127.0.0.1:4000
 ENV NEXT_PUBLIC_INTELLI_SERVICES_URL=${PUBLIC_SERVICES_PATH}
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends nginx && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -f /etc/nginx/sites-enabled/default
+# We install nginx, but we will ignore ALL its default configurations.
+RUN apk add --no-cache bash nginx
 
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+# We copy our OWN, COMPLETE nginx.conf file, overwriting the default main configuration file.
+COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
