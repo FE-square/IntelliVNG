@@ -549,7 +549,14 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             <div className="grid grid-cols-3 gap-2">
                                 {editingCharacter?.sprites?.map((sprite, index) => (
                                     <div key={sprite.id} className="relative group">
-                                        <img src={sprite.imageUrl} alt={`立绘${index + 1}`} className="w-full h-32 object-cover rounded border" />
+                                        <div className="w-full aspect-[3/4] bg-slate-50 rounded border overflow-hidden">
+                                            <img 
+                                                src={sprite.imageUrl} 
+                                                alt={`立绘${index + 1}`} 
+                                                className="w-full h-full object-contain"
+                                                style={{ mixBlendMode: 'multiply' }}
+                                            />
+                                        </div>
                                         <button
                                             onClick={() => {
                                                 setEditingCharacter({
