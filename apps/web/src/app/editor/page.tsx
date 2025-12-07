@@ -125,6 +125,9 @@ function EditorPageContent() {
     const [showCharactersDropdown, setShowCharactersDropdown] = useState(false);
     const [showScenesDropdown, setShowScenesDropdown] = useState(false);
     const [showNodesDropdown, setShowNodesDropdown] = useState(false);
+    const [selectedCharacter, setSelectedCharacter] = useState<any>(null); // 选中的角色（用于查看立绘）
+    const [selectedBackground, setSelectedBackground] = useState<any>(null); // 选中的场景（用于重新生成）
+    const [isGeneratingAsset, setIsGeneratingAsset] = useState(false); // 是否正在生成素材
     const [previewKey, setPreviewKey] = useState(0);  // ✅ 用于强制重新挂载GamePlayer
     const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);  // ✅ 最后保存时间
     const [isSaving, setIsSaving] = useState(false);  // ✅ 正在保存
@@ -217,6 +220,23 @@ function EditorPageContent() {
         }
     }, [showPreviewMenu]);
     
+    // ✅ 点击外部关闭下拉菜单
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest('.dropdown-container')) {
+                setShowCharactersDropdown(false);
+                setShowScenesDropdown(false);
+                setShowNodesDropdown(false);
+            }
+        };
+        
+        if (showCharactersDropdown || showScenesDropdown || showNodesDropdown) {
+            document.addEventListener('click', handleClickOutside);
+            return () => document.removeEventListener('click', handleClickOutside);
+        }
+    }, [showCharactersDropdown, showScenesDropdown, showNodesDropdown]);
+    
     // 自动保存草稿 - 每30秒保存到本地
     useEffect(() => {
         if (!project || !projectId) return;
@@ -277,7 +297,7 @@ function EditorPageContent() {
         prompt: string, 
         refImageUrl?: string,
         explicitType?: 'sprite' | 'avatar' | 'background'
-    ): Promise<string> => {
+    ): Promise<{ imageUrl: string; maskUrl?: string }> => {
         try {
             // ✅ 优先使用显式传入的 type，否则根据 characterId 和 prompt 推断
             let type: 'sprite' | 'avatar' | 'background' = explicitType || 'sprite';
@@ -324,11 +344,138 @@ function EditorPageContent() {
             }
             
             toast.success('生成成功', `${type === 'sprite' ? '角色立绘' : type === 'avatar' ? '角色头像' : '场景背景'}已生成 ✨`);
-            return data.imageUrl;
+            return {
+                imageUrl: data.imageUrl,
+                maskUrl: data.maskUrl,  // ✅ 返回 maskUrl（如果有）
+            };
         } catch (error) {
             console.error('[Editor] 图片生成失败:', error);
             toast.error('生成失败', error instanceof Error ? error.message : '请重试');
             throw error;
+        }
+    };
+    
+    // 重新生成角色立绘
+    const handleRegenerateSprite = async (character: any) => {
+        if (isGeneratingAsset || !project) return;
+        
+        setIsGeneratingAsset(true);
+        try {
+            const prompt = `${character.displayName || character.name}, ${character.description}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量`;
+            // ✅ 不使用参考图,让后端走抠图流程 generateSpriteWithTransparency
+            const result = await handleGenerateImage(character.id, prompt, undefined, 'sprite');
+            
+            // 更新项目数据
+            const updatedCharacters = project.characters?.map(c => {
+                if (c.id === character.id) {
+                    const newSprite = {
+                        id: `sprite-${Date.now()}`,
+                        emotion: 'neutral' as const,
+                        imageUrl: result.imageUrl,
+                        maskUrl: result.maskUrl,  // ✅ 保存 maskUrl
+                    };
+                    return {
+                        ...c,
+                        sprites: [newSprite, ...(c.sprites || [])],
+                        defaultSpriteId: newSprite.id,
+                    };
+                }
+                return c;
+            });
+            
+            setProject({ ...project, characters: updatedCharacters } as GameProject);
+            setSelectedCharacter({ ...character, sprites: updatedCharacters?.find(c => c.id === character.id)?.sprites });
+            toast.success('立绘重新生成', '已替换为最新的立绘');
+        } catch (error) {
+            console.error('[Editor] 立绘重新生成失败:', error);
+        } finally {
+            setIsGeneratingAsset(false);
+        }
+    };
+    
+    // 重新生成角色头像
+    const handleRegenerateAvatar = async (character: any) => {
+        if (isGeneratingAsset || !project) return;
+        
+        setIsGeneratingAsset(true);
+        try {
+            const prompt = `${character.displayName || character.name}, ${character.description}, 头像特写, 圆形头像, 动漫风格, 纯白色背景, 简洁, 高质量`;
+            // 如果有立绘，使用立绘作为参考图
+            const refImageUrl = character.sprites?.[0]?.imageUrl;
+            const result = await handleGenerateImage(character.id, prompt, refImageUrl, 'avatar');
+            
+            // 更新项目数据
+            const updatedCharacters = project.characters?.map(c => {
+                if (c.id === character.id) {
+                    return { ...c, avatarUrl: result.imageUrl };
+                }
+                return c;
+            });
+            
+            setProject({ ...project, characters: updatedCharacters } as GameProject);
+            setSelectedCharacter({ ...character, avatarUrl: result.imageUrl });
+            toast.success('头像重新生成', '已替换为最新的头像');
+        } catch (error) {
+            console.error('[Editor] 头像重新生成失败:', error);
+        } finally {
+            setIsGeneratingAsset(false);
+        }
+    };
+    
+    // 重新生成场景背景
+    const handleRegenerateBackground = async (background: any) => {
+        if (isGeneratingAsset || !project) return;
+        
+        setIsGeneratingAsset(true);
+        try {
+            const prompt = `${background.name}, ${background.description || ''}, 场景背景, 动漫风格, 高质量, 细节丰富`;
+            const result = await handleGenerateImage(background.id, prompt, undefined, 'background');
+            
+            // 更新项目数据
+            const updatedBackgrounds = project.backgrounds?.map(bg => {
+                if (bg.id === background.id) {
+                    return { ...bg, imageUrl: result.imageUrl };
+                }
+                return bg;
+            });
+            
+            setProject({ ...project, backgrounds: updatedBackgrounds } as GameProject);
+            setSelectedBackground({ ...background, imageUrl: result.imageUrl });
+            toast.success('背景重新生成', '已替换为最新的背景');
+        } catch (error) {
+            console.error('[Editor] 背景重新生成失败:', error);
+        } finally {
+            setIsGeneratingAsset(false);
+        }
+    };
+    
+    // 删除角色立绘
+    const handleDeleteSprite = async (character: any, spriteId: string) => {
+        if (!project) return;
+        
+        try {
+            // 更新项目数据
+            const updatedCharacters = project.characters?.map(c => {
+                if (c.id === character.id) {
+                    const remainingSprites = (c.sprites || []).filter(s => s.id !== spriteId);
+                    return {
+                        ...c,
+                        sprites: remainingSprites,
+                        // 如果删除的是默认立绘，更新默认立绘ID
+                        defaultSpriteId: c.defaultSpriteId === spriteId 
+                            ? (remainingSprites[0]?.id || undefined)
+                            : c.defaultSpriteId,
+                    };
+                }
+                return c;
+            });
+            
+            setProject({ ...project, characters: updatedCharacters } as GameProject);
+            setSelectedCharacter({ ...character, sprites: updatedCharacters?.find(c => c.id === character.id)?.sprites });
+            toast.success('删除成功', '立绘已删除');
+        } catch (error) {
+            console.error('[Editor] 立绘删除失败:', error);
+            toast.error('删除失败', '请重试');
         }
     };
     
@@ -341,6 +488,17 @@ function EditorPageContent() {
         if (diff < 60) return `${diff}秒前`;
         if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
         return lastSaveTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    };
+    
+    // ✅ 为 FlowEditor 提供的包装函数（只返回 imageUrl）
+    const handleGenerateImageForEditor = async (
+        characterId: string,
+        prompt: string,
+        refImageUrl?: string,
+        type?: 'sprite' | 'avatar' | 'background'
+    ): Promise<string> => {
+        const result = await handleGenerateImage(characterId, prompt, refImageUrl, type);
+        return result.imageUrl;
     };
 
     if (loading) {
@@ -577,7 +735,7 @@ function EditorPageContent() {
             <div className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-6 text-sm">
                 <div className="flex gap-6">
                     {/* ✅ 角色下拉 */}
-                    <div className="relative">
+                    <div className="relative dropdown-container">
                         <span 
                             className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
                             title="查看角色列表"
@@ -596,16 +754,23 @@ function EditorPageContent() {
                             <div className="absolute top-full mt-1 left-0 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[280px] max-h-[400px] overflow-y-auto">
                                 {project.characters && project.characters.length > 0 ? (
                                     project.characters.map((char, idx) => (
-                                        <div key={idx} className="px-4 py-3 hover:bg-indigo-50 transition-colors border-b border-slate-100 last:border-0">
+                                        <div 
+                                            key={idx} 
+                                            className="px-4 py-3 hover:bg-indigo-50 transition-colors border-b border-slate-100 last:border-0 cursor-pointer"
+                                            onClick={() => {
+                                                setSelectedCharacter(char);
+                                                setShowCharactersDropdown(false);
+                                            }}
+                                        >
                                             <div className="flex items-center gap-3">
                                                 {char.avatarUrl ? (
-                                                    <img src={char.avatarUrl} alt={char.name} className="w-10 h-10 rounded-full object-cover" />
+                                                    <img src={char.avatarUrl} alt={char.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
                                                 ) : (
-                                                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold">
+                                                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold flex-shrink-0">
                                                         {char.name.charAt(0)}
                                                     </div>
                                                 )}
-                                                <div className="flex-1">
+                                                <div className="flex-1 min-w-0">
                                                     <div className="font-semibold text-slate-800">{char.name}</div>
                                                     <div className="text-xs text-slate-500 line-clamp-1">
                                                         {char.description || 
@@ -624,7 +789,7 @@ function EditorPageContent() {
                     </div>
                     
                     {/* ✅ 场景下拉 */}
-                    <div className="relative">
+                    <div className="relative dropdown-container">
                         <span 
                             className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
                             title="查看场景列表"
@@ -643,16 +808,27 @@ function EditorPageContent() {
                             <div className="absolute top-full mt-1 left-0 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[280px] max-h-[400px] overflow-y-auto">
                                 {project.backgrounds && project.backgrounds.length > 0 ? (
                                     project.backgrounds.map((bg, idx) => (
-                                        <div key={idx} className="px-4 py-3 hover:bg-purple-50 transition-colors border-b border-slate-100 last:border-0">
+                                        <div 
+                                            key={idx} 
+                                            className="px-4 py-3 hover:bg-purple-50 transition-colors border-b border-slate-100 last:border-0 cursor-pointer"
+                                            onClick={() => {
+                                                setSelectedBackground(bg);
+                                                setShowScenesDropdown(false);
+                                            }}
+                                        >
                                             <div className="flex items-center gap-3">
                                                 {bg.imageUrl ? (
-                                                    <img src={bg.imageUrl} alt={bg.name} className="w-16 h-10 rounded object-cover" />
+                                                    <img 
+                                                        src={bg.imageUrl} 
+                                                        alt={bg.name} 
+                                                        className="w-16 h-10 rounded object-cover flex-shrink-0" 
+                                                    />
                                                 ) : (
-                                                    <div className="w-16 h-10 rounded bg-purple-100 flex items-center justify-center text-purple-600 text-xs">
+                                                    <div className="w-16 h-10 rounded bg-purple-100 flex items-center justify-center text-purple-600 text-xs flex-shrink-0">
                                                         🏞️
                                                     </div>
                                                 )}
-                                                <div className="flex-1">
+                                                <div className="flex-1 min-w-0">
                                                     <div className="font-semibold text-slate-800">{bg.name}</div>
                                                     <div className="text-xs text-slate-500 line-clamp-1">{bg.description || '暂无描述'}</div>
                                                 </div>
@@ -667,7 +843,7 @@ function EditorPageContent() {
                     </div>
                     
                     {/* ✅ 故事情节下拉 */}
-                    <div className="relative">
+                    <div className="relative dropdown-container">
                         <span 
                             className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
                             title="查看故事情节列表"
@@ -775,7 +951,7 @@ function EditorPageContent() {
                                 // ✅ 不再在这里自动保存,由定时器处理
                             }}
                             onSelectNode={setSelectedNodeId}  // ✅ 传递选中节点回调
-                            onGenerateImage={handleGenerateImage}  // ✅ 传递AI生成立绘回调
+                            onGenerateImage={handleGenerateImageForEditor}  // ✅ 传递AI生成立绘回调
                         />
                     </ReactFlowProvider>
                 ) : (
@@ -913,6 +1089,157 @@ function EditorPageContent() {
                         <p className="text-xs text-slate-500">
                             正在将所有图片转换为 Base64 并内嵌到 HTML 中...
                         </p>
+                    </div>
+                </div>
+            )}
+            
+            {/* ✅ 角色立绘查看弹窗 */}
+            {selectedCharacter && (
+                <div 
+                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    onClick={() => setSelectedCharacter(null)}
+                >
+                    <div 
+                        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 border border-slate-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between mb-6 gap-4">
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                                {selectedCharacter.avatarUrl && (
+                                    <img src={selectedCharacter.avatarUrl} alt={selectedCharacter.name} className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-2xl font-bold text-slate-800">{selectedCharacter.name}</h3>
+                                    <p className="text-sm text-slate-500">
+                                        {selectedCharacter.description || 
+                                         (typeof selectedCharacter.personality === 'string' ? selectedCharacter.personality : 
+                                          selectedCharacter.personality?.traits?.join('、') || '暂无描述')}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                {/* ✅ 重新生成按钮 */}
+                                <button
+                                    onClick={() => handleRegenerateAvatar(selectedCharacter)}
+                                    disabled={isGeneratingAsset}
+                                    className="px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                >
+                                    📷 {isGeneratingAsset ? '生成中...' : '重生头像'}
+                                </button>
+                                <button
+                                    onClick={() => handleRegenerateSprite(selectedCharacter)}
+                                    disabled={isGeneratingAsset}
+                                    className="px-3 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                >
+                                    🖼️ {isGeneratingAsset ? '生成中...' : '重生立绘'}
+                                </button>
+                                <button
+                                    onClick={() => setSelectedCharacter(null)}
+                                    className="text-slate-400 hover:text-slate-600 transition-colors text-2xl leading-none"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {selectedCharacter.sprites && selectedCharacter.sprites.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
+                                {selectedCharacter.sprites.map((sprite: any, idx: number) => (
+                                    <div key={idx} className="group relative aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden">
+                                        <img 
+                                            src={sprite.imageUrl} 
+                                            alt={`${selectedCharacter.name} - ${sprite.emotion}`}
+                                            className="w-full h-full object-contain"
+                                            style={{ mixBlendMode: 'multiply' }}
+                                        />
+                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <span className="text-white text-xs">{sprite.emotion}</span>
+                                        </div>
+                                        {/* ✅ 删除按钮 */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteSprite(selectedCharacter, sprite.id);
+                                            }}
+                                            className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 flex items-center justify-center"
+                                            title="删除立绘"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                                <div className="text-6xl mb-4">🖼️</div>
+                                <p className="text-lg">该角色暂无立绘</p>
+                                <button
+                                    onClick={() => handleRegenerateSprite(selectedCharacter)}
+                                    disabled={isGeneratingAsset}
+                                    className="mt-4 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isGeneratingAsset ? '生成中...' : '生成立绘'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+            
+            {/* ✅ 场景背景查看弹窗 */}
+            {selectedBackground && (
+                <div 
+                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    onClick={() => setSelectedBackground(null)}
+                >
+                    <div 
+                        className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full p-6 border border-slate-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between mb-6 gap-4">
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-2xl font-bold text-slate-800">{selectedBackground.name}</h3>
+                                <p className="text-sm text-slate-500">{selectedBackground.description || '暂无描述'}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                {/* ✅ 重新生成背景按钮 */}
+                                <button
+                                    onClick={() => handleRegenerateBackground(selectedBackground)}
+                                    disabled={isGeneratingAsset}
+                                    className="px-3 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                >
+                                    🌄 {isGeneratingAsset ? '生成中...' : '重生背景'}
+                                </button>
+                                <button
+                                    onClick={() => setSelectedBackground(null)}
+                                    className="text-slate-400 hover:text-slate-600 transition-colors text-2xl leading-none"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {selectedBackground.imageUrl ? (
+                            <div className="bg-slate-100 rounded-lg overflow-hidden max-h-[70vh]">
+                                <img 
+                                    src={selectedBackground.imageUrl} 
+                                    alt={selectedBackground.name}
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-slate-100 rounded-lg">
+                                <div className="text-6xl mb-4">🏞️</div>
+                                <p className="text-lg">该场景暂无背景图</p>
+                                <button
+                                    onClick={() => handleRegenerateBackground(selectedBackground)}
+                                    disabled={isGeneratingAsset}
+                                    className="mt-4 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isGeneratingAsset ? '生成中...' : '生成背景'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

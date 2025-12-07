@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             imageUrl: data.imageUrl,
+            maskUrl: data.maskUrl,  // ✅ 添加 maskUrl 字段
             prompt: data.prompt,
             type: data.type,
             taskId: data.taskId,

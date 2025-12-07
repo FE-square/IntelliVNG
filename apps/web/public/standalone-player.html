@@ -117,43 +117,53 @@
             bottom: 0;
             max-height: 90%;
             transition: all 0.3s ease;
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.3));
             /* ✅ 初始状态：不可见 + 左侧偏移 */
             opacity: 0;
             transform: translateX(-100px);
-            /* ✅ 去除白色背景 */
-            mix-blend-mode: darken;
+            /* ✅ 去除白色背景 - 在所有状态下都应用 */
+            mix-blend-mode: multiply;
+            /* ✅ 确保加载期间也保持透明 */
+            background-color: transparent;
         }
         
         /* ✅ 动画效果：渐入 + 从左侧滑入 */
         .character-sprite.show {
             animation: characterFadeIn 0.5s ease-out forwards;
+            /* ✅ 确保动画期间也保持混合模式 */
+            mix-blend-mode: multiply;
         }
         
         @keyframes characterFadeIn {
             from {
                 opacity: 0;
-                transform: translateX(-100px);
+                transform: translateX(-50%) translateX(-100px);
+                /* ✅ 动画开始帧也应用混合模式 */
+                mix-blend-mode: multiply;
             }
             to {
                 opacity: 1;
-                transform: translateX(0);
+                transform: translateX(-50%) translateX(0);
+                /* ✅ 动画结束帧也应用混合模式 */
+                mix-blend-mode: multiply;
             }
         }
         
         /* ✅ 退出动画 */
         .character-sprite.hide {
             animation: characterFadeOut 0.5s ease-in forwards;
+            mix-blend-mode: multiply;
         }
         
         @keyframes characterFadeOut {
             from {
                 opacity: 1;
-                transform: translateX(0);
+                transform: translateX(-50%) translateX(0);
+                mix-blend-mode: multiply;
             }
             to {
                 opacity: 0;
-                transform: translateX(-100px);
+                transform: translateX(-50%) translateX(-100px);
+                mix-blend-mode: multiply;
             }
         }
 
@@ -527,10 +537,9 @@ null
         }
 
         updateCharacters(node) {
-            // ✅ 不再自动显示所有角色，只是清空舞台准备
-            console.log('[updateCharacters] 准备场景，等待角色出场');
-            // 清空当前舞台
-            this.clearCharacters();
+            // ✅ 不再自动清空立绘，由 renderDialogue 按需管理
+            console.log('[updateCharacters] 准备场景，立绘将由对话控制');
+            // 不再执行 clearCharacters()
         }
         
         // ✅ 清空舞台上的所有角色（带退出动画）
@@ -605,16 +614,13 @@ null
             
             // 居中显示
             img.style.left = '50%';
+            img.style.transform = 'translateX(-50%) translateX(-100px)'; // 初始位置
             
             this.layers.characters.appendChild(img);
             
             // ✅ 延迟触发入场动画
             requestAnimationFrame(() => {
                 img.classList.add('show');
-                img.addEventListener('animationend', () => {
-                    img.style.transform = `translateX(-50%)`;
-                    img.style.opacity = '1';
-                }, { once: true });
             });
         }
 
@@ -653,10 +659,8 @@ null
             // ✅ 如果不是旁白，显示角色立绘
             if (dialogue.characterId && dialogue.characterId !== 'narrator') {
                 this.showCharacterSprite(dialogue.characterId);
-            } else {
-                // 旁白时清空所有立绘
-                this.clearCharacters();
             }
+            // ✅ 旁白时不清空立绘，保持当前舞台状态
 
             // 显示 UI
             this.layers.ui.classList.remove('hidden');

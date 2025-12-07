@@ -11,7 +11,18 @@ interface StoryNodeData {
 }
 
 export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
-    const { storyNode } = data;
+    const { storyNode, characters } = data;
+    
+    // ✅ 获取出场角色列表（去重）
+    const appearingCharacters = Array.from(
+        new Set(
+            storyNode.dialogues
+                .map(d => d.characterId)
+                .filter(id => id && id !== 'narrator') // 过滤旁白
+        )
+    ).map(characterId => 
+        characters.find(c => c.id === characterId)
+    ).filter(Boolean) as Character[];
     
     // 获取节点颜色
     const getNodeColor = () => {
@@ -85,6 +96,38 @@ export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
                     </div>
                 )}
                 </div>
+                
+                {/* ✅ 出场人物头像 */}
+                {appearingCharacters.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="text-xs text-gray-500 mb-2">出场人物:</div>
+                        <div className="flex flex-wrap gap-2">
+                            {appearingCharacters.map((char) => (
+                                <div key={char.id} className="group relative">
+                                    {char.avatarUrl ? (
+                                        <img
+                                            src={char.avatarUrl}
+                                            alt={char.displayName}
+                                            className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm hover:scale-110 transition-transform"
+                                            title={char.displayName}
+                                        />
+                                    ) : (
+                                        <div 
+                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-400 to-purple-400 text-white font-bold text-xs border-2 border-white shadow-sm hover:scale-110 transition-transform"
+                                            title={char.displayName}
+                                        >
+                                            {char.displayName.charAt(0)}
+                                        </div>
+                                    )}
+                                    {/* ✅ 悬停显示角色名 */}
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                        {char.displayName}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
             
             <Handle type="source" position={Position.Bottom} className="w-3 h-3" />

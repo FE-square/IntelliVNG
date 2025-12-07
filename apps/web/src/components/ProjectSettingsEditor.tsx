@@ -523,9 +523,8 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                             }
                                             try {
                                                 const prompt = `${editingCharacter.displayName}, ${editingCharacter.description}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量`;
-                                                // 立绘生成不需要参考图（或使用已有立绘保持一致性），显式指定 type='sprite' 触发抠图
-                                                const existingSprite = editingCharacter.sprites?.[0]?.imageUrl;
-                                                const imageUrl = await onGenerateImage(editingCharacter.id, prompt, existingSprite, 'sprite');
+                                                // ✅ 立绘生成不使用参考图，让后端走抠图流程 generateSpriteWithTransparency
+                                                const imageUrl = await onGenerateImage(editingCharacter.id, prompt, undefined, 'sprite');
                                                 const newSprite = {
                                                     id: createId(),
                                                     emotion: 'neutral' as const,
