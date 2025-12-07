@@ -3,8 +3,64 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, CardContent, CardHeader, CardTitle, useToast } from '@vng/ui';
-import { Wand2, Loader2, Image, Users, MapPin, ArrowRight, SkipForward, CheckCircle2 } from 'lucide-react';
+import { Wand2, Loader2, Image as ImageIcon, Users, MapPin, ArrowRight, SkipForward, CheckCircle2, Sparkles, Database } from 'lucide-react';
 import { GameProject } from '@vng/core';
+
+// Mock 数据 - 用于无数据时的展示调试
+const MOCK_PROJECT_DATA: Partial<GameProject> = {
+    id: 'mock-project-1',
+    title: '星渊·机械纪元',
+    description: '一个关于人工智能觉醒与人类共存的赛博朋克故事',
+    characters: [
+        {
+            id: 'mock-char-1',
+            displayName: '星野·亚特拉斯',
+            description: '反抗军领袖，拥有机械左臂的神秘少女',
+            name: 'Hoshino Atlas',
+            sprites: [], // 待生成
+            defaultSpriteId: '',
+            avatarUrl: '', // 待生成
+        },
+        {
+            id: 'mock-char-2',
+            displayName: 'K-99',
+            description: '拥有自我意识的战斗型机器人',
+            name: 'K-99',
+            sprites: [],
+            defaultSpriteId: '',
+            avatarUrl: '',
+        },
+        {
+            id: 'mock-char-3',
+            displayName: '月咏·希尔',
+            description: '神秘的财团大小姐，掌握核心科技',
+            name: 'Tsukuyomi',
+            sprites: [],
+            defaultSpriteId: '',
+            avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Luna', // 已有部分
+        }
+    ],
+    backgrounds: [
+        {
+            id: 'mock-bg-1',
+            name: '新都中央广场',
+            description: '繁华的赛博都市中心，全息广告牌林立',
+            imageUrl: '', // 待生成
+        },
+        {
+            id: 'mock-bg-2',
+            name: '旧城区废墟',
+            description: '被遗弃的旧时代遗迹，杂草丛生',
+            imageUrl: '',
+        },
+        {
+            id: 'mock-bg-3',
+            name: '量子研究所',
+            description: '充满科技感的实验室，蓝光环绕',
+            imageUrl: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809', // 已有
+        }
+    ]
+};
 
 /**
  * 视觉素材生成页面
@@ -32,19 +88,23 @@ function GenerateAssetsPageContent() {
         type: 'avatar' | 'sprite' | 'background';
         status: 'pending' | 'generating' | 'success' | 'error';
         imageUrl?: string;
-        retryCount?: number; // ✅ 新增：重试次数
-        error?: string; // ✅ 新增：错误信息
+        retryCount?: number;
+        error?: string;
     }>>([]);
+    const [isMockMode, setIsMockMode] = useState(false);
 
     // 加载项目
     useEffect(() => {
-        if (!projectId) {
-            toast.error('缺少项目ID');
-            router.push('/');
-            return;
-        }
-
         const loadProject = async () => {
+            if (!projectId) {
+                // 进入 Mock 模式
+                setIsMockMode(true);
+                setProject(MOCK_PROJECT_DATA as GameProject);
+                setLoading(false);
+                toast.info('预览模式', '当前为 Mock 数据演示');
+                return;
+            }
+
             try {
                 const response = await fetch(`/api/projects/${projectId}`);
                 if (!response.ok) {
@@ -54,7 +114,10 @@ function GenerateAssetsPageContent() {
                 setProject(data);
             } catch (error) {
                 console.error('加载项目失败:', error);
-                toast.error('加载项目失败', '请重试');
+                // 加载失败也进入 Mock 模式方便调试
+                setIsMockMode(true);
+                setProject(MOCK_PROJECT_DATA as GameProject);
+                toast.error('加载失败', '已切换至预览模式');
             } finally {
                 setLoading(false);
             }
@@ -79,21 +142,12 @@ function GenerateAssetsPageContent() {
 
     // 一键生成所有视觉素材（批量并行，限制并发数）
     const handleGenerateAll = async () => {
-        if (!project || !projectId) return;
+        if (!project) return;
 
         setIsGenerating(true);
         setGenerationProgress({ current: 0, total: totalAssets, message: '开始批量生成...', type: '' });
 
         try {
-            // ============================================================
-            // 准备生成任务列表（按类型分组，保证执行顺序：立绘 → 头像 → 背景）
-            // ============================================================
-            // 原因：
-            // 1. 立绘优先：生成完整角色形象
-            // 2. 头像次之：可以基于立绘保持形象一致性（虽然当前未启用ref_img）
-            // 3. 背景最后：独立的场景图，不依赖其他素材
-            // ============================================================
-            
             type TaskItem = {
                 id: string;
                 name: string;
@@ -108,7 +162,6 @@ function GenerateAssetsPageContent() {
             const avatarTasks: TaskItem[] = [];
             const backgroundTasks: TaskItem[] = [];
 
-            // 1. 收集角色立绘任务（优先级最高）
             project.characters.forEach(character => {
                 if (!character.sprites || character.sprites.length === 0) {
                     spriteTasks.push({
@@ -121,7 +174,6 @@ function GenerateAssetsPageContent() {
                 }
             });
 
-            // 2. 收集角色头像任务（次优先级）
             project.characters.forEach(character => {
                 if (!character.avatarUrl) {
                     avatarTasks.push({
@@ -134,7 +186,6 @@ function GenerateAssetsPageContent() {
                 }
             });
 
-            // 3. 收集场景背景任务（最后）
             project.backgrounds.forEach(background => {
                 if (!background.imageUrl) {
                     backgroundTasks.push({
@@ -147,10 +198,8 @@ function GenerateAssetsPageContent() {
                 }
             });
 
-            // 合并任务列表（保持顺序：立绘 → 头像 → 背景）
             const tasks = [...spriteTasks, ...avatarTasks, ...backgroundTasks];
 
-            // 初始化生成列表（UI展示用）
             setGeneratingItems(tasks.map(task => ({
                 id: task.id,
                 name: task.name,
@@ -160,33 +209,38 @@ function GenerateAssetsPageContent() {
 
             let completedCount = 0;
 
-            // 批量处理函数（限制并发数，同类型内部并行）
-            const CONCURRENT_LIMIT = 2; // 每次最多2个并发请求
-            const processBatchByType = async (batchTasks: TaskItem[], typeName: string) => {
-                if (batchTasks.length === 0) return;
+            // Mock 模式生成逻辑
+            const mockGenerate = async (task: TaskItem) => {
+                setGeneratingItems(prev => prev.map(item => 
+                    item.id === task.id ? { ...item, status: 'generating' } : item
+                ));
                 
-                console.log(`[GenerateAssets] 开始生成 ${typeName}，共 ${batchTasks.length} 个`);
+                await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
                 
-                for (let i = 0; i < batchTasks.length; i += CONCURRENT_LIMIT) {
-                    const batch = batchTasks.slice(i, i + CONCURRENT_LIMIT);
-                    const batchPromises = batch.map(task => generateSingleAsset(task));
-                    await Promise.all(batchPromises);
-                    
-                    // 每批次间隔等待一下，避免请求过快
-                    if (i + CONCURRENT_LIMIT < batchTasks.length) {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
-                }
+                const mockUrl = task.type === 'avatar' 
+                    ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${task.id}`
+                    : task.type === 'sprite'
+                    ? `https://placehold.co/400x600/6366f1/ffffff/png?text=${task.name}`
+                    : `https://placehold.co/800x450/e0e7ff/4f46e5/png?text=${task.name}`;
+
+                setGeneratingItems(prev => prev.map(item => 
+                    item.id === task.id ? { ...item, status: 'success', imageUrl: mockUrl } : item
+                ));
                 
-                console.log(`[GenerateAssets] ${typeName} 生成完成`);
+                completedCount++;
+                setGenerationProgress({
+                    current: completedCount,
+                    total: tasks.length,
+                    message: `已完成 ${completedCount}/${tasks.length}`,
+                    type: task.type
+                });
             };
 
-            // 生成单个素材的函数（带重试机制）
-            const MAX_RETRIES = 3; // 最多重试3次
-            const RETRY_DELAY = 2000; // 重试延迟2秒
+            // 真实生成逻辑
+            const MAX_RETRIES = 3;
+            const RETRY_DELAY = 2000;
             
-            const generateSingleAsset = async (task: typeof tasks[0], retryCount = 0): Promise<void> => {
-                // 更新为生成中
+            const realGenerate = async (task: TaskItem, retryCount = 0): Promise<void> => {
                 setGeneratingItems(prev => prev.map(item => 
                     item.id === task.id ? { ...item, status: 'generating', retryCount } : item
                 ));
@@ -204,39 +258,24 @@ function GenerateAssetsPageContent() {
                     }
 
                     const result = await response.json();
-                    
-                    if (!result.imageUrl) {
-                        throw new Error('未返回图片URL');
-                    }
+                    if (!result.imageUrl) throw new Error('未返回图片URL');
                     
                     // 更新项目数据
                     if (task.type === 'avatar' && task.characterId) {
                         const char = project.characters.find(c => c.id === task.characterId);
-                        if (char) {
-                            char.avatarUrl = result.imageUrl;
-                            console.log(`[GenerateAssets] 已生成头像: ${char.displayName} -> ${result.imageUrl}`);
-                        }
+                        if (char) char.avatarUrl = result.imageUrl;
                     } else if (task.type === 'sprite' && task.characterId) {
                         const char = project.characters.find(c => c.id === task.characterId);
                         if (char) {
                             const spriteId = `sprite-${task.characterId}-${Date.now()}`;
-                            char.sprites = [{
-                                id: spriteId,
-                                emotion: 'neutral',
-                                imageUrl: result.imageUrl,
-                            }];
+                            char.sprites = [{ id: spriteId, emotion: 'neutral', imageUrl: result.imageUrl }];
                             char.defaultSpriteId = spriteId;
-                            console.log(`[GenerateAssets] 已生成立绘: ${char.displayName} -> ${result.imageUrl}`);
                         }
                     } else if (task.type === 'background' && task.backgroundId) {
                         const bg = project.backgrounds.find(b => b.id === task.backgroundId);
-                        if (bg) {
-                            bg.imageUrl = result.imageUrl;
-                            console.log(`[GenerateAssets] 已生成背景: ${bg.name} -> ${result.imageUrl}`);
-                        }
+                        if (bg) bg.imageUrl = result.imageUrl;
                     }
 
-                    // 更新为成功
                     setGeneratingItems(prev => prev.map(item => 
                         item.id === task.id ? { ...item, status: 'success', imageUrl: result.imageUrl, error: undefined } : item
                     ));
@@ -248,54 +287,21 @@ function GenerateAssetsPageContent() {
                         message: `已完成 ${completedCount}/${tasks.length}`,
                         type: task.type
                     });
+
                 } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : '未知错误';
                     console.error(`[GenerateAssets] 生成 ${task.name} 失败 (尝试 ${retryCount + 1}/${MAX_RETRIES + 1}):`, errorMessage);
                     
-                    // ✅ 重试逻辑：如果失败且未达到最大重试次数，则重试
                     if (retryCount < MAX_RETRIES) {
-                        console.log(`[GenerateAssets] ${task.name} 将在 ${RETRY_DELAY}ms 后重试...`);
                         setGeneratingItems(prev => prev.map(item => 
                             item.id === task.id ? { ...item, status: 'generating', retryCount: retryCount + 1, error: `重试中... (${retryCount + 1}/${MAX_RETRIES})` } : item
                         ));
-                        
-                        // 延迟后重试
                         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-                        return generateSingleAsset(task, retryCount + 1);
+                        return realGenerate(task, retryCount + 1);
                     }
                     
-                    // ✅ 兜底逻辑：达到最大重试次数后，使用占位图片
-                    console.warn(`[GenerateAssets] ${task.name} 重试失败，使用兜底图片`);
+                    // 兜底图片
                     const fallbackImageUrl = getFallbackImage(task.type);
-                    
-                    // 使用兜底图片更新项目数据
-                    if (task.type === 'avatar' && task.characterId) {
-                        const char = project.characters.find(c => c.id === task.characterId);
-                        if (char) {
-                            char.avatarUrl = fallbackImageUrl;
-                            console.log(`[GenerateAssets] 使用兜底头像: ${char.displayName}`);
-                        }
-                    } else if (task.type === 'sprite' && task.characterId) {
-                        const char = project.characters.find(c => c.id === task.characterId);
-                        if (char) {
-                            const spriteId = `sprite-${task.characterId}-fallback`;
-                            char.sprites = [{
-                                id: spriteId,
-                                emotion: 'neutral',
-                                imageUrl: fallbackImageUrl,
-                            }];
-                            char.defaultSpriteId = spriteId;
-                            console.log(`[GenerateAssets] 使用兜底立绘: ${char.displayName}`);
-                        }
-                    } else if (task.type === 'background' && task.backgroundId) {
-                        const bg = project.backgrounds.find(b => b.id === task.backgroundId);
-                        if (bg) {
-                            bg.imageUrl = fallbackImageUrl;
-                            console.log(`[GenerateAssets] 使用兜底背景: ${bg.name}`);
-                        }
-                    }
-                    
-                    // 标记为错误但继续流程
                     setGeneratingItems(prev => prev.map(item => 
                         item.id === task.id ? { 
                             ...item, 
@@ -313,96 +319,55 @@ function GenerateAssetsPageContent() {
                         message: `已完成 ${completedCount}/${tasks.length} (含兜底)`,
                         type: task.type
                     });
-                    
-                    toast.warning(`${task.name} 使用占位图`, `生成失败已重试${MAX_RETRIES}次，可在编辑器中手动生成`);
                 }
             };
             
-            // ✅ 兜底图片函数
             const getFallbackImage = (type: 'avatar' | 'sprite' | 'background'): string => {
                 switch (type) {
-                    case 'avatar':
-                        return 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + Math.random();
-                    case 'sprite':
-                        return 'https://placehold.co/512x768/e0e7ff/4f46e5?text=角色立绘占位图';
-                    case 'background':
-                        return 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1280&h=720&fit=crop';
-                    default:
-                        return 'https://placehold.co/600x400?text=占位图';
+                    case 'avatar': return 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + Math.random();
+                    case 'sprite': return 'https://placehold.co/512x768/e0e7ff/4f46e5?text=角色立绘占位图';
+                    case 'background': return 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1280&h=720&fit=crop';
+                    default: return 'https://placehold.co/600x400?text=占位图';
                 }
             };
 
-            // ============================================================
-            // 按顺序执行批量生成：立绘 → 头像 → 背景
-            // ============================================================
-            
-            // Step 1: 生成立绘（优先级最高）
-            setGenerationProgress({
-                current: completedCount,
-                total: tasks.length,
-                message: '🎨 正在生成角色立绘...',
-                type: 'sprite'
-            });
+            const generateFn = isMockMode ? mockGenerate : realGenerate;
+
+            // 批量处理
+            const processBatchByType = async (batchTasks: TaskItem[], typeName: string) => {
+                if (batchTasks.length === 0) return;
+                
+                // 设置当前正在生成的类型
+                setGenerationProgress(prev => ({ ...prev, type: batchTasks[0].type as any }));
+
+                const CONCURRENT_LIMIT = 2;
+                for (let i = 0; i < batchTasks.length; i += CONCURRENT_LIMIT) {
+                    const batch = batchTasks.slice(i, i + CONCURRENT_LIMIT);
+                    // @ts-ignore
+                    await Promise.all(batch.map(task => generateFn(task)));
+                    if (i + CONCURRENT_LIMIT < batchTasks.length) {
+                        await new Promise(resolve => setTimeout(resolve, isMockMode ? 500 : 1000));
+                    }
+                }
+            };
+
             await processBatchByType(spriteTasks, '角色立绘');
-            
-            // Step 2: 生成头像
-            if (avatarTasks.length > 0) {
-                setGenerationProgress({
-                    current: completedCount,
-                    total: tasks.length,
-                    message: '👤 正在生成角色头像...',
-                    type: 'avatar'
+            await processBatchByType(avatarTasks, '角色头像');
+            await processBatchByType(backgroundTasks, '场景背景');
+
+            // 保存项目
+            if (!isMockMode) {
+                setGenerationProgress(prev => ({ ...prev, message: '保存项目到后端...', type: '' }));
+                const saveResponse = await fetch(`/api/projects/${projectId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(project),
                 });
-                await processBatchByType(avatarTasks, '角色头像');
+
+                if (!saveResponse.ok) {
+                    throw new Error('保存项目失败');
+                }
             }
-            
-            // Step 3: 生成背景
-            if (backgroundTasks.length > 0) {
-                setGenerationProgress({
-                    current: completedCount,
-                    total: tasks.length,
-                    message: '🏞️ 正在生成场景背景...',
-                    type: 'background'
-                });
-                await processBatchByType(backgroundTasks, '场景背景');
-            }
-
-            // 保存更新后的项目
-            setGenerationProgress({
-                current: tasks.length,
-                total: tasks.length,
-                message: '保存项目到后端...',
-                type: ''
-            });
-
-            console.log('[GenerateAssets] 保存项目数据:', {
-                projectId,
-                characters: project.characters.map(c => ({ 
-                    id: c.id, 
-                    name: c.displayName, 
-                    avatarUrl: c.avatarUrl, 
-                    sprites: c.sprites?.length 
-                })),
-                backgrounds: project.backgrounds.map(b => ({ 
-                    id: b.id, 
-                    name: b.name, 
-                    imageUrl: b.imageUrl 
-                }))
-            });
-
-            const saveResponse = await fetch(`/api/projects/${projectId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(project),
-            });
-
-            if (!saveResponse.ok) {
-                const errorData = await saveResponse.json();
-                throw new Error(errorData.error || '保存项目失败');
-            }
-
-            const savedData = await saveResponse.json();
-            console.log('[GenerateAssets] 项目保存成功:', savedData);
 
             setCompleted(true);
             
@@ -410,11 +375,9 @@ function GenerateAssetsPageContent() {
             const errorCount = generatingItems.filter(i => i.status === 'error').length;
             
             if (errorCount === 0) {
-                toast.success('所有视觉素材生成完成！', '项目已保存，可以进入编辑器了');
-            } else if (successCount > 0) {
-                toast.warning(`部分素材生成失败`, `成功 ${successCount}/${tasks.length}，${errorCount} 个使用占位图，可在编辑器中手动生成`);
+                toast.success('所有视觉素材生成完成！', isMockMode ? 'Mock 数据演示完成' : '项目已保存');
             } else {
-                toast.error('所有素材生成失败', `已使用占位图，请在编辑器中手动生成`);
+                toast.warning(`部分素材生成失败`, `成功 ${successCount} 个，${errorCount} 个使用占位图`);
             }
 
         } catch (error) {
@@ -425,76 +388,93 @@ function GenerateAssetsPageContent() {
         }
     };
 
-    // 跳过，直接进入编辑器
     const handleSkip = () => {
+        if (isMockMode) {
+            toast.info('跳转到编辑器 (Mock)');
+            return;
+        }
         router.push(`/editor?projectId=${projectId}`);
     };
 
-    // 进入编辑器
     const handleGoToEditor = () => {
+        if (isMockMode) {
+            toast.info('跳转到编辑器 (Mock)');
+            return;
+        }
         router.push(`/editor?projectId=${projectId}`);
     };
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
                 <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
             </div>
         );
     }
 
-    if (!project) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-                <Card className="max-w-md">
-                    <CardContent className="p-6 text-center">
-                        <p className="text-red-600">项目加载失败</p>
-                        <Button onClick={() => router.push('/')} className="mt-4">返回首页</Button>
-                    </CardContent>
-                </Card>
-            </div>
-        );
-    }
+    if (!project) return null;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-            <div className="max-w-4xl mx-auto">
-                <Card className="shadow-xl">
-                    <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
-                        <CardTitle className="text-2xl flex items-center gap-2">
-                            <Wand2 className="w-6 h-6" />
-                            视觉素材生成
-                        </CardTitle>
-                        <p className="text-indigo-100 mt-2">
-                            剧本已生成完成！现在可以为 <strong>{project.title}</strong> 生成视觉素材
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 p-8">
+            <div className="max-w-5xl mx-auto">
+                <Card className="shadow-2xl border-2 border-slate-200 bg-white/95 backdrop-blur">
+                    <CardHeader className="text-center pb-6 pt-8 border-b border-slate-100">
+                        <div className="flex justify-center mb-4">
+                            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-600 to-pink-600 flex items-center justify-center shadow-lg">
+                                <Wand2 className="w-10 h-10 text-white" />
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-center gap-3">
+                             <CardTitle className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600">
+                                视觉素材生成
+                            </CardTitle>
+                             {isMockMode && (
+                                <span className="px-3 py-1 bg-amber-100 text-amber-700 text-sm font-semibold rounded-full border border-amber-200 flex items-center gap-1">
+                                    <Database className="w-3 h-3" />
+                                    预览模式
+                                </span>
+                            )}
+                        </div>
+                        
+                        <p className="text-xl mt-3 text-slate-600">
+                            为剧本 <strong>{project.title}</strong> 生成角色与场景素材
                         </p>
                     </CardHeader>
 
-                    <CardContent className="p-6 space-y-6">
+                    <CardContent className="p-8 space-y-8">
                         {/* 素材统计 */}
                         {!completed && !isGenerating && (
-                            <div className="grid grid-cols-3 gap-4">
-                                <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-                                    <CardContent className="p-4 text-center">
-                                        <Users className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-                                        <p className="text-sm text-gray-600">角色头像</p>
-                                        <p className="text-2xl font-bold text-blue-700">{assetsCount.avatars}</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-100 shadow-sm hover:shadow-md transition-shadow group">
+                                    <CardContent className="p-6 text-center">
+                                        <div className="w-14 h-14 mx-auto mb-3 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                            <Users className="w-7 h-7 text-indigo-600" />
+                                        </div>
+                                        <p className="text-slate-600 font-medium">角色头像</p>
+                                        <p className="text-3xl font-bold text-indigo-700 mt-1">{assetsCount.avatars}</p>
+                                        <p className="text-xs text-indigo-400 mt-1">待生成</p>
                                     </CardContent>
                                 </Card>
 
-                                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-                                    <CardContent className="p-4 text-center">
-                                        <Image className="w-8 h-8 mx-auto mb-2 text-purple-600" />
-                                        <p className="text-sm text-gray-600">角色立绘</p>
-                                        <p className="text-2xl font-bold text-purple-700">{assetsCount.sprites}</p>
+                                <Card className="bg-gradient-to-br from-pink-50 to-rose-50 border-pink-100 shadow-sm hover:shadow-md transition-shadow group">
+                                    <CardContent className="p-6 text-center">
+                                        <div className="w-14 h-14 mx-auto mb-3 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                            <ImageIcon className="w-7 h-7 text-pink-600" />
+                                        </div>
+                                        <p className="text-slate-600 font-medium">角色立绘</p>
+                                        <p className="text-3xl font-bold text-pink-700 mt-1">{assetsCount.sprites}</p>
+                                        <p className="text-xs text-pink-400 mt-1">待生成</p>
                                     </CardContent>
                                 </Card>
 
-                                <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-                                    <CardContent className="p-4 text-center">
-                                        <MapPin className="w-8 h-8 mx-auto mb-2 text-green-600" />
-                                        <p className="text-sm text-gray-600">场景背景</p>
-                                        <p className="text-2xl font-bold text-green-700">{assetsCount.backgrounds}</p>
+                                <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100 shadow-sm hover:shadow-md transition-shadow group">
+                                    <CardContent className="p-6 text-center">
+                                        <div className="w-14 h-14 mx-auto mb-3 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                            <MapPin className="w-7 h-7 text-emerald-600" />
+                                        </div>
+                                        <p className="text-slate-600 font-medium">场景背景</p>
+                                        <p className="text-3xl font-bold text-emerald-700 mt-1">{assetsCount.backgrounds}</p>
+                                        <p className="text-xs text-emerald-400 mt-1">待生成</p>
                                     </CardContent>
                                 </Card>
                             </div>
@@ -502,127 +482,106 @@ function GenerateAssetsPageContent() {
 
                         {/* 提示信息 */}
                         {!completed && !isGenerating && totalAssets > 0 && (
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                <p className="text-sm text-amber-800">
-                                    💡 <strong>提示：</strong>点击"一键生成"将<strong>批量并行</strong>为所有角色和场景生成视觉素材（每次最多2个并发，避免API限制）。
-                                    如果想稍后手动生成，可以点击"跳过"直接进入编辑器。
-                                </p>
+                            <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-5 flex items-start gap-3">
+                                <Sparkles className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                                <div className="text-sm text-amber-800">
+                                    <p className="font-semibold mb-1">AI 批量生成模式</p>
+                                    <p className="opacity-90">
+                                        点击"一键生成"将并行生成所有缺失的视觉素材。AI 将根据角色设定和场景描述自动绘制高质量图片。
+                                        {isMockMode && <span className="block mt-1 font-semibold text-amber-700">当前处于 Mock 预览模式，不会消耗 Token 或产生真实请求。</span>}
+                                    </p>
+                                </div>
                             </div>
                         )}
 
                         {/* 生成进度 */}
                         {isGenerating && (
-                            <div className="space-y-4">
-                                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-lg border border-indigo-200">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-                                        <p className="font-medium text-indigo-900">{generationProgress.message}</p>
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative">
+                                                <div className="absolute inset-0 bg-indigo-200 rounded-full animate-ping opacity-25"></div>
+                                                <Loader2 className="w-6 h-6 animate-spin text-indigo-600 relative z-10" />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-slate-800 text-lg">{generationProgress.message}</p>
+                                                <p className="text-sm text-slate-500">正在调用 AI 绘图模型...</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-2xl font-bold text-slate-200 font-mono">
+                                            {String(generationProgress.current).padStart(2, '0')}/{String(generationProgress.total).padStart(2, '0')}
+                                        </span>
                                     </div>
                                     
                                     {/* 进度条 */}
-                                    <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                                    <div className="w-full bg-slate-100 rounded-full h-4 overflow-hidden shadow-inner">
                                         <div 
-                                            className="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all duration-300"
+                                            className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full rounded-full transition-all duration-500 ease-out relative"
                                             style={{ width: `${(generationProgress.current / generationProgress.total) * 100}%` }}
-                                        />
+                                        >
+                                            <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite] skew-x-12"></div>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-gray-600 text-right">
-                                        {generationProgress.current} / {generationProgress.total}
-                                    </p>
                                 </div>
 
                                 {/* 可视化生成列表 */}
-                                <div className="bg-white rounded-lg border border-slate-200 p-4 max-h-96 overflow-y-auto">
-                                    <h3 className="font-semibold text-slate-800 mb-3">生成详情</h3>
-                                    <div className="space-y-2">
+                                <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                                    <h3 className="font-semibold text-slate-700 mb-4 px-2 flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                                        生成详情队列
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {generatingItems.map(item => (
                                             <div 
                                                 key={item.id} 
-                                                className="flex items-center gap-3 p-3 rounded-lg border transition-all"
-                                                style={{
-                                                    borderColor: 
-                                                        item.status === 'success' ? 'rgb(34 197 94)' :
-                                                        item.status === 'error' ? 'rgb(239 68 68)' :
-                                                        item.status === 'generating' ? 'rgb(99 102 241)' :
-                                                        'rgb(226 232 240)',
-                                                    backgroundColor:
-                                                        item.status === 'success' ? 'rgb(240 253 244)' :
-                                                        item.status === 'error' ? 'rgb(254 242 242)' :
-                                                        item.status === 'generating' ? 'rgb(238 242 255)' :
-                                                        'rgb(248 250 252)'
-                                                }}
+                                                className={`flex items-center gap-4 p-3 rounded-xl border transition-all duration-300 ${
+                                                    item.status === 'generating' ? 'bg-white border-indigo-200 shadow-md scale-[1.01]' :
+                                                    item.status === 'success' ? 'bg-white border-green-200 shadow-sm' :
+                                                    item.status === 'error' ? 'bg-red-50 border-red-200' :
+                                                    'bg-slate-100/50 border-slate-200 opacity-70'
+                                                }`}
                                             >
                                                 {/* 状态图标 */}
-                                                <div className="flex-shrink-0">
-                                                    {item.status === 'pending' && (
-                                                        <div className="w-5 h-5 rounded-full border-2 border-slate-300" />
-                                                    )}
-                                                    {item.status === 'generating' && (
-                                                        <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-                                                    )}
-                                                    {item.status === 'success' && (
-                                                        <CheckCircle2 className="w-5 h-5 text-green-600" />
-                                                    )}
-                                                    {item.status === 'error' && (
-                                                        <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-                                                            <span className="text-white text-xs font-bold">×</span>
-                                                        </div>
-                                                    )}
+                                                <div className="flex-shrink-0 w-8 flex justify-center">
+                                                    {item.status === 'pending' && <div className="w-3 h-3 rounded-full bg-slate-300" />}
+                                                    {item.status === 'generating' && <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />}
+                                                    {item.status === 'success' && <CheckCircle2 className="w-6 h-6 text-green-500" />}
+                                                    {item.status === 'error' && <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-xs">!</div>}
                                                 </div>
 
                                                 {/* 类型图标 */}
-                                                <div className="flex-shrink-0">
-                                                    {item.type === 'avatar' && <Users className="w-5 h-5 text-blue-600" />}
-                                                    {item.type === 'sprite' && <Image className="w-5 h-5 text-purple-600" />}
-                                                    {item.type === 'background' && <MapPin className="w-5 h-5 text-green-600" />}
+                                                <div className={`p-2 rounded-lg ${
+                                                    item.type === 'avatar' ? 'bg-blue-100 text-blue-600' :
+                                                    item.type === 'sprite' ? 'bg-pink-100 text-pink-600' :
+                                                    'bg-emerald-100 text-emerald-600'
+                                                }`}>
+                                                    {item.type === 'avatar' && <Users className="w-4 h-4" />}
+                                                    {item.type === 'sprite' && <ImageIcon className="w-4 h-4" />}
+                                                    {item.type === 'background' && <MapPin className="w-4 h-4" />}
                                                 </div>
 
                                                 {/* 名称和错误信息 */}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
-                                                    {/* ✅ 显示重试次数和错误信息 */}
+                                                    <p className={`font-medium truncate ${item.status === 'pending' ? 'text-slate-500' : 'text-slate-800'}`}>
+                                                        {item.name}
+                                                    </p>
                                                     {item.retryCount !== undefined && item.retryCount > 0 && item.status === 'generating' && (
-                                                        <p className="text-xs text-amber-600 mt-0.5">
-                                                            重试中... ({item.retryCount}/3)
-                                                        </p>
+                                                        <p className="text-xs text-amber-600 mt-0.5">重试中... ({item.retryCount}/3)</p>
                                                     )}
                                                     {item.error && item.status === 'error' && (
-                                                        <p className="text-xs text-red-600 mt-0.5 truncate" title={item.error}>
-                                                            {item.error}
-                                                        </p>
+                                                        <p className="text-xs text-red-500 mt-0.5 truncate">{item.error}</p>
                                                     )}
                                                 </div>
 
                                                 {/* 预览图 */}
-                                                {item.imageUrl && (
-                                                    <img 
-                                                        src={item.imageUrl} 
-                                                        alt={item.name}
-                                                        className="w-12 h-12 object-cover rounded border border-slate-200"
-                                                    />
+                                                {item.imageUrl ? (
+                                                    <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 shadow-sm bg-slate-100">
+                                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-12 h-12 rounded-lg border border-slate-100 bg-slate-50"></div>
                                                 )}
-
-                                                {/* 状态文字 */}
-                                                <div className="flex-shrink-0">
-                                                    <span className="text-xs font-medium"
-                                                        style={{
-                                                            color:
-                                                                item.status === 'success' ? 'rgb(34 197 94)' :
-                                                                item.status === 'error' ? 'rgb(239 68 68)' :
-                                                                item.status === 'generating' ? 'rgb(99 102 241)' :
-                                                                'rgb(148 163 184)'
-                                                        }}
-                                                    >
-                                                        {item.status === 'pending' && '等待中'}
-                                                        {item.status === 'generating' && (
-                                                            item.retryCount && item.retryCount > 0 
-                                                                ? `重试 ${item.retryCount}/3` 
-                                                                : '生成中'
-                                                        )}
-                                                        {item.status === 'success' && '已完成'}
-                                                        {item.status === 'error' && '失败(已兜底)'}
-                                                    </span>
-                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -632,30 +591,27 @@ function GenerateAssetsPageContent() {
 
                         {/* 完成状态 */}
                         {completed && (() => {
-                            const successCount = generatingItems.filter(i => i.status === 'success').length;
                             const errorCount = generatingItems.filter(i => i.status === 'error').length;
-                            const totalCount = generatingItems.length;
-                            
                             return (
-                                <div className={`p-6 rounded-lg border-2 text-center ${
+                                <div className={`p-8 rounded-2xl border-2 text-center transform transition-all animate-in fade-in zoom-in duration-500 ${
                                     errorCount === 0 
-                                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300'
-                                        : errorCount < totalCount
-                                        ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300'
-                                        : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-300'
+                                        ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200'
+                                        : 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200'
                                 }`}>
-                                    <CheckCircle2 className={`w-16 h-16 mx-auto mb-4 ${
-                                        errorCount === 0 ? 'text-green-600' : 'text-amber-600'
-                                    }`} />
+                                    <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                                        errorCount === 0 ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'
+                                    }`}>
+                                        <CheckCircle2 className="w-10 h-10" />
+                                    </div>
                                     <h3 className={`text-2xl font-bold mb-2 ${
                                         errorCount === 0 ? 'text-green-900' : 'text-amber-900'
                                     }`}>
-                                        {errorCount === 0 ? '生成完成！' : '生成完成（部分使用占位图）'}
+                                        {errorCount === 0 ? '✨ 所有素材生成完成！' : '⚠️ 部分生成失败'}
                                     </h3>
                                     <p className={errorCount === 0 ? 'text-green-700' : 'text-amber-700'}>
                                         {errorCount === 0 
-                                            ? `所有 ${totalCount} 个视觉素材已成功生成` 
-                                            : `成功 ${successCount} 个，${errorCount} 个使用占位图（可在编辑器中手动生成）`
+                                            ? `太棒了！所有 ${generatingItems.length} 个视觉素材已就绪。` 
+                                            : `成功生成 ${generatingItems.length - errorCount} 个，${errorCount} 个使用占位图。`
                                         }
                                     </p>
                                 </div>
@@ -663,11 +619,11 @@ function GenerateAssetsPageContent() {
                         })()}
 
                         {/* 操作按钮 */}
-                        <div className="flex gap-3 pt-4">
+                        <div className="flex gap-4 pt-4">
                             {!completed && !isGenerating && totalAssets === 0 && (
                                 <Button
                                     onClick={handleGoToEditor}
-                                    className="flex-1 h-12 text-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                                    className="w-full h-14 text-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-lg hover:shadow-xl transition-all rounded-xl"
                                 >
                                     <ArrowRight className="w-5 h-5 mr-2" />
                                     进入编辑器
@@ -679,18 +635,27 @@ function GenerateAssetsPageContent() {
                                     <Button
                                         variant="outline"
                                         onClick={handleSkip}
-                                        className="flex-1 h-12 text-lg"
+                                        className="flex-1 h-14 text-lg border-2 border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl"
                                     >
                                         <SkipForward className="w-5 h-5 mr-2" />
-                                        跳过（稍后手动生成）
+                                        跳过
                                     </Button>
                                     <Button
                                         onClick={handleGenerateAll}
                                         disabled={isGenerating}
-                                        className="flex-1 h-12 text-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                                        className="flex-[2] h-14 text-lg bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 shadow-lg hover:shadow-indigo-500/25 transition-all rounded-xl"
                                     >
-                                        <Wand2 className="w-5 h-5 mr-2" />
-                                        一键生成所有素材
+                                        {isGenerating ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                                正在创作中...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Wand2 className="w-5 h-5 mr-2" />
+                                                一键生成所有素材 ({totalAssets})
+                                            </>
+                                        )}
                                     </Button>
                                 </>
                             )}
@@ -698,10 +663,10 @@ function GenerateAssetsPageContent() {
                             {completed && (
                                 <Button
                                     onClick={handleGoToEditor}
-                                    className="w-full h-12 text-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                                    className="w-full h-14 text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-green-500/25 transition-all rounded-xl"
                                 >
                                     <ArrowRight className="w-5 h-5 mr-2" />
-                                    进入编辑器
+                                    开始创作旅程
                                 </Button>
                             )}
                         </div>
@@ -715,8 +680,8 @@ function GenerateAssetsPageContent() {
 export default function GenerateAssetsPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+                <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
             </div>
         }>
             <GenerateAssetsPageContent />
