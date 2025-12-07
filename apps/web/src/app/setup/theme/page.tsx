@@ -8,7 +8,7 @@ import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
 import type { ThemeSetting } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
-import { t } from '@/i18n/client';
+import { I18N, t } from '@/i18n/client';
 
 // 预设主题选项
 const THEME_OPTIONS = [
@@ -161,8 +161,12 @@ export default function ThemeSetupPage() {
                                 <Palette className="w-8 h-8 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent mb-1">故事主题风格</h1>
-                                <p className="text-slate-600">明确故事的核心主题与风格基调,让 AI 生成符合预期的剧情</p>
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent mb-1" suppressHydrationWarning>
+                                    {I18N['key.theme.pageTitle'] || '故事主题风格'}
+                                </h1>
+                                <p className="text-slate-600" suppressHydrationWarning>
+                                    {I18N['key.theme.pageDescription'] || '定义故事的情感基调和艺术氛围'}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -179,7 +183,7 @@ export default function ThemeSetupPage() {
                             ) : (
                                 <Sparkles className="w-4 h-4 mr-2 text-amber-600" />
                             )}
-                            <span className="text-amber-700 font-medium">
+                            <span className="text-amber-700 font-medium" suppressHydrationWarning>
                                 {isAutocompleting ? 'AI推荐中...' : 'AI帮我选'}
                             </span>
                         </Button>
@@ -189,7 +193,7 @@ export default function ThemeSetupPage() {
                             onClick={() => router.push('/setup')}
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
-                            返回
+                            <span suppressHydrationWarning>{I18N['key.theme.back'] || '返回'}</span>
                         </Button>
                     </div>
                 </div>
@@ -359,7 +363,7 @@ export default function ThemeSetupPage() {
                             className="flex-1 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 h-12 text-lg shadow-lg"
                             onClick={handleSave}
                         >
-                            保存主题风格设定
+                            <span suppressHydrationWarning>{I18N['key.theme.saveButton'] || '保存主题风格设定'}</span>
                         </Button>
                     </div>
                 </div>
@@ -371,13 +375,13 @@ export default function ThemeSetupPage() {
                         className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
-                        ← 返回设置
+                        <span suppressHydrationWarning>← 返回设置</span>
                     </Button>
                     <Button
                         className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg"
                         onClick={() => router.push('/setup/scenes')}
                     >
-                        下一步:定义场景 →
+                        <span suppressHydrationWarning>下一步:定义场景 →</span>
                     </Button>
                 </div>
             </div>
