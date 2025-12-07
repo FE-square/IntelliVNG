@@ -1,15 +1,16 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { Suspense } from 'react';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@vng/ui';
 import { Users, Globe, Image, FileText, Palette, FolderOpen } from 'lucide-react';
 import { I18N, t } from '@/i18n/client';
+import { useRouterWithParams } from '@/hooks/useRouterWithParams';
 
 /**
  * 设置引导页 - 让用户选择开始定义角色还是背景
  */
-export default function SetupPage() {
-    const router = useRouter();
+function SetupPageContent() {
+    const router = useRouterWithParams();
 
     return (
         <main className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 p-8">
@@ -179,5 +180,14 @@ export default function SetupPage() {
                 </Card>
             </div>
         </main>
+    );
+}
+
+// 用 Suspense 包裹以支持 useSearchParams
+export default function SetupPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 flex items-center justify-center"><div className="text-lg">加载中...</div></div>}>
+            <SetupPageContent />
+        </Suspense>
     );
 }

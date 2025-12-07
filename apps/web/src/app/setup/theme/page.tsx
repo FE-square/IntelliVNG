@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast } from '@vng/ui';
 import { ArrowLeft, Palette, Plus, X, Sparkles, Loader2 } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
@@ -9,6 +8,7 @@ import { createId } from '@vng/core';
 import type { ThemeSetting } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 import { I18N, t } from '@/i18n/client';
+import { useRouterWithParams } from '@/hooks/useRouterWithParams';
 
 // 预设主题选项
 const THEME_OPTIONS = [
@@ -38,8 +38,8 @@ const STYLE_OPTIONS = [
     '校园青春',
 ];
 
-export default function ThemeSetupPage() {
-    const router = useRouter();
+function ThemeSetupPageContent() {
+    const router = useRouterWithParams();
     const toast = useToast();
     const { themeSetting, setThemeSetting, worldSetting, characters } = useSetupStore();
     const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<ThemeSetting>('theme');
@@ -400,5 +400,14 @@ export default function ThemeSetupPage() {
                 </div>
             </div>
         </main>
+    );
+}
+
+// 用 Suspense 包裹以支持 useSearchParams
+export default function ThemeSetupPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-pink-50 to-orange-50 flex items-center justify-center"><div className="text-lg">加载中...</div></div>}>
+            <ThemeSetupPageContent />
+        </Suspense>
     );
 }

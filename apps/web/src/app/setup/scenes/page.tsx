@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
 import { Button, Card, CardContent, useToast } from '@vng/ui';
 import { ArrowLeft, Plus, Trash2, Wand2, Edit2, Sparkles, Loader2 } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
@@ -9,9 +8,10 @@ import { createId } from '@vng/core';
 import type { Scene } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 import { I18N, t } from '@/i18n/client';
+import { useRouterWithParams } from '@/hooks/useRouterWithParams';
 
-export default function ScenesPage() {
-    const router = useRouter();
+function ScenesPageContent() {
+    const router = useRouterWithParams();
     const toast = useToast();
     const { scenes, addScene, updateScene, removeScene, worldSetting, themeSetting } = useSetupStore();
     const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<Scene>('scene');
@@ -418,5 +418,14 @@ export default function ScenesPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// 用 Suspense 包裹以支持 useSearchParams
+export default function ScenesPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-teal-50 flex items-center justify-center"><div className="text-lg">加载中...</div></div>}>
+            <ScenesPageContent />
+        </Suspense>
     );
 }

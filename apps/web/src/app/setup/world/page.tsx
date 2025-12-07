@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast } from '@vng/ui';
 import { ArrowLeft, Globe, Save, Sparkles, Loader2 } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
@@ -9,9 +8,10 @@ import { createId } from '@vng/core';
 import type { WorldSetting } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 import { I18N, t } from '@/i18n/client';
+import { useRouterWithParams } from '@/hooks/useRouterWithParams';
 
-export default function WorldSetupPage() {
-    const router = useRouter();
+function WorldSetupPageContent() {
+    const router = useRouterWithParams();
     const toast = useToast();
     const { worldSetting, setWorldSetting, themeSetting } = useSetupStore();
     const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<WorldSetting>('world');
@@ -251,5 +251,14 @@ export default function WorldSetupPage() {
                 </div>
             </div>
         </main>
+    );
+}
+
+// 用 Suspense 包裹以支持 useSearchParams
+export default function WorldSetupPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 flex items-center justify-center"><div className="text-lg">加载中...</div></div>}>
+            <WorldSetupPageContent />
+        </Suspense>
     );
 }
