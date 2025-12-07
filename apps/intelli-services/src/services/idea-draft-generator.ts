@@ -172,7 +172,8 @@ export class IdeaDraftGenerator {
         const preview = rawResponse.slice(0, 4000);
         const base64 = Buffer.from(rawResponse, 'utf8').toString('base64');
         console.error(`[IdeaDraftGenerator] (${profile}) 原始响应预览(前4k):\n${preview}`);
-        console.error(`[IdeaDraftGenerator] (${profile}) 原始响应Base64:\n${base64}`);
+        // 避免打印过长的base64字符串，只显示长度
+        console.error(`[IdeaDraftGenerator] (${profile}) 原始响应Base64长度: ${base64.length} 字符`);
       }
       console.error(`[IdeaDraftGenerator] (${profile}) 调用失败:`, error instanceof Error ? error.message : error);
       if (allowFallback && profile === 'primary' && hasLLMProfile('backup') && isRecoverableLLMError(error)) {

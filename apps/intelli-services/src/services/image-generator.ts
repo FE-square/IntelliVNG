@@ -12,6 +12,30 @@ import sharp from 'sharp';
 
 export type ImageType = 'sprite' | 'avatar' | 'background';
 
+/**
+ * 安全地打印URL，避免打印过长的base64字符串
+ * @param url - 要打印的URL
+ * @param maxLength - 最大显示长度（默认100）
+ * @returns 截断后的URL字符串
+ */
+function safeLogUrl(url: string | undefined, maxLength: number = 100): string {
+    if (!url) return '(empty)';
+    
+    // 如果是base64 data URL，只显示前缀
+    if (url.startsWith('data:image/')) {
+        const mimeEnd = url.indexOf(';');
+        const mime = mimeEnd > 0 ? url.substring(0, mimeEnd + 10) : url.substring(0, 20);
+        return `${mime}... (base64, length: ${url.length})`;
+    }
+    
+    // 如果URL太长，截断
+    if (url.length > maxLength) {
+        return `${url.substring(0, maxLength)}... (length: ${url.length})`;
+    }
+    
+    return url;
+}
+
 // 生成状态
 export type TaskStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
 
@@ -141,7 +165,7 @@ export class ImageGenerator {
 
                 if (taskStatus === 'SUCCEEDED') {
                     const imageUrl = resultData.output.results?.[0]?.url;
-                    console.log(`[ImageGenerator] 生成成功: ${imageUrl}`);
+                    console.log(`[ImageGenerator] 生成成功: ${safeLogUrl(imageUrl)}`);
                     onStatus?.('SUCCEEDED', '图片生成完成！', 100);
                     return {
                         imageUrl,
@@ -270,7 +294,7 @@ export class ImageGenerator {
 
                 if (taskStatus === 'SUCCEEDED') {
                     const imageUrl = resultData.output.results?.[0]?.url;
-                    console.log(`[ImageGenerator] 参考图生成成功: ${imageUrl}`);
+                    console.log(`[ImageGenerator] 参考图生成成功: ${safeLogUrl(imageUrl)}`);
                     onStatus?.('SUCCEEDED', '头像生成完成！', 100);
                     return {
                         imageUrl,
@@ -309,7 +333,7 @@ export class ImageGenerator {
         imageUrl: string,
         onStatus?: StatusCallback
     ): Promise<string> {
-        console.log(`[ImageGenerator] 生成mask: imageUrl=${imageUrl.substring(0, 50)}...`);
+        console.log(`[ImageGenerator] 生成mask: imageUrl=${safeLogUrl(imageUrl)}`);
         onStatus?.('RUNNING', '正在生成抠图遮罩...', 0);
 
         if (!this.apiKey) {
@@ -334,7 +358,7 @@ export class ImageGenerator {
                                     image: imageUrl,
                                 },
                                 {
-                                    text: '生成主体角色的二值图mask，主体必须纯白色，其余必须纯黑色',
+                                    text: '生成图片中间主体角色的二值图mask，中间主体区域必须纯白色，其余周边区域必须纯黑色',
                                 },
                             ],
                         },
@@ -506,7 +530,7 @@ export class ImageGenerator {
         });
 
         const originalImageUrl = originalResult.imageUrl;
-        console.log(`[ImageGenerator] 原始立绘生成完成: ${originalImageUrl}`);
+        console.log(`[ImageGenerator] 原始立绘生成完成: ${safeLogUrl(originalImageUrl)}`);
 
         // Step 2: 生成mask
         onStatus?.('RUNNING', '第2步: 正在生成抠图遮罩...', 45);
