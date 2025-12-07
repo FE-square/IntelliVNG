@@ -37,3 +37,4 @@ EXIT_CODE=$?
 cleanup
 wait || true
 exit "${EXIT_CODE}"
+

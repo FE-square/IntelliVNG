@@ -15,6 +15,18 @@ export type ImageType = 'sprite' | 'avatar' | 'background';
 // 生成状态
 export type TaskStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
 
+// 基础生图模型
+const IMAGE_BASE_MODEL = 'wan2.2-t2i-flash'; // 'wanx-v1';
+// 图生图模型
+const IMAGE_EDIT_MODEL = 'qwen-image-edit-plus'; // 'wanx2.1-imageedit';
+
+// 根据类型设置默认尺寸 wan2.2-t2i-flash 支持 [512, 1440] 像素范围内的任意宽高组合。
+const DEFAULT_SIZES: Record<ImageType, string> = {
+    sprite: '512*768',// '768*1152',     // 角色立绘 2:3比例 (竖屏)
+    avatar: '512*512',// '1024*1024',    // 头像 1:1方形
+    background: '1024*576',// '1280*720', // 场景背景 16:9横屏
+};
+
 interface GenerateImageResult {
     imageUrl: string;
     prompt: string;
@@ -25,12 +37,7 @@ interface GenerateImageResult {
 // 状态回调类型
 export type StatusCallback = (status: TaskStatus, message: string, progress?: number) => void;
 
-// 根据类型设置默认尺寸
-const DEFAULT_SIZES: Record<ImageType, string> = {
-    sprite: '768*1152',     // 角色立绘 2:3比例 (竖屏)
-    avatar: '1024*1024',    // 头像 1:1方形
-    background: '1280*720', // 场景背景 16:9横屏
-};
+
 
 export class ImageGenerator {
     private apiKey: string | undefined;
@@ -78,7 +85,7 @@ export class ImageGenerator {
                 'X-DashScope-Async': 'enable',
             },
             body: JSON.stringify({
-                model: 'wanx-v1',
+                model: IMAGE_BASE_MODEL,
                 input: {
                     prompt: prompt,
                     ...(type === 'sprite' || type === 'avatar' ? {
@@ -208,7 +215,7 @@ export class ImageGenerator {
                 'X-DashScope-Async': 'enable',
             },
             body: JSON.stringify({
-                model: 'wanx-v1',
+                model: IMAGE_BASE_MODEL,
                 input: {
                     prompt: prompt,
                     ref_img: refImageUrl,  // 参考图URL
@@ -317,7 +324,7 @@ export class ImageGenerator {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'qwen-image-edit-plus',
+                model: IMAGE_EDIT_MODEL,
                 input: {
                     messages: [
                         {
@@ -327,7 +334,7 @@ export class ImageGenerator {
                                     image: imageUrl,
                                 },
                                 {
-                                    text: '生成二值mask图，主体纯白，背景纯黑',
+                                    text: '生成主体角色的二值图mask，主体必须纯白色，其余必须纯黑色',
                                 },
                             ],
                         },
@@ -548,7 +555,7 @@ export class ImageGenerator {
                 'X-DashScope-Async': 'enable',
             },
             body: JSON.stringify({
-                model: 'wanx-v1',
+                model: IMAGE_BASE_MODEL,
                 input: {
                     prompt: prompt,
                     negative_prompt: 'complex background, detailed background, scenery, landscape, outdoor, indoor scene, room, furniture, props, objects, 复杂背景, 场景, 风景, 室内, 室外, 家具, 道具',

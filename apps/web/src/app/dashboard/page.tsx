@@ -532,26 +532,28 @@ export default function DashboardPage() {
                         setShowSettingsDialog(false);
                         setEditingProject(null);
                     }}
-                    onGenerateImage={async (characterId: string, prompt: string, refImageUrl?: string) => {
+                    onGenerateImage={async (characterId: string, prompt: string, refImageUrl?: string, explicitType?: 'sprite' | 'avatar' | 'background') => {
                         try {
-                            toast.info('生成中', '正在生成图片,请稍候...');
-                            
-                            // ✅ 根据 characterId 决定 type
-                            let type: 'sprite' | 'avatar' | 'background' = 'sprite';
-                            if (characterId === 'cover') {
-                                type = 'background';
-                            } else if (characterId === 'scene' || characterId.startsWith('background-')) {
-                                type = 'background';
-                            } else if (prompt.includes('头像') || prompt.includes('avatar')) {
-                                type = 'avatar';
+                            // ✅ 优先使用显式传入的 type，否则根据 characterId 和 prompt 推断
+                            let type: 'sprite' | 'avatar' | 'background' = explicitType || 'sprite';
+                            if (!explicitType) {
+                                if (characterId === 'cover') {
+                                    type = 'background';
+                                } else if (characterId === 'scene' || characterId.startsWith('background-')) {
+                                    type = 'background';
+                                } else if (prompt.includes('头像') || prompt.includes('avatar')) {
+                                    type = 'avatar';
+                                }
                             }
+                            
+                            toast.info('生成中', `正在生成${type === 'sprite' ? '角色立绘' : type === 'avatar' ? '角色头像' : '场景背景'},请稍候...`);
                             
                             const response = await fetch('/api/generate-image', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ 
                                     prompt,
-                                    type,  // ✅ 添加 type 参数
+                                    type,  // ✅ 后端根据此区分是否需要抠图（type='sprite' 时触发）
                                     refImageUrl,
                                     refStrength: refImageUrl ? 0.7 : undefined
                                 }),
@@ -576,7 +578,7 @@ export default function DashboardPage() {
                                 throw new Error('未返回图片URL');
                             }
                             
-                            toast.success('生成成功', '图片已生成 ✨');
+                            toast.success('生成成功', `${type === 'sprite' ? '角色立绘' : type === 'avatar' ? '角色头像' : '场景背景'}已生成 ✨`);
                             return data.imageUrl;
                         } catch (error) {
                             console.error('[Dashboard] 图片生成失败:', error);

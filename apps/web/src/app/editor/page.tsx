@@ -109,10 +109,10 @@ function EditorPageContent() {
     const [project, setProject] = useState<GameProject | null>(null);
     const [activeTab, _setActiveTab] = useState<'editor' | 'preview'>('editor');
     const setActiveTab = useCallback((tab: 'editor' | 'preview') => {
-        _setActiveTab((t: 'editor' | 'preview') => {
-            if (t === tab) {
+        _setActiveTab((tabInput: 'editor' | 'preview') => {
+            if (tabInput === tab) {
                 toast.warning(t('key.editor.alreadyInView'));
-                return t;
+                return tabInput;
             }
             return tab;
         });
@@ -271,32 +271,59 @@ function EditorPageContent() {
         }
     };
     
-    // ✅ AI生成立绘
-    const handleGenerateImage = async (characterId: string, prompt: string, refImageUrl?: string): Promise<string> => {
+
+    const handleGenerateImage = async (
+        characterId: string, 
+        prompt: string, 
+        refImageUrl?: string,
+        explicitType?: 'sprite' | 'avatar' | 'background'
+    ): Promise<string> => {
         try {
-            toast.info('生成中', '正在生成角色立绘,请稍候...');
+            // ✅ 优先使用显式传入的 type，否则根据 characterId 和 prompt 推断
+            let type: 'sprite' | 'avatar' | 'background' = explicitType || 'sprite';
+            if (!explicitType) {
+                if (characterId === 'cover') {
+                    type = 'background';
+                } else if (characterId === 'scene' || characterId.startsWith('background-')) {
+                    type = 'background';
+                } else if (prompt.includes('头像') || prompt.includes('avatar')) {
+                    type = 'avatar';
+                }
+            }
+            
+            toast.info('生成中', `正在生成${type === 'sprite' ? '角色立绘' : type === 'avatar' ? '角色头像' : '场景背景'},请稍候...`);
             
             const response = await fetch('/api/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     prompt,
+                    type,  // ✅ 后端根据此区分是否需要抠图（type='sprite' 时触发）
                     refImageUrl,
                     refStrength: refImageUrl ? 0.7 : undefined  // 使用参考图时保持70%相似度
                 }),
             });
             
-            if (!response.ok) {
-                throw new Error('图片生成失败');
-            }
-            
             const data = await response.json();
+            
+            if (!response.ok) {
+                // ✅ 显示详细的错误信息
+                const errorMessage = data.details || data.error || '图片生成失败';
+                console.error('[Editor] 图片生成失败:', {
+                    status: response.status,
+                    error: data.error,
+                    details: data.details,
+                    prompt,
+                    type
+                });
+                throw new Error(errorMessage);
+            }
             
             if (!data.imageUrl) {
                 throw new Error('未返回图片URL');
             }
             
-            toast.success('生成成功', '角色立绘已生成 ✨');
+            toast.success('生成成功', `${type === 'sprite' ? '角色立绘' : type === 'avatar' ? '角色头像' : '场景背景'}已生成 ✨`);
             return data.imageUrl;
         } catch (error) {
             console.error('[Editor] 图片生成失败:', error);

@@ -30,7 +30,7 @@ interface FlowEditorProps {
     project: GameProject;
     onUpdate?: (project: GameProject) => void;
     onSelectNode?: (nodeId: string | null) => void;
-    onGenerateImage?: (characterId: string, prompt: string, refImageUrl?: string) => Promise<string>;
+    onGenerateImage?: (characterId: string, prompt: string, refImageUrl?: string, type?: 'sprite' | 'avatar' | 'background') => Promise<string>;
 }
 
 export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }: FlowEditorProps) {
@@ -320,31 +320,22 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
             const updatedCharacters = [...project.characters];
             const updatedBackgrounds = [...project.backgrounds];
             
-            // 补全角色头像和立绘
+            // ============================================================
+            // 补全角色素材（按顺序：先立绘 → 后头像）
+            // 原因：立绘优先生成，头像可以使用立绘作为参考图保持形象一致性
+            // ============================================================
             for (let i = 0; i < updatedCharacters.length; i++) {
                 const char = updatedCharacters[i];
                 
-                // 补全头像
-                if (!char.avatarUrl) {
-                    toast.info('生成中', `正在生成 ${char.displayName} 的头像...`);
-                    try {
-                        const prompt = `头像特写, ${char.displayName}, ${char.description || ''}, 头像, 肖像`;
-                        const avatarUrl = await onGenerateImage('avatar-' + char.id, prompt);
-                        updatedCharacters[i] = { ...char, avatarUrl };
-                        generatedCount++;
-                    } catch (error) {
-                        console.error(`生成 ${char.displayName} 头像失败:`, error);
-                    }
-                }
-                
-                // 补全立绘
+                // Step 1: 先补全立绘（不使用参考图，或使用已有立绘保持一致性）
                 if (!char.sprites || char.sprites.length === 0) {
                     toast.info('生成中', `正在生成 ${char.displayName} 的立绘...`);
                     try {
                         const prompt = `全身立绘, ${char.displayName}, ${char.description || ''}, 站立姿势, 透明背景`;
-                        const spriteUrl = await onGenerateImage('sprite-' + char.id, prompt, char.avatarUrl);
+                        // 立绘生成不使用参考图，显式指定 type='sprite' 触发抠图流程
+                        const spriteUrl = await onGenerateImage('sprite-' + char.id, prompt, undefined, 'sprite');
                         updatedCharacters[i] = {
-                            ...updatedCharacters[i],
+                            ...char,
                             sprites: [{
                                 id: `sprite-${char.id}-default`,
                                 imageUrl: spriteUrl,
@@ -356,6 +347,21 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                         console.error(`生成 ${char.displayName} 立绘失败:`, error);
                     }
                 }
+                
+                // Step 2: 再补全头像（使用立绘作为参考图保持形象一致性）
+                if (!updatedCharacters[i].avatarUrl) {
+                    toast.info('生成中', `正在生成 ${char.displayName} 的头像...`);
+                    try {
+                        const prompt = `头像特写, ${char.displayName}, ${char.description || ''}, 头像, 肖像`;
+                        // 使用立绘作为参考图，显式指定 type='avatar'
+                        const refImageUrl = updatedCharacters[i].sprites?.[0]?.imageUrl;
+                        const avatarUrl = await onGenerateImage('avatar-' + char.id, prompt, refImageUrl, 'avatar');
+                        updatedCharacters[i] = { ...updatedCharacters[i], avatarUrl };
+                        generatedCount++;
+                    } catch (error) {
+                        console.error(`生成 ${char.displayName} 头像失败:`, error);
+                    }
+                }
             }
             
             // 补全场景背景图
@@ -365,7 +371,8 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                     toast.info('生成中', `正在生成场景 ${bg.name} 的背景图...`);
                     try {
                         const prompt = `场景背景图, ${bg.name}, ${bg.description || ''}, 宽幅场景, 高质量`;
-                        const imageUrl = await onGenerateImage('background-' + bg.id, prompt);
+                        // 显式指定 type='background'
+                        const imageUrl = await onGenerateImage('background-' + bg.id, prompt, undefined, 'background');
                         updatedBackgrounds[i] = { ...bg, imageUrl };
                         generatedCount++;
                     } catch (error) {

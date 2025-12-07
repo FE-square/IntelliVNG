@@ -85,33 +85,33 @@ function GenerateAssetsPageContent() {
         setGenerationProgress({ current: 0, total: totalAssets, message: '开始批量生成...', type: '' });
 
         try {
-            // 准备生成任务列表
-            const tasks: Array<{
+            // ============================================================
+            // 准备生成任务列表（按类型分组，保证执行顺序：立绘 → 头像 → 背景）
+            // ============================================================
+            // 原因：
+            // 1. 立绘优先：生成完整角色形象
+            // 2. 头像次之：可以基于立绘保持形象一致性（虽然当前未启用ref_img）
+            // 3. 背景最后：独立的场景图，不依赖其他素材
+            // ============================================================
+            
+            type TaskItem = {
                 id: string;
                 name: string;
                 type: 'avatar' | 'sprite' | 'background';
                 characterId?: string;
                 backgroundId?: string;
                 prompt: string;
-            }> = [];
+            };
 
-            // 收集角色头像任务
-            project.characters.forEach(character => {
-                if (!character.avatarUrl) {
-                    tasks.push({
-                        id: `avatar-${character.id}`,
-                        name: `${character.displayName} 头像`,
-                        type: 'avatar',
-                        characterId: character.id,
-                        prompt: `${character.displayName}, ${character.description}, 头像特写, 圆形头像, 动漫风格, 纯白色背景, 简洁, 高质量`,
-                    });
-                }
-            });
+            // 分组收集任务
+            const spriteTasks: TaskItem[] = [];
+            const avatarTasks: TaskItem[] = [];
+            const backgroundTasks: TaskItem[] = [];
 
-            // 收集角色立绘任务
+            // 1. 收集角色立绘任务（优先级最高）
             project.characters.forEach(character => {
                 if (!character.sprites || character.sprites.length === 0) {
-                    tasks.push({
+                    spriteTasks.push({
                         id: `sprite-${character.id}`,
                         name: `${character.displayName} 立绘`,
                         type: 'sprite',
@@ -121,10 +121,23 @@ function GenerateAssetsPageContent() {
                 }
             });
 
-            // 收集场景背景任务
+            // 2. 收集角色头像任务（次优先级）
+            project.characters.forEach(character => {
+                if (!character.avatarUrl) {
+                    avatarTasks.push({
+                        id: `avatar-${character.id}`,
+                        name: `${character.displayName} 头像`,
+                        type: 'avatar',
+                        characterId: character.id,
+                        prompt: `${character.displayName}, ${character.description}, 头像特写, 圆形头像, 动漫风格, 纯白色背景, 简洁, 高质量`,
+                    });
+                }
+            });
+
+            // 3. 收集场景背景任务（最后）
             project.backgrounds.forEach(background => {
                 if (!background.imageUrl) {
-                    tasks.push({
+                    backgroundTasks.push({
                         id: `background-${background.id}`,
                         name: `${background.name} 背景`,
                         type: 'background',
@@ -134,7 +147,10 @@ function GenerateAssetsPageContent() {
                 }
             });
 
-            // 初始化生成列表
+            // 合并任务列表（保持顺序：立绘 → 头像 → 背景）
+            const tasks = [...spriteTasks, ...avatarTasks, ...backgroundTasks];
+
+            // 初始化生成列表（UI展示用）
             setGeneratingItems(tasks.map(task => ({
                 id: task.id,
                 name: task.name,
@@ -144,9 +160,13 @@ function GenerateAssetsPageContent() {
 
             let completedCount = 0;
 
-            // 批量处理函数（限制并发数）
+            // 批量处理函数（限制并发数，同类型内部并行）
             const CONCURRENT_LIMIT = 2; // 每次最多2个并发请求
-            const processBatch = async (batchTasks: typeof tasks) => {
+            const processBatchByType = async (batchTasks: TaskItem[], typeName: string) => {
+                if (batchTasks.length === 0) return;
+                
+                console.log(`[GenerateAssets] 开始生成 ${typeName}，共 ${batchTasks.length} 个`);
+                
                 for (let i = 0; i < batchTasks.length; i += CONCURRENT_LIMIT) {
                     const batch = batchTasks.slice(i, i + CONCURRENT_LIMIT);
                     const batchPromises = batch.map(task => generateSingleAsset(task));
@@ -157,6 +177,8 @@ function GenerateAssetsPageContent() {
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                 }
+                
+                console.log(`[GenerateAssets] ${typeName} 生成完成`);
             };
 
             // 生成单个素材的函数（带重试机制）
@@ -310,8 +332,40 @@ function GenerateAssetsPageContent() {
                 }
             };
 
-            // 执行批量生成
-            await processBatch(tasks);
+            // ============================================================
+            // 按顺序执行批量生成：立绘 → 头像 → 背景
+            // ============================================================
+            
+            // Step 1: 生成立绘（优先级最高）
+            setGenerationProgress({
+                current: completedCount,
+                total: tasks.length,
+                message: '🎨 正在生成角色立绘...',
+                type: 'sprite'
+            });
+            await processBatchByType(spriteTasks, '角色立绘');
+            
+            // Step 2: 生成头像
+            if (avatarTasks.length > 0) {
+                setGenerationProgress({
+                    current: completedCount,
+                    total: tasks.length,
+                    message: '👤 正在生成角色头像...',
+                    type: 'avatar'
+                });
+                await processBatchByType(avatarTasks, '角色头像');
+            }
+            
+            // Step 3: 生成背景
+            if (backgroundTasks.length > 0) {
+                setGenerationProgress({
+                    current: completedCount,
+                    total: tasks.length,
+                    message: '🏞️ 正在生成场景背景...',
+                    type: 'background'
+                });
+                await processBatchByType(backgroundTasks, '场景背景');
+            }
 
             // 保存更新后的项目
             setGenerationProgress({

@@ -11,7 +11,7 @@ interface ProjectSettingsEditorProps {
     project: GameProject;
     onSave: (project: GameProject) => void;
     onClose: () => void;
-    onGenerateImage?: (characterId: string, prompt: string, refImageUrl?: string) => Promise<string>;
+    onGenerateImage?: (characterId: string, prompt: string, refImageUrl?: string, type?: 'sprite' | 'avatar' | 'background') => Promise<string>;
 }
 
 export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImage }: ProjectSettingsEditorProps) {
@@ -114,7 +114,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                 }
                                 try {
                                     const prompt = `${editingProject.title}, ${editingProject.description || ''}, 视觉小说封面, 横版, 高质量, 精美文字排版, 动漫风格`;
-                                    const imageUrl = await onGenerateImage('cover', prompt);
+                                    const imageUrl = await onGenerateImage('cover', prompt, undefined, 'background');
                                     setEditingProject({ ...editingProject, coverImage: imageUrl });
                                     toast.success('封面生成成功 ✨');
                                 } catch (error) {
@@ -258,29 +258,17 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                 let successCount = 0;
                                 let errorCount = 0;
                                 
-                                // 生成缺失的头像
-                                for (const char of missingAvatars) {
-                                    try {
-                                        const prompt = `${char.displayName}, ${char.description}, 头像, 圆形, 高质量`;
-                                        const imageUrl = await onGenerateImage(char.id, prompt);
-                                        
-                                        // 更新角色
-                                        const updatedChars = editingProject.characters?.map(c => 
-                                            c.id === char.id ? { ...c, avatarUrl: imageUrl } : c
-                                        );
-                                        setEditingProject({ ...editingProject, characters: updatedChars });
-                                        successCount++;
-                                    } catch (error) {
-                                        console.error(`生成${char.displayName}头像失败:`, error);
-                                        errorCount++;
-                                    }
-                                }
+                                // ============================================================
+                                // 按顺序生成：先立绘 → 后头像
+                                // 原因：立绘优先生成，头像可以使用立绘作为参考图保持形象一致性
+                                // ============================================================
                                 
-                                // 生成缺失的立绘
+                                // Step 1: 生成缺失的立绘
                                 for (const char of missingSprites) {
                                     try {
                                         const prompt = `${char.displayName}, ${char.description}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量`;
-                                        const imageUrl = await onGenerateImage(char.id, prompt, char.avatarUrl);
+                                        // 立绘生成不使用参考图，显式指定 type='sprite' 触发抠图
+                                        const imageUrl = await onGenerateImage(char.id, prompt, undefined, 'sprite');
                                         
                                         const newSprite = {
                                             id: createId(),
@@ -300,6 +288,27 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         successCount++;
                                     } catch (error) {
                                         console.error(`生成${char.displayName}立绘失败:`, error);
+                                        errorCount++;
+                                    }
+                                }
+                                
+                                // Step 2: 生成缺失的头像（使用立绘作为参考图）
+                                for (const char of missingAvatars) {
+                                    try {
+                                        const prompt = `${char.displayName}, ${char.description}, 头像, 圆形, 高质量`;
+                                        // 获取刚生成的立绘作为参考图
+                                        const updatedChar = editingProject.characters?.find(c => c.id === char.id);
+                                        const refImageUrl = updatedChar?.sprites?.[0]?.imageUrl;
+                                        const imageUrl = await onGenerateImage(char.id, prompt, refImageUrl, 'avatar');
+                                        
+                                        // 更新角色
+                                        const updatedChars = editingProject.characters?.map(c => 
+                                            c.id === char.id ? { ...c, avatarUrl: imageUrl } : c
+                                        );
+                                        setEditingProject({ ...editingProject, characters: updatedChars });
+                                        successCount++;
+                                    } catch (error) {
+                                        console.error(`生成${char.displayName}头像失败:`, error);
                                         errorCount++;
                                     }
                                 }
@@ -478,7 +487,9 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                             }
                                             try {
                                                 const prompt = `${editingCharacter.displayName}, ${editingCharacter.description}, 头像, 圆形, 高质量`;
-                                                const imageUrl = await onGenerateImage(editingCharacter.id, prompt);
+                                                // 使用立绘作为参考图生成头像，保持形象一致性，显式指定 type='avatar'
+                                                const refImageUrl = editingCharacter.sprites?.[0]?.imageUrl;
+                                                const imageUrl = await onGenerateImage(editingCharacter.id, prompt, refImageUrl, 'avatar');
                                                 setEditingCharacter({ ...editingCharacter!, avatarUrl: imageUrl });
                                             } catch (error) {
                                                 // 错误已在onGenerateImage中处理
@@ -512,7 +523,9 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                             }
                                             try {
                                                 const prompt = `${editingCharacter.displayName}, ${editingCharacter.description}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量`;
-                                                const imageUrl = await onGenerateImage(editingCharacter.id, prompt, editingCharacter.avatarUrl);
+                                                // 立绘生成不需要参考图（或使用已有立绘保持一致性），显式指定 type='sprite' 触发抠图
+                                                const existingSprite = editingCharacter.sprites?.[0]?.imageUrl;
+                                                const imageUrl = await onGenerateImage(editingCharacter.id, prompt, existingSprite, 'sprite');
                                                 const newSprite = {
                                                     id: createId(),
                                                     emotion: 'neutral' as const,
@@ -659,17 +672,13 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                             let updated = { ...char };
                                             
                                             try {
-                                                // 生成头像
-                                                if (missingAvatar) {
-                                                    const prompt = `${char.displayName}, ${char.description}, 头像, 圆形, 高质量`;
-                                                    const imageUrl = await onGenerateImage(char.id, prompt);
-                                                    updated.avatarUrl = imageUrl;
-                                                }
+                                                // 按顺序生成：先立绘 → 后头像
                                                 
-                                                // 生成立绘
+                                                // Step 1: 生成立绘
                                                 if (missingSprite) {
                                                     const prompt = `${char.displayName}, ${char.description}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量`;
-                                                    const imageUrl = await onGenerateImage(char.id, prompt, updated.avatarUrl);
+                                                    // 显式指定 type='sprite' 触发抠图
+                                                    const imageUrl = await onGenerateImage(char.id, prompt, undefined, 'sprite');
                                                     const newSprite = {
                                                         id: createId(),
                                                         emotion: 'neutral' as const,
@@ -677,6 +686,15 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                                     };
                                                     updated.sprites = [newSprite];
                                                     updated.defaultSpriteId = newSprite.id;
+                                                }
+                                                
+                                                // Step 2: 生成头像（使用立绘作为参考图）
+                                                if (missingAvatar) {
+                                                    const prompt = `${char.displayName}, ${char.description}, 头像, 圆形, 高质量`;
+                                                    // 使用刚生成的立绘作为参考图，显式指定 type='avatar'
+                                                    const refImageUrl = updated.sprites?.[0]?.imageUrl;
+                                                    const imageUrl = await onGenerateImage(char.id, prompt, refImageUrl, 'avatar');
+                                                    updated.avatarUrl = imageUrl;
                                                 }
                                                 
                                                 // 更新角色
@@ -875,7 +893,8 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                 for (const bg of missingBackgrounds) {
                                     try {
                                         const prompt = `${bg.name}, ${bg.description || ''}, 场景背景图, 横屏1920x1080, 动漫风格, 高质量, 无人物`;
-                                        const imageUrl = await onGenerateImage(bg.id, prompt);
+                                        // 显式指定 type='background'
+                                        const imageUrl = await onGenerateImage(bg.id, prompt, undefined, 'background');
                                         
                                         // 更新场景
                                         const updatedBgs = editingProject.backgrounds?.map(b => 
@@ -1004,7 +1023,8 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                             }
                                             try {
                                                 const prompt = `${editingScene.name}, ${editingScene.description || ''}, 场景背景, 宽幅, 高质量, 细节丰富`;
-                                                const imageUrl = await onGenerateImage('scene', prompt);
+                                                // 显式指定 type='background'
+                                                const imageUrl = await onGenerateImage('scene', prompt, undefined, 'background');
                                                 setEditingScene({ ...editingScene!, imageUrl: imageUrl });
                                             } catch (error) {
                                                 // 错误已在onGenerateImage中处理
@@ -1098,7 +1118,8 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                             toast.info(`正在为 ${bg.name} 生成背景图...`);
                                             try {
                                                 const prompt = `${bg.name}, ${bg.description || ''}, 场景背景图, 横屏1920x1080, 动漫风格, 高质量, 无人物`;
-                                                const imageUrl = await onGenerateImage(bg.id, prompt);
+                                                // 显式指定 type='background'
+                                                const imageUrl = await onGenerateImage(bg.id, prompt, undefined, 'background');
                                                 
                                                 // 更新场景
                                                 const updatedBgs = editingProject.backgrounds?.map(b => 
