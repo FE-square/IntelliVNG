@@ -76,8 +76,8 @@ export default function SummaryPage() {
                     console.warn('[Summary] 项目保存失败,但仍可继续编辑');
                 }
                 
-                // 跳转到编辑器页面
-                router.push(`/editor?projectId=${result.data.id}`);
+                // 跳转到视觉素材生成页面
+                router.push(`/generate-assets?projectId=${result.data.id}`);
             } else {
                 console.error('[Summary] Generation failed:', result.error);
                 toast.error('生成失败', result.error || '未知错误');

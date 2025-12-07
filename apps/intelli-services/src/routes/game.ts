@@ -7,7 +7,7 @@ import { ideaDraftGenerator } from '../services/idea-draft-generator';
 import { createProgressEmitter, removeProgressEmitter, type ProgressEvent } from '../services/progress-emitter';
 import { ImageGenerator, ImageType } from '../services/image-generator';
 import { FormAutocomplete, FormType } from '../services/form-autocomplete';
-import { getCacheKey, getFromCache, saveToCache, saveProject, getProject, listProjects } from '../services/cache';
+import { getCacheKey, getFromCache, saveToCache, saveProject, getProject, listProjects, deleteProject } from '../services/cache';
 import { getLocaleFromRequest, type Locale } from '../utils/locale';
 
 export const gameRoutes = new Hono();
@@ -273,8 +273,32 @@ gameRoutes.get('/projects/:id', async (c) => {
     const project = getProject(projectId);
     
     if (!project) {
+        console.log(`[GameRoute] 项目不存在: ${projectId}`);
         return c.json({ success: false, error: 'Project not found' }, 404);
     }
+    
+    // 详细日志：原始数据
+    console.log(`[GameRoute] GET原始数据 - projectId: ${projectId}`);
+    console.log(`[GameRoute] characters类型:`, typeof (project as any).characters);
+    console.log(`[GameRoute] characters[0]:`, JSON.stringify((project as any).characters?.[0]));
+    console.log(`[GameRoute] backgrounds[0]:`, JSON.stringify((project as any).backgrounds?.[0]));
+    
+    console.log(`[GameRoute] 返回项目: ${projectId}`, {
+        characters: (project as any).characters?.map((c: any) => ({
+            id: c.id,
+            name: c.displayName,
+            avatarUrl: c.avatarUrl,
+            spritesCount: c.sprites?.length || 0
+        })),
+        backgrounds: (project as any).backgrounds?.map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            imageUrl: b.imageUrl,
+            hasImage: !!b.imageUrl
+        }))
+    });
+    
+    console.log(`[GameRoute] 完整项目数据:`, JSON.stringify(project, null, 2).substring(0, 500));
     
     return c.json({
         success: true,
@@ -290,6 +314,21 @@ gameRoutes.put('/projects/:id', async (c) => {
     if (!projectId) {
         return c.json({ success: false, error: 'Project ID is required' }, 400);
     }
+    
+    console.log(`[GameRoute] PUT请求 - projectId: ${projectId}`);
+    console.log(`[GameRoute] 接收到的数据:`, {
+        characters: body.characters?.map((c: any) => ({
+            id: c.id,
+            name: c.displayName,
+            avatarUrl: c.avatarUrl,
+            spritesCount: c.sprites?.length || 0
+        })),
+        backgrounds: body.backgrounds?.map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            hasImage: !!b.imageUrl
+        }))
+    });
     
     // 检查项目是否存在
     const existing = getProject(projectId);
@@ -315,12 +354,69 @@ gameRoutes.put('/projects/:id', async (c) => {
         console.log(`[GameRoute] 创建新项目: ${projectId}`);
     }
     
+    console.log(`[GameRoute] 保存前的数据:`, {
+        characters: result.characters?.map((c: any) => ({
+            id: c.id,
+            name: c.displayName,
+            avatarUrl: c.avatarUrl,
+            spritesCount: c.sprites?.length || 0
+        })),
+        backgrounds: result.backgrounds?.map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            imageUrl: b.imageUrl,
+            hasImage: !!b.imageUrl
+        }))
+    });
+    
     saveProject(result);
+    
+    // 验证保存后的数据
+    const saved = getProject(projectId);
+    console.log(`[GameRoute] 保存后的数据:`, {
+        characters: (saved as any)?.characters?.map((c: any) => ({
+            id: c.id,
+            name: c.displayName,
+            avatarUrl: c.avatarUrl,
+            spritesCount: c.sprites?.length || 0
+        })),
+        backgrounds: (saved as any)?.backgrounds?.map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            imageUrl: b.imageUrl,
+            hasImage: !!b.imageUrl
+        }))
+    });
     
     return c.json({
         success: true,
         data: result,
     });
+});
+
+// DELETE /api/game/projects/:id - 删除项目
+gameRoutes.delete('/projects/:id', async (c) => {
+    const projectId = c.req.param('id');
+    
+    if (!projectId) {
+        return c.json({ success: false, error: 'Project ID is required' }, 400);
+    }
+    
+    console.log(`[GameRoute] DELETE请求 - projectId: ${projectId}`);
+    
+    const success = deleteProject(projectId);
+    
+    if (success) {
+        return c.json({
+            success: true,
+            message: `Project ${projectId} deleted successfully`,
+        });
+    } else {
+        return c.json({
+            success: false,
+            error: 'Project not found or failed to delete',
+        }, 404);
+    }
 });
 
 // =====================================================

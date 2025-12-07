@@ -166,17 +166,22 @@ export function clearDraft(projectId: string): void {
 
 /**
  * 删除项目（调用后端 API）
- * 注意：后端暂未实现删除接口，此函数预留
  */
 export async function deleteProject(projectId: string): Promise<boolean> {
     try {
-        // TODO: 后端实现删除接口后启用
-        // const response = await fetch(`${BACKEND_URL}/api/game/projects/${projectId}`, {
-        //     method: 'DELETE',
-        // });
-        // return response.ok;
-        console.warn('[ProjectStorage] 删除功能暂未实现');
-        return false;
+        const response = await fetch(`${BACKEND_URL}/api/game/projects/${projectId}`, {
+            method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[ProjectStorage] 删除失败:', errorData);
+            return false;
+        }
+        
+        const data = await response.json();
+        console.log('[ProjectStorage] 删除成功:', data);
+        return data.success;
     } catch (error) {
         console.error('[ProjectStorage] 删除项目失败:', error);
         return false;

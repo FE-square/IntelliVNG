@@ -150,14 +150,41 @@ function EditorPageContent() {
             }
 
             try {
-                const response = await fetch(`/api/projects/${projectId}`);
+                // 🔧 直接调用后端API，绕过前端Next.js API路由
+                const BACKEND_URL = process.env.NEXT_PUBLIC_INTELLI_SERVICES_URL || 'http://localhost:4000';
+                const response = await fetch(`${BACKEND_URL}/api/game/projects/${projectId}`);
                 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.error || `HTTP ${response.status}`);
                 }
 
-                const projectData = await response.json();
+                const data = await response.json();
+                console.log('[Editor] 后端返回数据:', {
+                    success: data.success,
+                    characters: data.data?.characters?.map((c: any) => ({
+                        id: c.id,
+                        avatarUrl: c.avatarUrl,
+                        sprites: c.sprites?.length
+                    }))
+                });
+                
+                const projectData = data.data;
+                console.log('[Editor] 加载项目数据:', {
+                    projectId,
+                    title: projectData.title,
+                    characters: projectData.characters?.map((c: any) => ({
+                        id: c.id,
+                        name: c.displayName,
+                        avatarUrl: c.avatarUrl,
+                        sprites: c.sprites?.length || 0
+                    })),
+                    backgrounds: projectData.backgrounds?.map((b: any) => ({
+                        id: b.id,
+                        name: b.name,
+                        hasImage: !!b.imageUrl
+                    }))
+                });
                 setProject(projectData);
             } catch (err) {
                 const message = err instanceof Error ? err.message : 'Failed to load project';

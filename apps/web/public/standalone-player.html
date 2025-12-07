@@ -118,6 +118,43 @@
             max-height: 90%;
             transition: all 0.3s ease;
             filter: drop-shadow(0 0 10px rgba(0,0,0,0.3));
+            /* ✅ 初始状态：不可见 + 左侧偏移 */
+            opacity: 0;
+            transform: translateX(-100px);
+            /* ✅ 去除白色背景 */
+            mix-blend-mode: darken;
+        }
+        
+        /* ✅ 动画效果：渐入 + 从左侧滑入 */
+        .character-sprite.show {
+            animation: characterFadeIn 0.5s ease-out forwards;
+        }
+        
+        @keyframes characterFadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* ✅ 退出动画 */
+        .character-sprite.hide {
+            animation: characterFadeOut 0.5s ease-in forwards;
+        }
+        
+        @keyframes characterFadeOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-100px);
+            }
         }
 
         /* 对话框 */
@@ -490,117 +527,95 @@ null
         }
 
         updateCharacters(node) {
-            this.layers.characters.innerHTML = '';
+            // ✅ 不再自动显示所有角色，只是清空舞台准备
+            console.log('[updateCharacters] 准备场景，等待角色出场');
+            // 清空当前舞台
+            this.clearCharacters();
+        }
+        
+        // ✅ 清空舞台上的所有角色（带退出动画）
+        clearCharacters() {
+            const existingCharacters = this.layers.characters.querySelectorAll('.character-sprite');
+            if (existingCharacters.length > 0) {
+                existingCharacters.forEach(img => {
+                    img.classList.remove('show');
+                    img.classList.add('hide');
+                });
+                
+                setTimeout(() => {
+                    this.layers.characters.innerHTML = '';
+                }, 500);
+            }
+        }
+        
+        // ✅ 显示指定角色的立绘（按需调用）
+        showCharacterSprite(characterId) {
+            // 检查角色是否已经在舞台上
+            const existingSprite = this.layers.characters.querySelector(`[data-character-id="${characterId}"]`);
+            if (existingSprite) {
+                console.log('[showCharacterSprite] 角色已在舞台上:', characterId);
+                return; // 已存在，不重复添加
+            }
             
-            console.log('[updateCharacters]', {
-                nodeId: node.id,
-                hasVisualAssets: !!node.visualAssets,
-                charactersCount: node.visualAssets?.characters?.length || 0,
-                characters: node.visualAssets?.characters
+            // ✅ 清除其他角色（保持舞台上只有当前说话者）
+            const allSprites = this.layers.characters.querySelectorAll('.character-sprite');
+            allSprites.forEach(img => {
+                const spriteCharId = img.getAttribute('data-character-id');
+                if (spriteCharId !== characterId) {
+                    img.classList.remove('show');
+                    img.classList.add('hide');
+                    // 动画结束后移除
+                    setTimeout(() => {
+                        if (img.parentNode) img.remove();
+                    }, 500);
+                }
             });
             
-            // 方式1: 使用 visualAssets.characters 中的立绘配置
-            if (node.visualAssets?.characters && node.visualAssets.characters.length > 0) {
-                node.visualAssets.characters.forEach(charConfig => {
-                    const char = this.characterMap.get(charConfig.characterId);
-                    if (!char) {
-                        console.warn('[updateCharacters] 未找到角色:', charConfig.characterId);
-                        return;
-                    }
-
-                    // 尝试获取立绘 URL
-                    let spriteUrl = charConfig.spriteUrl;
-                    if (!spriteUrl && char.defaultSpriteId) {
-                        const sprite = char.sprites?.find(s => s.id === char.defaultSpriteId);
-                        if (sprite) spriteUrl = sprite.imageUrl;
-                    }
-                    // 如果还是没有,尝试使用第一个立绘
-                    if (!spriteUrl && char.sprites && char.sprites.length > 0) {
-                        spriteUrl = char.sprites[0].imageUrl;
-                    }
-
-                    console.log('[updateCharacters] 角色立绘:', {
-                        characterId: charConfig.characterId,
-                        characterName: char.displayName || char.name,
-                        spriteUrl,
-                        configSpriteUrl: charConfig.spriteUrl,
-                        defaultSpriteId: char.defaultSpriteId
-                    });
-
-                    if (spriteUrl) {
-                        const img = document.createElement('img');
-                        img.src = spriteUrl;
-                        img.className = 'character-sprite';
-                        
-                        const left = charConfig.position?.x || 50;
-                        const scale = charConfig.scale || 1;
-                        
-                        img.style.left = `${left}%`;
-                        img.style.transform = `translateX(-50%) scale(${scale})`;
-                        
-                        this.layers.characters.appendChild(img);
-                    } else {
-                        console.warn('[updateCharacters] 角色没有立绘:', char.displayName || char.name);
-                    }
-                });
+            const char = this.characterMap.get(characterId);
+            if (!char) {
+                console.warn('[showCharacterSprite] 未找到角色:', characterId);
+                return;
             }
-            // 方式2: ✅ 如果没有visualAssets配置,自动从对话中提取出场角色
-            else if (node.dialogues && node.dialogues.length > 0) {
-                console.log('[updateCharacters] ✅ 没有visualAssets配置,自动从对话中提取立绘');
-                
-                // 收集所有对话中的角色ID
-                const dialogueCharacterIds = new Set();
-                node.dialogues.forEach(d => {
-                    if (d.characterId && d.characterId !== 'narrator') {
-                        dialogueCharacterIds.add(d.characterId);
-                    }
-                });
-                
-                // 为每个角色显示立绘
-                let index = 0;
-                dialogueCharacterIds.forEach(characterId => {
-                    const char = this.characterMap.get(characterId);
-                    if (!char) {
-                        console.warn('[updateCharacters] 未找到角色:', characterId);
-                        return;
-                    }
-                    
-                    // 获取立绘URL
-                    let spriteUrl;
-                    if (char.defaultSpriteId) {
-                        const sprite = char.sprites?.find(s => s.id === char.defaultSpriteId);
-                        if (sprite) spriteUrl = sprite.imageUrl;
-                    }
-                    if (!spriteUrl && char.sprites && char.sprites.length > 0) {
-                        spriteUrl = char.sprites[0].imageUrl;
-                    }
-                    
-                    console.log('[updateCharacters] 自动添加角色立绘:', {
-                        characterId,
-                        characterName: char.displayName || char.name,
-                        spriteUrl
-                    });
-                    
-                    if (spriteUrl) {
-                        const img = document.createElement('img');
-                        img.src = spriteUrl;
-                        img.className = 'character-sprite';
-                        
-                        // 自动排列: 每个角色间隄25%
-                        const left = 30 + (index * 25);
-                        
-                        img.style.left = `${left}%`;
-                        img.style.transform = `translateX(-50%)`;
-                        
-                        this.layers.characters.appendChild(img);
-                        index++;
-                    } else {
-                        console.warn('[updateCharacters] 角色没有立绘:', char.displayName || char.name);
-                    }
-                });
-            } else {
-                console.log('[updateCharacters] 没有角色需要显示');
+            
+            // 获取立绘URL
+            let spriteUrl;
+            if (char.defaultSpriteId) {
+                const sprite = char.sprites?.find(s => s.id === char.defaultSpriteId);
+                if (sprite) spriteUrl = sprite.imageUrl;
             }
+            if (!spriteUrl && char.sprites && char.sprites.length > 0) {
+                spriteUrl = char.sprites[0].imageUrl;
+            }
+            
+            if (!spriteUrl) {
+                console.warn('[showCharacterSprite] 角色没有立绘:', char.displayName || char.name);
+                return;
+            }
+            
+            console.log('[showCharacterSprite] 显示角色立绘:', {
+                characterId,
+                characterName: char.displayName || char.name,
+                spriteUrl
+            });
+            
+            const img = document.createElement('img');
+            img.src = spriteUrl;
+            img.className = 'character-sprite';
+            img.setAttribute('data-character-id', characterId); // ✅ 标记角色ID
+            
+            // 居中显示
+            img.style.left = '50%';
+            
+            this.layers.characters.appendChild(img);
+            
+            // ✅ 延迟触发入场动画
+            requestAnimationFrame(() => {
+                img.classList.add('show');
+                img.addEventListener('animationend', () => {
+                    img.style.transform = `translateX(-50%)`;
+                    img.style.opacity = '1';
+                }, { once: true });
+            });
         }
 
         next() {
@@ -634,6 +649,14 @@ null
                 hasAvatar: !!avatarUrl,
                 avatarUrl
             });
+            
+            // ✅ 如果不是旁白，显示角色立绘
+            if (dialogue.characterId && dialogue.characterId !== 'narrator') {
+                this.showCharacterSprite(dialogue.characterId);
+            } else {
+                // 旁白时清空所有立绘
+                this.clearCharacters();
+            }
 
             // 显示 UI
             this.layers.ui.classList.remove('hidden');

@@ -140,11 +140,20 @@ export function listProjects(): Array<{
             const saved = JSON.parse(data);
             const project = saved.project;
             
+            // ✅ 如果没有 coverImage，使用第一个场景背景图
+            let coverImage = project.coverImage;
+            if (!coverImage && project.backgrounds && project.backgrounds.length > 0) {
+                const firstBg = project.backgrounds[0];
+                if (firstBg.imageUrl) {
+                    coverImage = firstBg.imageUrl;
+                }
+            }
+            
             projects.push({
                 id: project.id,
                 title: project.title,
                 description: project.description || '',
-                coverImage: project.coverImage,
+                coverImage,
                 savedAt: saved.savedAt,
                 characterCount: project.characters?.length || 0,
                 sceneCount: project.backgrounds?.length || 0,
@@ -156,6 +165,27 @@ export function listProjects(): Array<{
     } catch (error) {
         console.error('[Projects] Failed to list projects:', error);
         return [];
+    }
+}
+
+/**
+ * 删除项目（基于 projectId）
+ */
+export function deleteProject(projectId: string): boolean {
+    const filePath = getProjectFilePath(projectId);
+    
+    if (!existsSync(filePath)) {
+        console.log(`[Projects] Project not found: ${projectId}`);
+        return false;
+    }
+    
+    try {
+        unlinkSync(filePath);
+        console.log(`[Projects] Deleted project: ${projectId}`);
+        return true;
+    } catch (error) {
+        console.error('[Projects] Failed to delete project:', error);
+        return false;
     }
 }
 

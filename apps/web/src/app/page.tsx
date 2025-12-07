@@ -137,7 +137,7 @@ export default function Home() {
     const handleViewProject = () => {
         if (!finalProjectRef.current) return;
         clearRedirectCountdown();
-        router.push(`/editor?projectId=${finalProjectRef.current.id}`);
+        router.push(`/generate-assets?projectId=${finalProjectRef.current.id}`);
     };
 
     const resetAgentFlow = (options?: { keepDraft?: boolean }) => {
@@ -207,7 +207,7 @@ export default function Home() {
                 const projectData = { id: payload.data.id, title: payload.data.title };
                 updateFinalProject(projectData);
                 setSessionStatus('success');
-                toast.success('生成成功', '5 秒后自动跳转到编辑器...');
+                toast.success('生成成功', '5 秒后自动跳转到视觉素材生成页面...');
                 startRedirectCountdown();
             }
             return true;
@@ -305,10 +305,10 @@ export default function Home() {
             setIsQuickGenerating(false)
             setShowFastScriptLoading(false);
             if (result.success) {
-                toast.success('剧本生成成功', '即将跳转到编辑器...');
+                toast.success('剧本生成成功', '即将跳转到视觉素材生成页面...');
                 setTimeout(() => {
-                    router.push(`/editor?projectId=${result.data.id}`);
-                }, 5000);
+                    router.push(`/generate-assets?projectId=${result.data.id}`);
+                }, 2000);
             } else {
                 setIsQuickGenerating(false)
                 setShowFastScriptLoading(false);
