@@ -79,8 +79,8 @@ function SummaryPageContent() {
                     console.warn('[Summary] 项目保存失败,但仍可继续编辑');
                 }
                 
-                // 跳转到视觉素材生成页面
-                router.push(`/generate-assets?projectId=${result.data.id}`);
+                // 直接跳转到编辑页面
+                router.push(`/editor?projectId=${result.data.id}`);
             } else {
                 console.error('[Summary] Generation failed:', result.error);
                 toast.error(t('key.summary.generateFailed'), result.error || '未知错误');
