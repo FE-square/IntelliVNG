@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, useToast } from '@vng/ui';
 import { Sparkles, FolderOpen, Zap, Settings, Users, Map, BookOpen, Globe2, Loader2, BrainCircuit } from 'lucide-react';
 import type { Character, Scene, ThemeSetting, WorldSetting } from '@vng/core';
+import { t } from '@/i18n/client';
 
 type ProgressStage =
     | 'init'
@@ -413,13 +414,13 @@ export default function Home() {
                             </div>
                         </div>
                         <CardTitle className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600">
-                            IntelliVNG Studio
+                            {t('key.home.title')}
                         </CardTitle>
                         <CardDescription className="text-xl mt-3 text-slate-600">
-                            用 AI 讲述你的故事
+                            {t('key.home.subtitle')}
                         </CardDescription>
                         <p className="text-sm mt-2 text-slate-500">
-                            一句话创作完整视觉小说，从灵感到成品只需几分钟
+                            {t('key.home.quickMode.description')}
                         </p>
                     </CardHeader>
 
@@ -432,17 +433,17 @@ export default function Home() {
                                     <CardContent className="p-4">
                                         <div className="flex items-center gap-2 mb-3">
                                             <Zap className="w-5 h-5 text-amber-600" />
-                                            <h3 className="font-semibold text-amber-900">自动创作模式</h3>
-                                            <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">推荐</span>
+                                            <h3 className="font-semibold text-amber-900">{t('key.home.autoMode.title')}</h3>
+                                            <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">{t('key.home.autoMode.badge')}</span>
                                         </div>
-                                        <p className="text-sm text-amber-700 mb-3">描述你的故事创意，AI 自动生成完整的多分支剧情游戏</p>
+                                        <p className="text-sm text-amber-700 mb-3">{t('key.home.autoMode.description')}</p>
                                         <div className="space-y-2">
                                             <textarea
                                                 className="w-full px-4 py-3 border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
                                                 rows={3}
                                                 value={quickPrompt}
                                                 onChange={(e) => setQuickPrompt(e.target.value)}
-                                                placeholder="例如：关于失忆少女在未来城市寻找记忆的悬疑故事"
+                                                placeholder={t('key.home.autoMode.placeholder')}
                                                 disabled={isDraftGenerating}
                                             />
                                             <div className="flex items-center gap-2">
@@ -456,7 +457,7 @@ export default function Home() {
                                                     ) : (
                                                         <Zap className="w-5 h-5 mr-2" />
                                                     )}
-                                                    {isQuickGenerating ? 'LLM 正在创作...' : '快速创作 (大模型)'}
+                                                    {isQuickGenerating ? t('key.home.autoMode.generating') : t('key.home.autoMode.buttonFast')}
                                                 </Button>
                                                 <Button
                                                     className="w-full h-12 bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 shadow-lg"
@@ -468,7 +469,7 @@ export default function Home() {
                                                     ) : (
                                                         <BrainCircuit className="w-5 h-5 mr-2" />
                                                     )}
-                                                    {isAgentGenerating ? 'Agents 正在创作...' : '高级创作 (智能体系统)'}
+                                                    {isAgentGenerating ? t('key.home.autoMode.generatingAgent') : t('key.home.autoMode.buttonAgent')}
                                                 </Button>
                                             </div>
                                         </div>
@@ -482,7 +483,7 @@ export default function Home() {
                                     onClick={() => router.push('/setup')}
                                 >
                                     <Settings className="w-5 h-5 mr-2" />
-                                    专业模式
+                                    {t('key.home.professionalMode.button')}
                                 </Button>
                             </>
 
@@ -492,13 +493,13 @@ export default function Home() {
                                 onClick={() => router.push('/dashboard')}
                             >
                                 <FolderOpen className="w-5 h-5 mr-2" />
-                                查看我的项目
+                                {t('key.home.button.viewProjects')}
                             </Button>
                         </div>
 
                         {/* 额外说明 */}
                         <div className="text-center text-sm text-slate-500 pt-2">
-                            <p>💡 AI 自动生成角色、场景、对话和分支剧情 | 🎨 支持自定义立绘和背景</p>
+                            <p>{t('key.home.quickMode.info')}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -509,17 +510,17 @@ export default function Home() {
                             <CardHeader>
                                 <CardTitle className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
                                     <BookOpen className="w-6 h-6 text-indigo-500" />
-                                    设定草稿
+                                    {t('key.home.draft.title')}
                                     {draftCached && draftData && (
                                         <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
-                                            缓存命中
+                                            {t('key.home.draft.cached')}
                                         </span>
                                     )}
                                 </CardTitle>
                                 <CardDescription className="text-slate-600">
                                     {draftData
-                                        ? `${draftData.projectTitle} · ${draftData.summary || draftData.hook || 'AI 已完成世界观、角色与场景规划'}`
-                                        : '正在生成草稿（世界观 / 角色阵容 / 关键场景 / 主题 & 风格）...'}
+                                        ? `${draftData.projectTitle} · ${draftData.summary || draftData.hook || t('key.home.draft.completed')}`
+                                        : t('key.home.draft.generating')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
@@ -743,7 +744,7 @@ export default function Home() {
 
                 {/* 页脚 */}
                 <p className="text-slate-600 mt-8 text-sm">
-                    Made with ❤️ by IntelliVNG Team
+                    {t('key.home.footer')}
                 </p>
             </main>
             {showDraftLoading && (
