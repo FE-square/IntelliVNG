@@ -184,7 +184,7 @@ export default function ThemeSetupPage() {
                                 <Sparkles className="w-4 h-4 mr-2 text-amber-600" />
                             )}
                             <span className="text-amber-700 font-medium" suppressHydrationWarning>
-                                {isAutocompleting ? 'AI推荐中...' : 'AI帮我选'}
+                                {isAutocompleting ? (I18N['key.theme.aiSuggesting'] || 'AI推荐中...') : (I18N['key.theme.aiSuggest'] || 'AI帮我选')}
                             </span>
                         </Button>
                         <Button
@@ -204,7 +204,7 @@ export default function ThemeSetupPage() {
                         <CardHeader className="bg-gradient-to-br from-pink-50 to-rose-50">
                             <CardTitle className="flex items-center gap-2 text-slate-800">
                                 <Palette className="w-5 h-5" />
-                                核心主题(可多选)
+                                <span suppressHydrationWarning>{I18N['key.theme.coreThemesMulti'] || '核心主题(可多选)'}</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -226,12 +226,14 @@ export default function ThemeSetupPage() {
 
                             {/* 自定义主题 */}
                             <div>
-                                <label className="block text-sm font-medium mb-2">自定义主题</label>
+                                <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
+                                    {I18N['key.theme.customTheme'] || '自定义主题'}
+                                </label>
                                 <div className="flex gap-2">
                                     <Input
                                         value={customTheme}
                                         onChange={(e) => setCustomTheme(e.target.value)}
-                                        placeholder="输入自定义主题，如：时间旅行"
+                                        placeholder={I18N['key.theme.customThemePlaceholder'] || '输入自定义主题，如：时间旅行'}
                                         onKeyPress={(e) => e.key === 'Enter' && addCustomTheme()}
                                     />
                                     <Button onClick={addCustomTheme} size="sm">
@@ -243,7 +245,9 @@ export default function ThemeSetupPage() {
                             {/* 已选主题标签 */}
                             {selectedThemes.length > 0 && (
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">已选择的主题</label>
+                                    <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
+                                        {I18N['key.theme.selectedThemes'] || '已选择的主题'}
+                                    </label>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedThemes.map(theme => (
                                             <div
@@ -270,7 +274,7 @@ export default function ThemeSetupPage() {
                         <CardHeader className="bg-gradient-to-br from-purple-50 to-blue-50">
                             <CardTitle className="flex items-center gap-2 text-slate-800">
                                 <Palette className="w-5 h-5" />
-                                剧情风格(可多选)
+                                <span suppressHydrationWarning>{I18N['key.theme.plotStylesMulti'] || '剧情风格(可多选)'}</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -292,12 +296,14 @@ export default function ThemeSetupPage() {
 
                             {/* 自定义风格 */}
                             <div>
-                                <label className="block text-sm font-medium mb-2">自定义风格</label>
+                                <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
+                                    {I18N['key.theme.customStyle'] || '自定义风格'}
+                                </label>
                                 <div className="flex gap-2">
                                     <Input
                                         value={customStyle}
                                         onChange={(e) => setCustomStyle(e.target.value)}
-                                        placeholder="输入自定义风格，如：蒸汽朋克"
+                                        placeholder={I18N['key.theme.customStylePlaceholder'] || '输入自定义风格，如：蒸汽朋克'}
                                         onKeyPress={(e) => e.key === 'Enter' && addCustomStyle()}
                                     />
                                     <Button onClick={addCustomStyle} size="sm">
@@ -309,7 +315,9 @@ export default function ThemeSetupPage() {
                             {/* 已选风格标签 */}
                             {selectedStyles.length > 0 && (
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">已选择的风格</label>
+                                    <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
+                                        {I18N['key.theme.selectedStyles'] || '已选择的风格'}
+                                    </label>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedStyles.map(style => (
                                             <div
@@ -334,24 +342,30 @@ export default function ThemeSetupPage() {
                     {/* 基调与补充说明 */}
                     <Card className="shadow-lg border-2 border-slate-200">
                         <CardHeader className="bg-gradient-to-br from-amber-50 to-yellow-50">
-                            <CardTitle className="text-slate-800">补充说明(可选)</CardTitle>
+                            <CardTitle className="text-slate-800" suppressHydrationWarning>
+                                {I18N['key.theme.supplementSection'] || '补充说明(可选)'}
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium mb-2">整体基调</label>
+                                <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
+                                    {I18N['key.theme.overallToneLabel'] || '整体基调'}
+                                </label>
                                 <Input
                                     value={tone}
                                     onChange={(e) => setTone(e.target.value)}
-                                    placeholder="如：压抑悲伤、轻松幽默、紧张刺激"
+                                    placeholder={I18N['key.theme.tonePlaceholder'] || '如：压抑悲伤、轻松幽默、紧张刺激'}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-2">其他说明</label>
+                                <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
+                                    {I18N['key.theme.otherDescription'] || '其他说明'}
+                                </label>
                                 <textarea
                                     className="w-full border rounded px-3 py-2 min-h-[100px]"
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
-                                    placeholder="补充任何你希望 AI 了解的主题风格要求..."
+                                    placeholder={I18N['key.theme.descriptionPlaceholder'] || '补充任何你希望 AI 了解的主题风格要求...'}
                                 />
                             </div>
                         </CardContent>
@@ -375,13 +389,13 @@ export default function ThemeSetupPage() {
                         className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
-                        <span suppressHydrationWarning>← 返回设置</span>
+                        <span suppressHydrationWarning>{I18N['key.theme.backToSetup'] || '← 返回设置'}</span>
                     </Button>
                     <Button
                         className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg"
                         onClick={() => router.push('/setup/scenes')}
                     >
-                        <span suppressHydrationWarning>下一步:定义场景 →</span>
+                        <span suppressHydrationWarning>{I18N['key.theme.nextStep'] || '下一步:定义场景 →'}</span>
                     </Button>
                 </div>
             </div>
