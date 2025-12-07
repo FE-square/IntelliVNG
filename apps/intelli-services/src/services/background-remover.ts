@@ -1,6 +1,11 @@
 import { spawn } from 'child_process';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { writeFileSync, unlinkSync } from 'fs';
+import { fileURLToPath } from 'url';
+
+// ES模块中获取__dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * 图片去背景服务
