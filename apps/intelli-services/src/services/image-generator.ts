@@ -40,9 +40,9 @@ function safeLogUrl(url: string | undefined, maxLength: number = 100): string {
 export type TaskStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
 
 // 基础生图模型
-const IMAGE_BASE_MODEL = 'wan2.2-t2i-flash'; // 'wanx-v1';
+const IMAGE_BASE_MODEL = process.env.IMAGE_BASE_MODEL || 'wan2.2-t2i-flash'; // 'wanx-v1';
 // 图生图模型
-const IMAGE_EDIT_MODEL = 'qwen-image-edit-plus'; // 'wanx2.1-imageedit';
+const IMAGE_EDIT_MODEL = process.env.IMAGE_EDIT_MODEL || 'qwen-image-edit-plus'; // 'wanx2.1-imageedit';
 
 // 根据类型设置默认尺寸 wan2.2-t2i-flash 支持 [512, 1440] 像素范围内的任意宽高组合。
 const DEFAULT_SIZES: Record<ImageType, string> = {
