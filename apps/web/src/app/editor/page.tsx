@@ -10,6 +10,7 @@ import { GameProject } from '@vng/core';
 import { FlowEditor } from '@vng/editor';
 import { saveProject, saveDraft, clearDraft } from '@/lib/projectStorage';
 import { exportProjectAsJson, exportProjectAsPlayableHtml, exportProjectAsPlayableHtmlWithImages } from '@/lib/projectExport';
+import { t } from '@/i18n/client';
 
 // Mock Project for testing (fallback)
 const MOCK_PROJECT: GameProject = {
@@ -110,7 +111,7 @@ function EditorPageContent() {
     const setActiveTab = useCallback((tab: 'editor' | 'preview') => {
         _setActiveTab((t: 'editor' | 'preview') => {
             if (t === tab) {
-                toast.warning('现在已经处于这个界面啦');
+                toast.warning(t('key.editor.alreadyInView'));
                 return t;
             }
             return tab;
