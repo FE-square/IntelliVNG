@@ -8,7 +8,7 @@ import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
 import type { Scene } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
-import { t } from '@/i18n/client';
+import { I18N, t } from '@/i18n/client';
 
 export default function ScenesPage() {
     const router = useRouter();
@@ -149,8 +149,12 @@ export default function ScenesPage() {
                                 <Wand2 className="w-8 h-8 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-1">场景设定</h1>
-                                <p className="text-slate-600">设定关键场景的类型、氛围、细节等</p>
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-1" suppressHydrationWarning>
+                                    {I18N['key.scenes.pageTitle'] || '场景设定'}
+                                </h1>
+                                <p className="text-slate-600" suppressHydrationWarning>
+                                    {I18N['key.scenes.pageDescription'] || '定义故事发生的空间背景'}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -160,7 +164,7 @@ export default function ScenesPage() {
                         onClick={() => router.push('/setup')}
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        返回
+                        <span suppressHydrationWarning>{I18N['key.scenes.back'] || '返回'}</span>
                     </Button>
                 </div>
 
@@ -169,8 +173,8 @@ export default function ScenesPage() {
                     <Card className="shadow-lg border-2 border-slate-200">
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-semibold text-lg text-slate-800">
-                                    {editingId ? '✏️ 编辑场景' : '🌟 添加新场景'}
+                                <h3 className="font-semibold text-lg text-slate-800" suppressHydrationWarning>
+                                    {editingId ? ('✏️ ' + (I18N['key.scenes.editScene'] || '编辑场景')) : ('🌟 添加新场景')}
                                 </h3>
                                 {/* AI 自动补全按钮 */}
                                 <Button
@@ -185,7 +189,7 @@ export default function ScenesPage() {
                                     ) : (
                                         <Sparkles className="w-4 h-4 text-amber-600" />
                                     )}
-                                    <span className="text-amber-700 font-medium">
+                                    <span className="text-amber-700 font-medium" suppressHydrationWarning>
                                         {isAutocompleting ? 'AI补全中...' : 'AI帮我填'}
                                     </span>
                                 </Button>
@@ -276,7 +280,9 @@ export default function ScenesPage() {
                                                 className="w-full gap-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
                                             >
                                                 <Wand2 className="w-4 h-4" />
-                                                {isGeneratingBackground ? 'AI生成中...' : 'AI生成背景图'}
+                                                <span suppressHydrationWarning>
+                                                    {isGeneratingBackground ? (I18N['key.scenes.generating'] || 'AI生成中...') : (I18N['key.scenes.generateBackground'] || 'AI生成背景图')}
+                                                </span>
                                             </Button>
                                         </div>
                                         
@@ -313,7 +319,7 @@ export default function ScenesPage() {
                                             variant="outline"
                                             className="flex-1"
                                         >
-                                            取消编辑
+                                            <span suppressHydrationWarning>{I18N['key.scenes.cancel'] || '取消编辑'}</span>
                                         </Button>
                                     )}
                                     <Button
@@ -322,7 +328,9 @@ export default function ScenesPage() {
                                         disabled={!currentScene.name || !currentScene.type || !currentScene.atmosphere}
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
-                                        {editingId ? '保存修改' : '添加场景'}
+                                        <span suppressHydrationWarning>
+                                            {editingId ? (I18N['key.scenes.updateScene'] || '保存修改') : (I18N['key.scenes.addScene'] || '添加场景')}
+                                        </span>
                                     </Button>
                                 </div>
                             </div>
@@ -331,12 +339,16 @@ export default function ScenesPage() {
 
                     {/* 已添加的场景列表 */}
                     <div className="space-y-4">
-                        <h3 className="font-semibold text-lg text-slate-800">已添加场景 ({scenes.length})</h3>
+                        <h3 className="font-semibold text-lg text-slate-800" suppressHydrationWarning>
+                            {I18N['key.scenes.scenesList'] || '场景列表'} ({scenes.length})
+                        </h3>
                         {scenes.length === 0 ? (
                             <Card className="p-8 text-center text-slate-500 shadow-lg border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-green-50">
                                 <Wand2 className="w-16 h-16 mx-auto mb-3 text-slate-300" />
-                                <p className="font-medium">还没有添加场景</p>
-                                <p className="text-sm mt-1">点击左侧表单添加第一个场景</p>
+                                <p className="font-medium" suppressHydrationWarning>
+                                    {I18N['key.scenes.noScenes'] || '还没有添加场景'}
+                                </p>
+                                <p className="text-sm mt-1" suppressHydrationWarning>点击左侧表单添加第一个场景</p>
                             </Card>
                         ) : (
                             scenes.map((scene) => (
@@ -395,13 +407,13 @@ export default function ScenesPage() {
                         className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
-                        ← 返回设置
+                        <span suppressHydrationWarning>← 返回设置</span>
                     </Button>
                     <Button
                         className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 shadow-lg"
                         onClick={() => router.push('/setup/characters')}
                     >
-                        下一步:定义角色 →
+                        <span suppressHydrationWarning>下一步:定义角色 →</span>
                     </Button>
                 </div>
             </div>
