@@ -453,7 +453,19 @@ gameRoutes.post(
                     size,
                     refStrength
                 );
-            } else {
+            } 
+            // 如果是sprite类型，尝试使用抠图流程生成透明背景
+            else if (type === 'sprite') {
+                try {
+                    result = await imageGenerator.generateSpriteWithTransparency(prompt, size);
+                } catch (transparencyError) {
+                    // 抠图失败，回退到普通生成
+                    console.warn('[GameRoute] 透明背景生成失败，回退到普通生成:', transparencyError);
+                    result = await imageGenerator.generate(prompt, type as ImageType, size);
+                }
+            } 
+            // 其他类型普通生成
+            else {
                 result = await imageGenerator.generate(prompt, type as ImageType, size);
             }
             
@@ -516,7 +528,28 @@ gameRoutes.post(
                                 refStrength,
                                 onStatus
                             );
-                        } else {
+                        } 
+                        // 如果是sprite类型，尝试使用抠图流程生成透明背景
+                        else if (type === 'sprite') {
+                            try {
+                                result = await imageGenerator.generateSpriteWithTransparency(
+                                    prompt,
+                                    size,
+                                    onStatus
+                                );
+                            } catch (transparencyError) {
+                                // 抠图失败，回退到普通生成
+                                console.warn('[GameRoute] 透明背景生成失败，回退到普通生成:', transparencyError);
+                                sendEvent({ status: 'RUNNING', message: '透明背景生成失败，切换到普通模式...', progress: 10 });
+                                result = await imageGenerator.generate(
+                                    prompt,
+                                    type as ImageType,
+                                    size,
+                                    onStatus
+                                );
+                            }
+                        }
+                        else {
                             result = await imageGenerator.generate(
                                 prompt,
                                 type as ImageType,
