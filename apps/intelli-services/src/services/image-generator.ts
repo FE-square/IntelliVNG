@@ -5,7 +5,10 @@
  * 特性：
  * - 支持异步轮询模式，返回任务状态
  * - 支持参考图生成（ref_img），用于保持角色形象一致性
+ * - 集成rembg自动去除立绘背景
  */
+
+import { backgroundRemover } from './background-remover';
 
 export type ImageType = 'sprite' | 'avatar' | 'background';
 
@@ -130,8 +133,20 @@ export class ImageGenerator {
                 console.log(`[ImageGenerator] 任务状态: ${taskStatus}`);
 
                 if (taskStatus === 'SUCCEEDED') {
-                    const imageUrl = resultData.output.results?.[0]?.url;
+                    let imageUrl = resultData.output.results?.[0]?.url;
                     console.log(`[ImageGenerator] 生成成功: ${imageUrl}`);
+                    
+                    // ✅ 如果是立绘，尝试去除背景
+                    if (type === 'sprite' && backgroundRemover.isServiceAvailable()) {
+                        onStatus?.('RUNNING', '正在去除背景...', 95);
+                        try {
+                            imageUrl = await backgroundRemover.removeBackgroundFromUrl(imageUrl);
+                            console.log('[ImageGenerator] 背景已去除');
+                        } catch (error) {
+                            console.warn('[ImageGenerator] 去除背景失败，使用原始图片:', error);
+                        }
+                    }
+                    
                     onStatus?.('SUCCEEDED', '图片生成完成！', 100);
                     return {
                         imageUrl,
@@ -259,8 +274,20 @@ export class ImageGenerator {
                 console.log(`[ImageGenerator] 任务状态: ${taskStatus}`);
 
                 if (taskStatus === 'SUCCEEDED') {
-                    const imageUrl = resultData.output.results?.[0]?.url;
+                    let imageUrl = resultData.output.results?.[0]?.url;
                     console.log(`[ImageGenerator] 参考图生成成功: ${imageUrl}`);
+                    
+                    // ✅ 如果是立绘，尝试去除背景
+                    if (type === 'sprite' && backgroundRemover.isServiceAvailable()) {
+                        onStatus?.('RUNNING', '正在去除背景...', 95);
+                        try {
+                            imageUrl = await backgroundRemover.removeBackgroundFromUrl(imageUrl);
+                            console.log('[ImageGenerator] 背景已去除');
+                        } catch (error) {
+                            console.warn('[ImageGenerator] 去除背景失败，使用原始图片:', error);
+                        }
+                    }
+                    
                     onStatus?.('SUCCEEDED', '头像生成完成！', 100);
                     return {
                         imageUrl,
