@@ -62,14 +62,8 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [editingProject, setEditingProject] = useState<any>(null);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-    const [i18nReady, setI18nReady] = useState(false);
     const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
     const [isSelectionMode, setIsSelectionMode] = useState(false);
-    
-    // 等待客户端挂载后再显示翻译文本
-    useEffect(() => {
-        setI18nReady(true);
-    }, []);
     
     useEffect(() => {
         loadProjects();
@@ -126,7 +120,7 @@ export default function DashboardPage() {
         
         if (confirmed) {
             let successCount = 0;
-            for (const projectId of selectedProjects) {
+            for (const projectId of Array.from(selectedProjects)) {
                 const success = await deleteProject(projectId);
                 if (success) successCount++;
             }
@@ -189,16 +183,16 @@ export default function DashboardPage() {
             const success = await saveProject(newProject);
             
             if (success) {
-                toast.success(i18nReady ? t(i18nMap.importSuccess) : '', i18nReady ? t(i18nMap.importRedirecting) : '');
+                toast.success(t(i18nMap.importSuccess), t(i18nMap.importRedirecting));
                 setTimeout(() => {
                     router.push(`/editor?projectId=${newProject.id}`);
                 }, 1000);
             } else {
-                toast.error(i18nReady ? t(i18nMap.importFailed) : '', i18nReady ? t(i18nMap.importSaveFailed) : '');
+                toast.error(t(i18nMap.importFailed), t(i18nMap.importSaveFailed));
             }
         } catch (error) {
             console.error('[Dashboard] 导入失败:', error);
-            toast.error(i18nReady ? t(i18nMap.importFailed) : '', error instanceof Error ? error.message : '');
+            toast.error(t(i18nMap.importFailed), error instanceof Error ? error.message : '');
         }
     };
     
@@ -208,16 +202,16 @@ export default function DashboardPage() {
             const success = await saveProject(updatedProject);
             
             if (success) {
-                toast.success(i18nReady ? t(i18nMap.settingsSaveSuccess) : '', i18nReady ? t(i18nMap.settingsSaveDescription) : '');
+                toast.success(t(i18nMap.settingsSaveSuccess), t(i18nMap.settingsSaveDescription));
                 setShowSettingsDialog(false);
                 setEditingProject(null);
                 loadProjects(); // 重新加载项目列表
             } else {
-                toast.error(i18nReady ? t(i18nMap.settingsSaveFailed) : '', i18nReady ? t(i18nMap.deleteRetry) : '');
+                toast.error(t(i18nMap.settingsSaveFailed), t(i18nMap.deleteRetry));
             }
         } catch (error) {
             console.error('[Dashboard] 保存设定失败:', error);
-            toast.error(i18nReady ? t(i18nMap.settingsSaveFailed) : '', error instanceof Error ? error.message : '');
+            toast.error(t(i18nMap.settingsSaveFailed), error instanceof Error ? error.message : '');
         }
     };
 
@@ -227,8 +221,8 @@ export default function DashboardPage() {
                 {/* 标题栏 */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-4xl font-bold text-white mb-2">{i18nReady ? t(i18nMap.title) : ''}</h1>
-                        <p className="text-white/80">{i18nReady ? t(i18nMap.subtitle) : ''}</p>
+                        <h1 className="text-4xl font-bold text-white mb-2">{t(i18nMap.title)}</h1>
+                        <p className="text-white/80">{t(i18nMap.subtitle)}</p>
                     </div>
                     <div className="flex gap-3">
                         {projects.length > 0 && (
@@ -257,14 +251,14 @@ export default function DashboardPage() {
                             onClick={handleImportProject}
                         >
                             <Upload className="w-4 h-4 mr-2" />
-                            {i18nReady ? t(i18nMap.importProject) : ''}
+                            {t(i18nMap.importProject)}
                         </Button>
                         <Button
                             className="bg-white/20 text-white border-white/40 hover:bg-white/30 border"
                             onClick={() => router.push('/setup')}
                         >
                             <Plus className="w-4 h-4 mr-2" />
-                            {i18nReady ? t(i18nMap.createNewProject) : ''}
+                            {t(i18nMap.createNewProject)}
                         </Button>
                         <Button
                             variant="outline"
@@ -272,7 +266,7 @@ export default function DashboardPage() {
                             onClick={() => router.push('/')}
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
-                            {i18nReady ? t(i18nMap.backToHome) : ''}
+                            {t(i18nMap.backToHome)}
                         </Button>
                     </div>
                 </div>
@@ -319,7 +313,7 @@ export default function DashboardPage() {
                 {loading ? (
                     <div className="text-center py-20">
                         <div className="inline-block w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-                        <p className="text-white mt-4">{i18nReady ? t(i18nMap.loading) : ''}</p>
+                        <p className="text-white mt-4">{t(i18nMap.loading)}</p>
                     </div>
                 ) : projects.length === 0 ? (
                     <Card className="text-center py-20">
@@ -327,14 +321,14 @@ export default function DashboardPage() {
                             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-100 flex items-center justify-center">
                                 <FileCode className="w-12 h-12 text-slate-400" />
                             </div>
-                            <h2 className="text-2xl font-bold text-slate-800 mb-3">{i18nReady ? t(i18nMap.emptyTitle) : ''}</h2>
-                            <p className="text-slate-500 mb-6">{i18nReady ? t(i18nMap.emptyDescription) : ''}</p>
+                            <h2 className="text-2xl font-bold text-slate-800 mb-3">{t(i18nMap.emptyTitle)}</h2>
+                            <p className="text-slate-500 mb-6">{t(i18nMap.emptyDescription)}</p>
                             <Button
                                 className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                                 onClick={() => router.push('/setup')}
                             >
                                 <Plus className="w-4 h-4 mr-2" />
-                                {i18nReady ? t(i18nMap.emptyButton) : ''}
+                                {t(i18nMap.emptyButton)}
                             </Button>
                         </CardContent>
                     </Card>
@@ -392,7 +386,7 @@ export default function DashboardPage() {
                                 <CardHeader>
                                     <CardTitle className="text-xl line-clamp-1">{project.title}</CardTitle>
                                     <CardDescription className="line-clamp-2">
-                                        {project.description || (i18nReady ? t(i18nMap.noDescription) : '')}
+                                        {project.description || t(i18nMap.noDescription)}
                                     </CardDescription>
                                 </CardHeader>
 
@@ -402,17 +396,17 @@ export default function DashboardPage() {
                                         <div className="text-center p-2 bg-indigo-50 rounded">
                                             <Users className="w-4 h-4 mx-auto mb-1 text-indigo-600" />
                                             <div className="font-semibold text-indigo-700">{project.characterCount}</div>
-                                            <div className="text-xs text-slate-500">{i18nReady ? t(i18nMap.characters) : ''}</div>
+                                            <div className="text-xs text-slate-500">{t(i18nMap.characters)}</div>
                                         </div>
                                         <div className="text-center p-2 bg-purple-50 rounded">
                                             <ImageIcon className="w-4 h-4 mx-auto mb-1 text-purple-600" />
                                             <div className="font-semibold text-purple-700">{project.sceneCount}</div>
-                                            <div className="text-xs text-slate-500">{i18nReady ? t(i18nMap.scenes) : ''}</div>
+                                            <div className="text-xs text-slate-500">{t(i18nMap.scenes)}</div>
                                         </div>
                                         <div className="text-center p-2 bg-pink-50 rounded">
                                             <FileCode className="w-4 h-4 mx-auto mb-1 text-pink-600" />
                                             <div className="font-semibold text-pink-700">{project.nodeCount}</div>
-                                            <div className="text-xs text-slate-500">{i18nReady ? t(i18nMap.storyNodes) : ''}</div>
+                                            <div className="text-xs text-slate-500">{t(i18nMap.storyNodes)}</div>
                                         </div>
                                     </div>
 
@@ -420,14 +414,14 @@ export default function DashboardPage() {
                                     <div className="space-y-2 mb-4">
                                         <div className="flex items-center gap-2 text-xs text-slate-500">
                                             <Calendar className="w-3 h-3" />
-                                            <span>{i18nReady ? t(i18nMap.updated) : ''}: {formatDate(project.updatedAt)}</span>
+                                            <span>{t(i18nMap.updated)}: {formatDate(project.updatedAt)}</span>
                                             {project.autoSaved && (
-                                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{i18nReady ? t(i18nMap.autoSaved) : ''}</span>
+                                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{t(i18nMap.autoSaved)}</span>
                                             )}
                                         </div>
                                         {project.saveNote && (
                                             <div className="text-xs text-slate-600 bg-amber-50 px-2 py-1.5 rounded border border-amber-200">
-                                                <span className="font-semibold text-amber-700">{i18nReady ? t(i18nMap.note) : ''}:</span> {project.saveNote}
+                                                <span className="font-semibold text-amber-700">{t(i18nMap.note)}:</span> {project.saveNote}
                                             </div>
                                         )}
                                     </div>
@@ -441,7 +435,7 @@ export default function DashboardPage() {
                                                 onClick={() => router.push(`/editor?projectId=${project.id}`)}
                                             >
                                                 <Edit className="w-4 h-4 mr-1" />
-                                                {i18nReady ? t(i18nMap.editScript) : ''}
+                                                {t(i18nMap.editScript)}
                                             </Button>
                                             <Button
                                                 variant="outline"
@@ -452,12 +446,12 @@ export default function DashboardPage() {
                                                         setEditingProject(fullProject);
                                                         setShowSettingsDialog(true);
                                                     } else {
-                                                        toast.error(i18nReady ? t(i18nMap.settingsLoadFailed) : '');
+                                                        toast.error(t(i18nMap.settingsLoadFailed));
                                                     }
                                                 }}
                                             >
                                                 <Settings className="w-4 h-4 mr-1" />
-                                                {i18nReady ? t(i18nMap.editSettings) : ''}
+                                                {t(i18nMap.editSettings)}
                                             </Button>
                                         </div>
                                         
@@ -471,12 +465,12 @@ export default function DashboardPage() {
                                                     const fullProject = await getProject(project.id);
                                                     if (fullProject) {
                                                         exportProjectAsJson(fullProject);
-                                                        toast.success(i18nReady ? t(i18nMap.exportSuccess) : '');
+                                                        toast.success(t(i18nMap.exportSuccess));
                                                     }
                                                 }}
                                             >
                                                 <Download className="w-3 h-3 mr-1" />
-                                                {i18nReady ? t(i18nMap.export) : ''}
+                                                {t(i18nMap.export)}
                                             </Button>
                                             <Button
                                                 variant="outline"
@@ -487,7 +481,7 @@ export default function DashboardPage() {
                                                 }}
                                             >
                                                 <Play className="w-3 h-3 mr-1" />
-                                                {i18nReady ? t(i18nMap.preview) : ''}
+                                                {t(i18nMap.preview)}
                                             </Button>
                                             <Button
                                                 variant="outline"
@@ -499,7 +493,7 @@ export default function DashboardPage() {
                                                 }}
                                             >
                                                 <Trash2 className="w-3 h-3 mr-1" />
-                                                {i18nReady ? t(i18nMap.deleteBtn) : ''}
+                                                {t(i18nMap.deleteBtn)}
                                             </Button>
                                         </div>
                                     </div>
