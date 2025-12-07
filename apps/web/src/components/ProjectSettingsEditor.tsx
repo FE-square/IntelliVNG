@@ -33,6 +33,14 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
     const [editingScene, setEditingScene] = useState<Background | null>(null);
     const [showSceneForm, setShowSceneForm] = useState(false);
     
+    // URL输入状态
+    const [showAvatarUrlInput, setShowAvatarUrlInput] = useState(false);
+    const [showSpriteUrlInput, setShowSpriteUrlInput] = useState(false);
+    const [showBackgroundUrlInput, setShowBackgroundUrlInput] = useState(false);
+    const [avatarUrlValue, setAvatarUrlValue] = useState('');
+    const [spriteUrlValue, setSpriteUrlValue] = useState('');
+    const [backgroundUrlValue, setBackgroundUrlValue] = useState('');
+    
     // ✅ 主题风格状态 - 从meta中加载
     const [selectedThemes, setSelectedThemes] = useState<string[]>(
         (project.meta as any)?.themes || []
@@ -468,14 +476,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                         {/* 头像管理 */}
                         <div className="border-t pt-4">
                             <label className="block text-sm font-medium mb-2">👤 角色头像</label>
-                            <div className="flex gap-3">
-                                <input
-                                    type="text"
-                                    className="flex-1 px-3 py-2 border rounded-lg"
-                                    value={editingCharacter?.avatarUrl || ''}
-                                    onChange={(e) => setEditingCharacter({ ...editingCharacter!, avatarUrl: e.target.value })}
-                                    placeholder="输入头像URL"
-                                />
+                            <div className="flex gap-2">
                                 {onGenerateImage && (
                                     <Button
                                         size="sm"
@@ -495,13 +496,76 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                                 // 错误已在onGenerateImage中处理
                                             }
                                         }}
-                                        className="gap-1"
+                                        className="flex-1 gap-1 bg-white border-2 border-blue-200 text-slate-700 hover:border-blue-400 hover:bg-blue-50"
                                     >
                                         <Wand2 className="w-3 h-3" />
                                         AI生成
                                     </Button>
                                 )}
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setShowAvatarUrlInput(!showAvatarUrlInput);
+                                        setShowSpriteUrlInput(false);
+                                        setAvatarUrlValue('');
+                                    }}
+                                    className="flex-1 gap-1 bg-white border-2 border-green-200 text-slate-700 hover:border-green-400 hover:bg-green-50"
+                                >
+                                    🔗 URL添加
+                                </Button>
                             </div>
+                            
+                            {/* URL输入框 */}
+                            {showAvatarUrlInput && (
+                                <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                                    <label className="block text-xs font-medium text-slate-700 mb-2">输入头像图URL</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={avatarUrlValue}
+                                            onChange={(e) => setAvatarUrlValue(e.target.value)}
+                                            placeholder="https://example.com/avatar.png"
+                                            className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && avatarUrlValue.trim()) {
+                                                    setEditingCharacter({ ...editingCharacter!, avatarUrl: avatarUrlValue.trim() });
+                                                    toast.success('头像添加成功');
+                                                    setShowAvatarUrlInput(false);
+                                                    setAvatarUrlValue('');
+                                                }
+                                            }}
+                                        />
+                                        <Button
+                                            size="sm"
+                                            onClick={() => {
+                                                if (!avatarUrlValue.trim()) {
+                                                    toast.warning('请输入URL');
+                                                    return;
+                                                }
+                                                setEditingCharacter({ ...editingCharacter!, avatarUrl: avatarUrlValue.trim() });
+                                                toast.success('头像添加成功');
+                                                setShowAvatarUrlInput(false);
+                                                setAvatarUrlValue('');
+                                            }}
+                                            className="bg-green-500 text-white hover:bg-green-600"
+                                        >
+                                            确定
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setShowAvatarUrlInput(false);
+                                                setAvatarUrlValue('');
+                                            }}
+                                        >
+                                            取消
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                            
                             {editingCharacter?.avatarUrl && (
                                 <div className="mt-2 flex justify-center">
                                     <img src={editingCharacter.avatarUrl} alt="头像预览" className="w-20 h-20 rounded-full object-cover border-2 border-slate-200" />
@@ -513,39 +577,121 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                         <div className="border-t pt-4">
                             <div className="flex items-center justify-between mb-2">
                                 <label className="block text-sm font-medium">💼 角色立绘 ({editingCharacter?.sprites?.length || 0})</label>
-                                {onGenerateImage && (
+                                <div className="flex gap-2">
+                                    {onGenerateImage && (
+                                        <Button
+                                            size="sm"
+                                            onClick={async () => {
+                                                if (!editingCharacter?.displayName || !editingCharacter?.description) {
+                                                    toast.warning('请先填写角色名称和描述');
+                                                    return;
+                                                }
+                                                try {
+                                                    const prompt = `${editingCharacter.displayName}, ${editingCharacter.description}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量`;
+                                                    // ✅ 立绘生成不使用参考图，让后端走抠图流程 generateSpriteWithTransparency
+                                                    const imageUrl = await onGenerateImage(editingCharacter.id, prompt, undefined, 'sprite');
+                                                    const newSprite = {
+                                                        id: createId(),
+                                                        emotion: 'neutral' as const,
+                                                        imageUrl: imageUrl,
+                                                    };
+                                                    setEditingCharacter({
+                                                        ...editingCharacter!,
+                                                        sprites: [...(editingCharacter.sprites || []), newSprite],
+                                                        defaultSpriteId: editingCharacter.defaultSpriteId || newSprite.id
+                                                    });
+                                                } catch (error) {
+                                                    // 错误已在onGenerateImage中处理
+                                                }
+                                            }}
+                                            className="gap-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                                        >
+                                            <Wand2 className="w-3 h-3" />
+                                            AI生成立绘
+                                        </Button>
+                                    )}
                                     <Button
                                         size="sm"
-                                        onClick={async () => {
-                                            if (!editingCharacter?.displayName || !editingCharacter?.description) {
-                                                toast.warning('请先填写角色名称和描述');
-                                                return;
-                                            }
-                                            try {
-                                                const prompt = `${editingCharacter.displayName}, ${editingCharacter.description}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量`;
-                                                // ✅ 立绘生成不使用参考图，让后端走抠图流程 generateSpriteWithTransparency
-                                                const imageUrl = await onGenerateImage(editingCharacter.id, prompt, undefined, 'sprite');
+                                        variant="outline"
+                                        onClick={() => {
+                                            setShowSpriteUrlInput(!showSpriteUrlInput);
+                                            setShowAvatarUrlInput(false);
+                                            setSpriteUrlValue('');
+                                        }}
+                                        className="gap-1 bg-white border-2 border-orange-200 text-slate-700 hover:border-orange-400 hover:bg-orange-50"
+                                    >
+                                        🔗 URL添加
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            {/* URL输入框 */}
+                            {showSpriteUrlInput && (
+                                <div className="mb-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                    <label className="block text-xs font-medium text-slate-700 mb-2">输入立绘图URL</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={spriteUrlValue}
+                                            onChange={(e) => setSpriteUrlValue(e.target.value)}
+                                            placeholder="https://example.com/sprite.png"
+                                            className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && spriteUrlValue.trim()) {
+                                                    const newSprite = {
+                                                        id: createId(),
+                                                        emotion: 'neutral' as const,
+                                                        imageUrl: spriteUrlValue.trim(),
+                                                    };
+                                                    setEditingCharacter({
+                                                        ...editingCharacter!,
+                                                        sprites: [...(editingCharacter!.sprites || []), newSprite],
+                                                        defaultSpriteId: editingCharacter!.defaultSpriteId || newSprite.id
+                                                    });
+                                                    toast.success('立绘添加成功');
+                                                    setShowSpriteUrlInput(false);
+                                                    setSpriteUrlValue('');
+                                                }
+                                            }}
+                                        />
+                                        <Button
+                                            size="sm"
+                                            onClick={() => {
+                                                if (!spriteUrlValue.trim()) {
+                                                    toast.warning('请输入URL');
+                                                    return;
+                                                }
                                                 const newSprite = {
                                                     id: createId(),
                                                     emotion: 'neutral' as const,
-                                                    imageUrl: imageUrl,
+                                                    imageUrl: spriteUrlValue.trim(),
                                                 };
                                                 setEditingCharacter({
                                                     ...editingCharacter!,
-                                                    sprites: [...(editingCharacter.sprites || []), newSprite],
-                                                    defaultSpriteId: editingCharacter.defaultSpriteId || newSprite.id
+                                                    sprites: [...(editingCharacter!.sprites || []), newSprite],
+                                                    defaultSpriteId: editingCharacter!.defaultSpriteId || newSprite.id
                                                 });
-                                            } catch (error) {
-                                                // 错误已在onGenerateImage中处理
-                                            }
-                                        }}
-                                        className="gap-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                                    >
-                                        <Wand2 className="w-3 h-3" />
-                                        AI生成立绘
-                                    </Button>
-                                )}
-                            </div>
+                                                toast.success('立绘添加成功');
+                                                setShowSpriteUrlInput(false);
+                                                setSpriteUrlValue('');
+                                            }}
+                                            className="bg-orange-500 text-white hover:bg-orange-600"
+                                        >
+                                            确定
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setShowSpriteUrlInput(false);
+                                                setSpriteUrlValue('');
+                                            }}
+                                        >
+                                            取消
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                             <div className="grid grid-cols-3 gap-2">
                                 {editingCharacter?.sprites?.map((sprite, index) => (
                                     <div key={sprite.id} className="relative group">
@@ -1009,15 +1155,8 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-2">背景图片URL</label>
-                            <div className="flex gap-3">
-                                <input
-                                    type="text"
-                                    className="flex-1 px-3 py-2 border rounded-lg"
-                                    value={editingScene?.imageUrl || ''}
-                                    onChange={(e) => setEditingScene({ ...editingScene!, imageUrl: e.target.value })}
-                                    placeholder="输入图片链接或使用AI生成"
-                                />
+                            <label className="block text-sm font-medium mb-2">背景图片</label>
+                            <div className="flex gap-2">
                                 {onGenerateImage && (
                                     <Button
                                         size="sm"
@@ -1036,13 +1175,75 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                                 // 错误已在onGenerateImage中处理
                                             }
                                         }}
-                                        className="gap-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
+                                        className="flex-1 gap-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
                                     >
                                         <Wand2 className="w-3 h-3" />
                                         AI生成
                                     </Button>
                                 )}
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setShowBackgroundUrlInput(!showBackgroundUrlInput);
+                                        setBackgroundUrlValue('');
+                                    }}
+                                    className="flex-1 gap-1 bg-white border-2 border-cyan-200 text-slate-700 hover:border-cyan-400 hover:bg-cyan-50"
+                                >
+                                    🔗 URL添加
+                                </Button>
                             </div>
+                            
+                            {/* URL输入框 */}
+                            {showBackgroundUrlInput && (
+                                <div className="mt-3 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
+                                    <label className="block text-xs font-medium text-slate-700 mb-2">输入背景图URL</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={backgroundUrlValue}
+                                            onChange={(e) => setBackgroundUrlValue(e.target.value)}
+                                            placeholder="https://example.com/background.png"
+                                            className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && backgroundUrlValue.trim()) {
+                                                    setEditingScene({ ...editingScene!, imageUrl: backgroundUrlValue.trim() });
+                                                    toast.success('背景添加成功');
+                                                    setShowBackgroundUrlInput(false);
+                                                    setBackgroundUrlValue('');
+                                                }
+                                            }}
+                                        />
+                                        <Button
+                                            size="sm"
+                                            onClick={() => {
+                                                if (!backgroundUrlValue.trim()) {
+                                                    toast.warning('请输入URL');
+                                                    return;
+                                                }
+                                                setEditingScene({ ...editingScene!, imageUrl: backgroundUrlValue.trim() });
+                                                toast.success('背景添加成功');
+                                                setShowBackgroundUrlInput(false);
+                                                setBackgroundUrlValue('');
+                                            }}
+                                            className="bg-cyan-500 text-white hover:bg-cyan-600"
+                                        >
+                                            确定
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setShowBackgroundUrlInput(false);
+                                                setBackgroundUrlValue('');
+                                            }}
+                                        >
+                                            取消
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                            
                             {editingScene?.imageUrl && (
                                 <img src={editingScene.imageUrl} alt="预览" className="mt-2 w-full h-48 object-cover rounded-lg" />
                             )}
