@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, useToast, useConfirmDialog } from '@vng/ui';
-import { Plus, Trash2, Edit, Calendar, Users, Image as ImageIcon, FileCode, ArrowLeft, Upload, Settings, Download, Play } from 'lucide-react';
+import { Plus, Trash2, Edit, Calendar, Users, Image as ImageIcon, FileCode, ArrowLeft, Upload, Settings, Download, Play, CheckSquare, Square } from 'lucide-react';
 import { getAllProjects, deleteProject, ProjectMetadata, saveProject, getProject } from '@/lib/projectStorage';
 import { importProjectFromJson, openFileDialog, exportProjectAsJson } from '@/lib/projectExport';
 import { I18N, t } from '@/i18n/client';
@@ -63,6 +63,8 @@ export default function DashboardPage() {
     const [editingProject, setEditingProject] = useState<any>(null);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [i18nReady, setI18nReady] = useState(false);
+    const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
     
     // 等待客户端挂载后再显示翻译文本
     useEffect(() => {
@@ -106,6 +108,57 @@ export default function DashboardPage() {
                     t(i18nMap.deleteRetry)
                 );
             }
+        }
+    };
+    
+    // 批量删除
+    const handleBatchDelete = async () => {
+        const selectedCount = selectedProjects.size;
+        if (selectedCount === 0) return;
+        
+        const confirmed = await confirm({
+            title: '批量删除项目',
+            message: `确定要删除选中的 ${selectedCount} 个项目吗？此操作无法撤销。`,
+            confirmText: '确认删除',
+            cancelText: '取消',
+            variant: 'danger',
+        });
+        
+        if (confirmed) {
+            let successCount = 0;
+            for (const projectId of selectedProjects) {
+                const success = await deleteProject(projectId);
+                if (success) successCount++;
+            }
+            
+            if (successCount > 0) {
+                toast.success('删除成功', `已删除 ${successCount} 个项目`);
+                setSelectedProjects(new Set());
+                setIsSelectionMode(false);
+                loadProjects();
+            } else {
+                toast.error('删除失败', '请重试');
+            }
+        }
+    };
+    
+    // 切换项目选中状态
+    const toggleProjectSelection = (projectId: string) => {
+        const newSelection = new Set(selectedProjects);
+        if (newSelection.has(projectId)) {
+            newSelection.delete(projectId);
+        } else {
+            newSelection.add(projectId);
+        }
+        setSelectedProjects(newSelection);
+    };
+    
+    // 全选/取消全选
+    const toggleSelectAll = () => {
+        if (selectedProjects.size === projects.length) {
+            setSelectedProjects(new Set());
+        } else {
+            setSelectedProjects(new Set(projects.map(p => p.id)));
         }
     };
     
@@ -178,6 +231,27 @@ export default function DashboardPage() {
                         <p className="text-white/80">{i18nReady ? t(i18nMap.subtitle) : ''}</p>
                     </div>
                     <div className="flex gap-3">
+                        {projects.length > 0 && (
+                            <Button
+                                className="bg-white/20 text-white border-white/40 hover:bg-white/30 border"
+                                onClick={() => {
+                                    setIsSelectionMode(!isSelectionMode);
+                                    setSelectedProjects(new Set());
+                                }}
+                            >
+                                {isSelectionMode ? (
+                                    <>
+                                        <Square className="w-4 h-4 mr-2" />
+                                        取消选择
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckSquare className="w-4 h-4 mr-2" />
+                                        批量管理
+                                    </>
+                                )}
+                            </Button>
+                        )}
                         <Button
                             className="bg-white/20 text-white border-white/40 hover:bg-white/30 border"
                             onClick={handleImportProject}
@@ -202,6 +276,44 @@ export default function DashboardPage() {
                         </Button>
                     </div>
                 </div>
+
+                {/* 批量操作栏 */}
+                {isSelectionMode && projects.length > 0 && (
+                    <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 mb-6 flex items-center justify-between shadow-lg">
+                        <div className="flex items-center gap-4">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={toggleSelectAll}
+                            >
+                                {selectedProjects.size === projects.length ? (
+                                    <>
+                                        <Square className="w-4 h-4 mr-2" />
+                                        取消全选
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckSquare className="w-4 h-4 mr-2" />
+                                        全选
+                                    </>
+                                )}
+                            </Button>
+                            <span className="text-sm text-slate-600">
+                                已选择 <span className="font-semibold text-indigo-600">{selectedProjects.size}</span> / {projects.length} 个项目
+                            </span>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-red-300 text-red-600 hover:bg-red-50"
+                            onClick={handleBatchDelete}
+                            disabled={selectedProjects.size === 0}
+                        >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            删除选中项目
+                        </Button>
+                    </div>
+                )}
 
                 {/* 项目列表 */}
                 {loading ? (
@@ -231,8 +343,35 @@ export default function DashboardPage() {
                         {projects.map((project) => (
                             <Card 
                                 key={project.id} 
-                                className="hover:shadow-2xl transition-all cursor-pointer group overflow-hidden"
+                                className={`hover:shadow-2xl transition-all cursor-pointer group overflow-hidden relative ${
+                                    isSelectionMode && selectedProjects.has(project.id) ? 'ring-4 ring-indigo-500' : ''
+                                }`}
                             >
+                                {/* 选择复选框 */}
+                                {isSelectionMode && (
+                                    <div className="absolute top-2 left-2 z-10">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className={`w-8 h-8 p-0 rounded-full ${
+                                                selectedProjects.has(project.id) 
+                                                    ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700' 
+                                                    : 'bg-white/90 hover:bg-white'
+                                            }`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleProjectSelection(project.id);
+                                            }}
+                                        >
+                                            {selectedProjects.has(project.id) ? (
+                                                <CheckSquare className="w-5 h-5" />
+                                            ) : (
+                                                <Square className="w-5 h-5" />
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
+                                
                                 {/* 封面图 */}
                                 <div 
                                     className="h-40 bg-gradient-to-br from-slate-200 to-slate-300 relative overflow-hidden"
@@ -385,21 +524,41 @@ export default function DashboardPage() {
                         try {
                             toast.info('生成中', '正在生成图片,请稍候...');
                             
+                            // ✅ 根据 characterId 决定 type
+                            let type: 'sprite' | 'avatar' | 'background' = 'sprite';
+                            if (characterId === 'cover') {
+                                type = 'background';
+                            } else if (characterId === 'scene' || characterId.startsWith('background-')) {
+                                type = 'background';
+                            } else if (prompt.includes('头像') || prompt.includes('avatar')) {
+                                type = 'avatar';
+                            }
+                            
                             const response = await fetch('/api/generate-image', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ 
                                     prompt,
+                                    type,  // ✅ 添加 type 参数
                                     refImageUrl,
                                     refStrength: refImageUrl ? 0.7 : undefined
                                 }),
                             });
                             
-                            if (!response.ok) {
-                                throw new Error('图片生成失败');
-                            }
-                            
                             const data = await response.json();
+                            
+                            if (!response.ok) {
+                                // ✅ 显示详细的错误信息
+                                const errorMessage = data.details || data.error || '图片生成失败';
+                                console.error('[Dashboard] 图片生成失败:', {
+                                    status: response.status,
+                                    error: data.error,
+                                    details: data.details,
+                                    prompt,
+                                    type
+                                });
+                                throw new Error(errorMessage);
+                            }
                             
                             if (!data.imageUrl) {
                                 throw new Error('未返回图片URL');
