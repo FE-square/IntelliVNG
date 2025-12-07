@@ -111,8 +111,8 @@ export class ImageGenerator {
             console.log(`[ImageGenerator] 异步任务创建成功, task_id: ${taskId}`);
             onStatus?.('RUNNING', `任务已创建，正在生成中... (ID: ${taskId.substring(0, 8)}...)`, 20);
 
-            // 轮询获取结果（最多等待60秒）
-            for (let i = 0; i < 60; i++) {
+            // 轮询获取结果（最多等待180秒）
+            for (let i = 0; i < 180; i++) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
                 const progress = Math.min(20 + Math.floor((i / 60) * 70), 90);
@@ -240,8 +240,8 @@ export class ImageGenerator {
             console.log(`[ImageGenerator] 异步任务创建成功, task_id: ${taskId}`);
             onStatus?.('RUNNING', `基于参考图生成中... (ID: ${taskId.substring(0, 8)}...)`, 20);
 
-            // 轮询获取结果（最多等待60秒）
-            for (let i = 0; i < 60; i++) {
+            // 轮询获取结果（最多等待180秒）
+            for (let i = 0; i < 180; i++) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
                 const progress = Math.min(20 + Math.floor((i / 60) * 70), 90);
@@ -577,8 +577,8 @@ export class ImageGenerator {
             console.log(`[ImageGenerator] 异步任务创建成功, task_id: ${taskId}`);
             onStatus?.('RUNNING', `任务已创建，正在生成中... (ID: ${taskId.substring(0, 8)}...)`, 20);
 
-            // 轮询获取结果（最多等待60秒）
-            for (let i = 0; i < 60; i++) {
+            // 轮询获取结果（最多等待180秒）
+            for (let i = 0; i < 180; i++) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
                 const progress = Math.min(20 + Math.floor((i / 60) * 70), 90);

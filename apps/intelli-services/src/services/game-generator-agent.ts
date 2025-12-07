@@ -1071,6 +1071,7 @@ export class GameGeneratorAgent {
         characterConsistency: 85,
         dialogueQuality: 85,
         branchMeaningfulness: 85,
+        branchDistribution: 85,
         pacing: 85,
       },
       overallScore: 85,
