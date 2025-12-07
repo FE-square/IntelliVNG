@@ -1070,7 +1070,7 @@ function CharactersPageContent() {
 // 用 Suspense 包裹以支持 useSearchParams
 export default function CharactersPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 flex items-center justify-center"><div className="text-lg"><span suppressHydrationWarning>{getText('key.common.loading', '加载中...')}</span></div></div>}>
+        <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 flex items-center justify-center"><div className="text-lg">加载中...</div></div>}>
             <CharactersPageContent />
         </Suspense>
     );
