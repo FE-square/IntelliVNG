@@ -193,63 +193,134 @@ export default function Home() {
         }
     }, [recentProgressEvents]);
 
+    /**
+     * ============================================================
+     * SSE 事件处理器（智能体模式专用）
+     * ============================================================
+     * 
+     * 处理来自 /api/game/generate-by-agents 的实时事件推送
+     * 
+     * 事件类型：
+     * 1. 'progress' - 进度事件（最频繁）
+     *    - 智能体工作进度更新（规划中/写作中/评审中等）
+     *    - 添加到 progressEvents 数组，供 UI 展示
+     *    - 不终止流
+     * 
+     * 2. 'session' - 会话状态事件
+     *    - sessionId: 会话唯一标识
+     *    - status: 'started' | 'ended'
+     *    - 'ended' 时标记为成功（如果之前无错误）
+     *    - 不终止流
+     * 
+     * 3. 'result' - 最终结果事件
+     *    - 包含完整剧本数据（projectId, title等）
+     *    - 保存项目信息，启动跳转倒计时
+     *    - 终止流
+     * 
+     * 4. 'error' - 错误事件
+     *    - 智能体生成过程中的业务错误
+     *    - 标记为错误状态，显示错误提示
+     *    - 终止流
+     * 
+     * @param payload - SSE 事件载荷
+     * @returns boolean - true 表示应终止流，false 表示继续接收
+     */
     const handleAgentEvent = (payload: AgentEventPayload) => {
+        // ========== 进度事件 ==========
         if (payload.event === 'progress') {
-            setProgressEvents((prev) => [...prev, payload]);
-            setSessionStatus((prev) => (prev === 'error' ? prev : 'running'));
-            return false;
+            setProgressEvents((prev) => [...prev, payload]); // 追加进度事件
+            setSessionStatus((prev) => (prev === 'error' ? prev : 'running')); // 保持运行状态（除非已错误）
+            return false; // 继续接收
         }
 
+        // ========== 会话状态事件 ==========
         if (payload.event === 'session') {
             setSessionInfo({ sessionId: payload.sessionId, message: payload.message });
             if (payload.status === 'ended' && sessionStatus !== 'error') {
-                setSessionStatus('success');
+                setSessionStatus('success'); // 会话正常结束
             }
-            return false;
+            return false; // 继续接收（可能还有 result 事件）
         }
 
+        // ========== 最终结果事件 ==========
         if (payload.event === 'result') {
             if (payload.data?.id) {
                 const projectData = { id: payload.data.id, title: payload.data.title };
-                updateFinalProject(projectData);
+                updateFinalProject(projectData); // 保存项目信息
                 setSessionStatus('success');
                 toast.success('生成成功', '5 秒后自动跳转到视觉素材生成页面...');
-                startRedirectCountdown();
+                startRedirectCountdown(); // 启动5秒倒计时跳转
             }
-            return true;
+            return true; // 终止流
         }
 
+        // ========== 错误事件 ==========
         if (payload.event === 'error') {
             setSessionStatus('error');
             toast.error('智能体生成失败', payload.error || '请重试');
-            return true;
+            return true; // 终止流
         }
 
-        return false;
+        return false; // 未知事件类型，继续接收
     };
 
+    /**
+     * ============================================================
+     * SSE 流式响应处理（智能体模式专用）
+     * ============================================================
+     * 
+     * 解析 Server-Sent Events (SSE) 流，实时更新进度
+     * 
+     * SSE 格式：
+     * ```
+     * data: {"event":"progress","stage":"planning","message":"..."}
+     * 
+     * data: {"event":"result","data":{"id":"xxx","title":"..."}}
+     * 
+     * ```
+     * 
+     * 处理流程：
+     * 1. 使用 ReadableStream 逐块读取响应体
+     * 2. 按 '\n\n' 分割事件
+     * 3. 提取 'data:' 后的 JSON 并解析
+     * 4. 调用 handleAgentEvent 处理事件
+     * 5. 收到终止信号（result/error）时停止读取
+     * 
+     * 错误处理：
+     * - 无响应体：抛出错误，重置状态
+     * - JSON 解析失败：警告日志，跳过该事件，继续接收
+     * 
+     * @param response - fetch 返回的 Response 对象
+     */
     const streamAgentResponse = async (response: Response) => {
+        // ========== 前置检查 ==========
         if (!response.body) {
             setIsQuickGenerating(false);
             setIsAgentGenerating(false);
             throw new Error('无法建立智能体 SSE 连接');
         }
 
+        // ========== 初始化流读取器 ==========
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
-        let buffer = '';
-        let shouldStop = false;
+        let buffer = ''; // 缓冲区，存储未完成的数据
+        let shouldStop = false; // 终止标志
 
+        // ========== 循环读取流 ==========
         while (!shouldStop) {
             const { value, done } = await reader.read();
-            if (done) break;
+            if (done) break; // 流结束
+            
+            // 解码并追加到缓冲区
             buffer += decoder.decode(value, { stream: true });
 
+            // 按 '\n\n' 分割事件
             let boundary = buffer.indexOf('\n\n');
             while (boundary !== -1) {
                 const chunk = buffer.slice(0, boundary).trim();
-                buffer = buffer.slice(boundary + 2);
+                buffer = buffer.slice(boundary + 2); // 移除已处理部分
 
+                // 解析 SSE 事件
                 if (chunk.startsWith('data:')) {
                     const dataStr = chunk.replace(/^data:\s*/, '');
                     if (dataStr) {
@@ -257,11 +328,12 @@ export default function Home() {
                             const payload = JSON.parse(dataStr) as AgentEventPayload;
                             const shouldTerminate = handleAgentEvent(payload);
                             if (shouldTerminate) {
-                                shouldStop = true;
+                                shouldStop = true; // 收到终止信号
                                 break;
                             }
                         } catch (error) {
                             console.warn('解析 SSE 事件失败:', error);
+                            // 继续处理下一个事件
                         }
                     }
                 }
@@ -269,6 +341,7 @@ export default function Home() {
             }
         }
 
+        // ========== 处理剩余数据 ==========
         const trimmed = buffer.trim();
         if (trimmed.startsWith('data:')) {
             try {
@@ -279,22 +352,58 @@ export default function Home() {
             }
         }
 
+        // ========== 清理资源 ==========
         await reader.cancel().catch(() => { });
     };
-
+    /**
+     * ============================================================
+     * 剧本生成接口调用 - 支持两种模式和自动重试
+     * ============================================================
+     * 
+     * @param draft - 设定草稿数据（角色/世界观/场景/主题）
+     * @param locale - 用户语言
+     * @param mode - 生成模式：
+     *   - 'fast': 快速模式，单次LLM调用，约1min完成
+     *   - 'agent': 智能体模式，多智能体协作+SSE实时进度，约5min完成
+     * @param time - 当前重试次数（从1开始）
+     * 
+     * 重试机制：
+     * - 当 response.ok 为 false（HTTP 4xx/5xx）时自动重试
+     * - 最多重试3次，第4次失败时抛出错误并重置状态
+     * - 重试时递归调用自己，保持原 mode 和 draft 参数
+     * 
+     * 状态管理：
+     * - sessionStatus: 'running' - 会话运行中
+     * - showFastScriptLoading: true - 快速模式专用加载UI
+     * - 成功后路由跳转或触发 SSE 流式响应
+     * 
+     * 错误处理：
+     * - 超过3次重试：抛出错误，外层 catch 处理
+     * - HTTP错误：自动重试，不向外抛出
+     * - result.success === false：显示错误提示，不抛出（由调用方 finally 清理状态）
+     */
     const requestScriptsGeneration = async (draft: DraftData, locale: string, mode = 'fast', time = 1) => {
+        // ========== 重试次数检查 ==========
         if (time > 3) {
+            // 超过3次重试，重置所有加载状态并抛出错误
             setIsQuickGenerating(false);
             setIsAgentGenerating(false);
+            setShowFastScriptLoading(false);
             throw new Error('智能体服务异常 (generate-by-agents)');
         }
+
+        // ========== 初始化状态 ==========
         setSessionStatus('running');
         const controller = new AbortController();
-        controllerRef.current = controller;
+        controllerRef.current = controller; // 存储到 ref，支持用户手动取消
         toast.info('连接智能创作服务', `模式: ${mode}`);
+
+        // 快速模式开启专用加载UI
         if (mode === 'fast') {
             setShowFastScriptLoading(true);
         }
+
+        // ========== 发起剧本生成请求 ==========
         const response = await fetch('/api/game/generate-by-agents', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -306,57 +415,101 @@ export default function Home() {
                 locale,
                 mode,
             }),
-            signal: controller.signal,
+            signal: controller.signal, // 支持手动取消
         });
 
+        // ========== HTTP 错误自动重试 ==========
         if (!response.ok) {
             const errorPayload = await response.json().catch(() => ({}));
             console.error('[智能体服务重连中]', errorPayload.error);
-            requestScriptsGeneration(draft, locale, mode, time + 1);
-            throw new Error(errorPayload.error || '智能体服务重连中 (generate-by-agents)');
+            // 递归重试，time + 1，返回重试的 Promise
+            return requestScriptsGeneration(draft, locale, mode, time + 1);
         }
+
+        // ========== 成功响应处理 ==========
         if (mode === 'fast') {
+            // --- 快速模式：JSON 响应，一次性返回完整剧本 ---
             const result = await response.json();
-            setIsQuickGenerating(false)
+            setIsQuickGenerating(false);
             setShowFastScriptLoading(false);
+
             if (result.success) {
+                // 生成成功，跳转到视觉素材生成页面
                 toast.success('剧本生成成功', '即将跳转到视觉素材生成页面...');
                 setTimeout(() => {
                     router.push(`/generate-assets?projectId=${result.data.id}`);
                 }, 2000);
             } else {
-                setIsQuickGenerating(false)
+                // result.success === false，业务层失败（非HTTP错误）
+                // 重置加载状态，显示错误提示，不抛出错误（让调用方 finally 统一清理）
+                setIsQuickGenerating(false);
                 setShowFastScriptLoading(false);
                 toast.error('生成失败', result.error || '请重试');
             }
         } else {
+            // --- 智能体模式：SSE 流式响应，实时进度推送 ---
+            // streamAgentResponse 内部会更新 progressEvents 和 sessionStatus
             await streamAgentResponse(response);
         }
     };
 
-    // 先 /idea-to-draft 生成草稿 然后交给 /generate-by-agents 接口生成脚本
+    /**
+     * ============================================================
+     * 完整创作流程：从创意到剧本（两阶段）
+     * ============================================================
+     * 
+     * 流程：
+     * 1. 【草稿阶段】调用 /api/game/idea-to-draft
+     *    - 输入：用户的故事创意描述（quickPrompt）
+     *    - 输出：设定草稿（角色/世界观/场景/主题）
+     *    - 支持缓存，相同创意会复用历史草稿
+     * 
+     * 2. 【剧本阶段】调用 requestScriptsGeneration
+     *    - 输入：草稿数据
+     *    - 输出：完整剧本（多智能体协作生成的节点树）
+     * 
+     * @param mode - 生成模式（'fast' 或 'agent'）
+     * 
+     * 状态管理：
+     * - isDraftGenerating: 草稿生成中（整个流程都为true，在finally统一关闭）
+     * - isQuickGenerating: 快速模式生成中
+     * - isAgentGenerating: 智能体模式生成中
+     * - showFastScriptLoading: 快速模式专用加载UI
+     * 
+     * 错误处理：
+     * - 草稿失败：立即 throw，进入 catch，显示错误，重置状态
+     * - 剧本失败：requestScriptsGeneration 内部已重试3次，失败后 throw 到这里
+     * - AbortError：用户手动取消，显示取消提示
+     * - finally：确保所有状态在任何情况下都会被重置
+     */
     const handleDraftAndScripts = async (mode = 'fast') => {
+        // ========== 参数校验 ==========
         if (!quickPrompt.trim()) {
             toast.warning('请输入故事描述');
             return;
         }
-        setIsDraftGenerating(true);
+
+        // ========== 初始化状态 ==========
+        setIsDraftGenerating(true); // 整个流程标记为生成中
         if (mode === 'fast') {
-            setIsQuickGenerating(true);
+            setIsQuickGenerating(true); // 快速模式标记
         } else {
-            setIsAgentGenerating(true);
+            setIsAgentGenerating(true); // 智能体模式标记
         }
-        resetAgentFlow();
+        resetAgentFlow(); // 重置智能体流程状态（清空进度事件等）
 
         try {
+            // ========== 准备工作 ==========
             const locale = getUserLocale();
-            setLastLocale(locale);
+            setLastLocale(locale); // 保存语言，供重试时使用
             toast.info('AI创作中', '正在分析创意并生成设定草稿...');
 
+            // 延迟滚动到草稿区域，提升用户体验
             setTimeout(() => {
                 draftSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 500);
 
+            // ========== 阶段1：生成设定草稿 ==========
             const draftResponse = await fetch('/api/game/idea-to-draft', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -365,55 +518,125 @@ export default function Home() {
                     locale,
                 }),
             });
-            setIsDraftGenerating(false);
 
             const draftResult = await draftResponse.json().catch(() => ({}));
+            
+            // 草稿失败立即抛出，不重试（草稿生成通常很快且稳定）
             if (!draftResponse.ok || !draftResult.success) {
                 throw new Error(draftResult.error || '设定草稿生成失败');
             }
 
+            // 保存草稿数据到状态
             setDraftData(draftResult.data);
             setDraftCached(Boolean(draftResult.cached));
+            
+            // 命中缓存提示
             if (draftResult.cached) {
                 toast.info('命中草稿缓存', '使用历史草稿加速生成流程');
             }
+            
             toast.info('设定草稿完成', '智能体系统即将写作剧本...');
 
+            // ========== 阶段2：生成剧本 ==========
+            // requestScriptsGeneration 内部有重试机制，失败会自动重试最多3次
             await requestScriptsGeneration(draftResult.data, locale, mode);
+
         } catch (error) {
+            // ========== 错误处理 ==========
             if (error instanceof DOMException && error.name === 'AbortError') {
+                // 用户手动取消（通过 controllerRef.current.abort()）
                 toast.info('已取消生成');
             } else {
+                // 草稿失败、剧本失败、或其他异常
                 console.error('Agents generate error:', error);
                 toast.error('生成失败', error instanceof Error ? error.message : '请检查网络连接');
-                setSessionStatus('error');
+                setSessionStatus('error'); // 标记会话为错误状态
             }
         } finally {
-            controllerRef.current = null;
-            setIsAgentGenerating(false);
+            // ========== 状态清理（无论成功/失败/取消都会执行） ==========
+            controllerRef.current = null; // 清空 AbortController
+            setIsDraftGenerating(false);  // 关闭整体生成中标记
+            
+            // 根据模式关闭对应的加载状态
+            if (mode === 'fast') {
+                setIsQuickGenerating(false);
+                setShowFastScriptLoading(false);
+            } else {
+                setIsAgentGenerating(false);
+            }
         }
     };
 
+    /**
+     * ============================================================
+     * 手动重试剧本生成（跳过草稿阶段）
+     * ============================================================
+     * 
+     * 使用场景：
+     * - 剧本生成失败后，用户点击重试按钮
+     * - 已有草稿数据，不需要重新生成草稿
+     * 
+     * @param mode - 生成模式（'fast' 或 'agent'）
+     * 
+     * 与 handleDraftAndScripts 的区别：
+     * - handleDraftAndScripts: 完整流程（草稿 + 剧本）
+     * - handleRetryAgents: 仅剧本阶段，复用已有草稿
+     * 
+     * 状态管理：
+     * - 只设置 isAgentGenerating，不设置 isDraftGenerating
+     * - keepDraft: true，保留草稿数据，只重置进度事件
+     * 
+     * 错误处理：
+     * - 失败后标记 sessionStatus 为 'error'
+     * - finally 确保状态被重置
+     */
     const handleRetryAgents = async (mode = 'fast') => {
-        if (!draftData) return;
-        resetAgentFlow({ keepDraft: true });
-        setIsAgentGenerating(true);
+        // ========== 前置检查 ==========
+        if (!draftData) return; // 必须有草稿数据才能重试
+
+        // ========== 初始化状态 ==========
+        resetAgentFlow({ keepDraft: true }); // 保留草稿，重置进度
+        setIsAgentGenerating(true); // 标记为生成中
+
         try {
             toast.info('正在重试', '使用现有设定重新驱动智能体系统...');
+            
+            // ========== 调用剧本生成（带重试机制） ==========
+            // 使用保存的语言或当前语言
             await requestScriptsGeneration(draftData, lastLocale || getUserLocale(), mode);
+            
         } catch (error) {
+            // ========== 错误处理 ==========
             console.error('Agents retry error:', error);
             toast.error('重试失败', error instanceof Error ? error.message : '请检查网络连接');
             setSessionStatus('error');
         } finally {
+            // ========== 状态清理 ==========
             controllerRef.current = null;
             setIsAgentGenerating(false);
         }
     };
 
+    /**
+     * ============================================================
+     * 进度面板的重试按钮处理
+     * ============================================================
+     * 
+     * 使用场景：
+     * - 用户在进度面板中点击重试按钮
+     * 
+     * 安全检查：
+     * - 必须有草稿数据
+     * - 不能在生成中时重复点击
+     * 
+     * @param mode - 生成模式（'fast' 或 'agent'）
+     */
     const handleProgressRetry = (mode: 'fast' | 'agent') => {
+        // ========== 防重复点击 ==========
         if (!draftData || isAgentGenerating) return;
-        setProgressEvents([]);
+
+        // ========== 清空旧进度并重试 ==========
+        setProgressEvents([]); // 清空旧进度事件，准备接收新进度
         handleRetryAgents(mode);
     };
 
@@ -774,7 +997,7 @@ export default function Home() {
                                 <Loader2 className="absolute inset-0 m-auto h-10 w-10 text-indigo-500 animate-spin" />
                             </div>
                             <div>
-                                <p className="text-lg font-semibold text-slate-900">设定草稿生成中（约 30s）</p>
+                                <p className="text-lg font-semibold text-slate-900">设定草稿生成中（{"< 90s"}）</p>
                                 <p className="text-sm text-slate-500 mt-1">世界观 / 角色阵容 / 关键场景 / 主题 & 风格</p>
                             </div>
                             <div className="w-full space-y-2 text-left text-sm text-slate-500">
@@ -805,7 +1028,7 @@ export default function Home() {
                             </div>
                             <div>
                                 <p className="text-lg font-semibold text-slate-900">故事线生成中</p>
-                                <p className="text-sm text-slate-500 mt-1">大约 30s 内即可完成
+                                <p className="text-sm text-slate-500 mt-1">约 90s 内即完成
                                 </p>
                             </div>
                             <div className="w-full space-y-2 text-left text-sm text-slate-500">
