@@ -137,7 +137,7 @@ function WorldSetupPageContent() {
                                     <Input
                                         value={formData.name || ''}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        placeholder={I18N['key.world.namePlaceholder'] || '如：灵纪元、赛博都市2077'}
+                                        placeholder="如:灵纪元、赛博都市2077"
                                     />
                                 </div>
                                 <div>
@@ -147,7 +147,7 @@ function WorldSetupPageContent() {
                                     <Input
                                         value={formData.era || ''}
                                         onChange={(e) => setFormData({ ...formData, era: e.target.value })}
-                                        placeholder={I18N['key.world.eraPlaceholder'] || '如：古风武侠、近现代都市、未来科幻'}
+                                        placeholder="如:古风武侠、近现代都市、未来科幻"
                                     />
                                 </div>
                                 <div>
@@ -157,7 +157,7 @@ function WorldSetupPageContent() {
                                     <Input
                                         value={formData.location || ''}
                                         onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                        placeholder={I18N['key.world.locationPlaceholder'] || '如：架空大陆、真实城市、异次元空间'}
+                                        placeholder="如:架空大陆、真实城市、异次元空间"
                                     />
                                 </div>
                             </div>
@@ -177,7 +177,7 @@ function WorldSetupPageContent() {
                                         className="w-full border rounded px-3 py-2 min-h-[100px]"
                                         value={formData.rules || ''}
                                         onChange={(e) => setFormData({ ...formData, rules: e.target.value })}
-                                        placeholder={I18N['key.world.rulesPlaceholder'] || '描述魔法体系/科技上限/超能力限制/特殊规则等，如：修仙体系分为炼气、筑基、金丹...'}
+                                        placeholder="描述魔法体系/科技上限/超能力限制/特殊规则等,如:修仙体系分为炼气、筑基、金丹..."
                                     />
                                 </div>
                                 <div>
@@ -188,7 +188,7 @@ function WorldSetupPageContent() {
                                         className="w-full border rounded px-3 py-2 min-h-[80px]"
                                         value={formData.socialStructure || ''}
                                         onChange={(e) => setFormData({ ...formData, socialStructure: e.target.value })}
-                                        placeholder={I18N['key.world.socialStructurePlaceholder'] || '如：王权统治、贵族阶级、公会体系、种族关系等'}
+                                        placeholder="如:王权统治、贵族阶级、公会体系、种族关系等"
                                     />
                                 </div>
                             </div>
@@ -203,7 +203,7 @@ function WorldSetupPageContent() {
                                 className="w-full border rounded px-3 py-2 min-h-[120px]"
                                 value={formData.history || ''}
                                 onChange={(e) => setFormData({ ...formData, history: e.target.value })}
-                                placeholder={I18N['key.world.historyPlaceholder'] || '描述关键历史事件、王朝更迭、文明起源等，如：三百年前大灾变导致文明倒退...'}
+                                placeholder="描述关键历史事件、王朝更迭、文明起源等,如:三百年前大灾变导致文明倒退..."
                             />
                         </div>
 
@@ -216,7 +216,7 @@ function WorldSetupPageContent() {
                                 className="w-full border rounded px-3 py-2 min-h-[100px]"
                                 value={formData.description || ''}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                placeholder={I18N['key.world.supplementPlaceholder'] || '补充任何你希望加入的世界观细节...'}
+                                placeholder="补充任何你希望加入的世界观细节..."
                             />
                         </div>
 
