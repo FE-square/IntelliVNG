@@ -221,8 +221,12 @@ export default function DashboardPage() {
                 {/* 标题栏 */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-4xl font-bold text-white mb-2">{t(i18nMap.title)}</h1>
-                        <p className="text-white/80">{t(i18nMap.subtitle)}</p>
+                        <h1 className="text-4xl font-bold text-white mb-2" suppressHydrationWarning>
+                            {I18N[i18nMap.title] || '我的项目'}
+                        </h1>
+                        <p className="text-white/80" suppressHydrationWarning>
+                            {I18N[i18nMap.subtitle] || '管理您的所有创作项目'}
+                        </p>
                     </div>
                     <div className="flex gap-3">
                         {projects.length > 0 && (
@@ -251,14 +255,14 @@ export default function DashboardPage() {
                             onClick={handleImportProject}
                         >
                             <Upload className="w-4 h-4 mr-2" />
-                            {t(i18nMap.importProject)}
+                            <span suppressHydrationWarning>{I18N[i18nMap.importProject] || '导入项目'}</span>
                         </Button>
                         <Button
                             className="bg-white/20 text-white border-white/40 hover:bg-white/30 border"
                             onClick={() => router.push('/setup')}
                         >
                             <Plus className="w-4 h-4 mr-2" />
-                            {t(i18nMap.createNewProject)}
+                            <span suppressHydrationWarning>{I18N[i18nMap.createNewProject] || '创建新项目'}</span>
                         </Button>
                         <Button
                             variant="outline"
@@ -266,7 +270,7 @@ export default function DashboardPage() {
                             onClick={() => router.push('/')}
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
-                            {t(i18nMap.backToHome)}
+                            <span suppressHydrationWarning>{I18N[i18nMap.backToHome] || '返回首页'}</span>
                         </Button>
                     </div>
                 </div>
@@ -313,7 +317,9 @@ export default function DashboardPage() {
                 {loading ? (
                     <div className="text-center py-20">
                         <div className="inline-block w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-                        <p className="text-white mt-4">{t(i18nMap.loading)}</p>
+                        <p className="text-white mt-4" suppressHydrationWarning>
+                            {I18N[i18nMap.loading] || '加载中...'}
+                        </p>
                     </div>
                 ) : projects.length === 0 ? (
                     <Card className="text-center py-20">
@@ -321,14 +327,18 @@ export default function DashboardPage() {
                             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-100 flex items-center justify-center">
                                 <FileCode className="w-12 h-12 text-slate-400" />
                             </div>
-                            <h2 className="text-2xl font-bold text-slate-800 mb-3">{t(i18nMap.emptyTitle)}</h2>
-                            <p className="text-slate-500 mb-6">{t(i18nMap.emptyDescription)}</p>
+                            <h2 className="text-2xl font-bold text-slate-800 mb-3" suppressHydrationWarning>
+                                {I18N[i18nMap.emptyTitle] || '还没有项目'}
+                            </h2>
+                            <p className="text-slate-500 mb-6" suppressHydrationWarning>
+                                {I18N[i18nMap.emptyDescription] || '开始创建您的第一个视觉小说项目'}
+                            </p>
                             <Button
                                 className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                                 onClick={() => router.push('/setup')}
                             >
                                 <Plus className="w-4 h-4 mr-2" />
-                                {t(i18nMap.emptyButton)}
+                                <span suppressHydrationWarning>{I18N[i18nMap.emptyButton] || '创建项目'}</span>
                             </Button>
                         </CardContent>
                     </Card>
@@ -385,8 +395,8 @@ export default function DashboardPage() {
 
                                 <CardHeader>
                                     <CardTitle className="text-xl line-clamp-1">{project.title}</CardTitle>
-                                    <CardDescription className="line-clamp-2">
-                                        {project.description || t(i18nMap.noDescription)}
+                                    <CardDescription className="line-clamp-2" suppressHydrationWarning>
+                                        {project.description || I18N[i18nMap.noDescription] || '暂无描述'}
                                     </CardDescription>
                                 </CardHeader>
 
@@ -396,32 +406,40 @@ export default function DashboardPage() {
                                         <div className="text-center p-2 bg-indigo-50 rounded">
                                             <Users className="w-4 h-4 mx-auto mb-1 text-indigo-600" />
                                             <div className="font-semibold text-indigo-700">{project.characterCount}</div>
-                                            <div className="text-xs text-slate-500">{t(i18nMap.characters)}</div>
+                                            <div className="text-xs text-slate-500" suppressHydrationWarning>
+                                                {I18N[i18nMap.characters] || '角色'}
+                                            </div>
                                         </div>
                                         <div className="text-center p-2 bg-purple-50 rounded">
                                             <ImageIcon className="w-4 h-4 mx-auto mb-1 text-purple-600" />
                                             <div className="font-semibold text-purple-700">{project.sceneCount}</div>
-                                            <div className="text-xs text-slate-500">{t(i18nMap.scenes)}</div>
+                                            <div className="text-xs text-slate-500" suppressHydrationWarning>
+                                                {I18N[i18nMap.scenes] || '场景'}
+                                            </div>
                                         </div>
                                         <div className="text-center p-2 bg-pink-50 rounded">
                                             <FileCode className="w-4 h-4 mx-auto mb-1 text-pink-600" />
                                             <div className="font-semibold text-pink-700">{project.nodeCount}</div>
-                                            <div className="text-xs text-slate-500">{t(i18nMap.storyNodes)}</div>
+                                            <div className="text-xs text-slate-500" suppressHydrationWarning>
+                                                {I18N[i18nMap.storyNodes] || '节点'}
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* 时间信息 + 保存备注 */}
                                     <div className="space-y-2 mb-4">
-                                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                                        <div className="flex items-center gap-2 text-xs text-slate-500" suppressHydrationWarning>
                                             <Calendar className="w-3 h-3" />
-                                            <span>{t(i18nMap.updated)}: {formatDate(project.updatedAt)}</span>
+                                            <span>{I18N[i18nMap.updated] || '更新'}: {formatDate(project.updatedAt)}</span>
                                             {project.autoSaved && (
-                                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{t(i18nMap.autoSaved)}</span>
+                                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                                                    {I18N[i18nMap.autoSaved] || '自动保存'}
+                                                </span>
                                             )}
                                         </div>
                                         {project.saveNote && (
-                                            <div className="text-xs text-slate-600 bg-amber-50 px-2 py-1.5 rounded border border-amber-200">
-                                                <span className="font-semibold text-amber-700">{t(i18nMap.note)}:</span> {project.saveNote}
+                                            <div className="text-xs text-slate-600 bg-amber-50 px-2 py-1.5 rounded border border-amber-200" suppressHydrationWarning>
+                                                <span className="font-semibold text-amber-700">{I18N[i18nMap.note] || '备注'}:</span> {project.saveNote}
                                             </div>
                                         )}
                                     </div>
@@ -435,7 +453,7 @@ export default function DashboardPage() {
                                                 onClick={() => router.push(`/editor?projectId=${project.id}`)}
                                             >
                                                 <Edit className="w-4 h-4 mr-1" />
-                                                {t(i18nMap.editScript)}
+                                                <span suppressHydrationWarning>{I18N[i18nMap.editScript] || '编辑剧本'}</span>
                                             </Button>
                                             <Button
                                                 variant="outline"
@@ -451,7 +469,7 @@ export default function DashboardPage() {
                                                 }}
                                             >
                                                 <Settings className="w-4 h-4 mr-1" />
-                                                {t(i18nMap.editSettings)}
+                                                <span suppressHydrationWarning>{I18N[i18nMap.editSettings] || '编辑设定'}</span>
                                             </Button>
                                         </div>
                                         
@@ -470,7 +488,7 @@ export default function DashboardPage() {
                                                 }}
                                             >
                                                 <Download className="w-3 h-3 mr-1" />
-                                                {t(i18nMap.export)}
+                                                <span suppressHydrationWarning>{I18N[i18nMap.export] || '导出'}</span>
                                             </Button>
                                             <Button
                                                 variant="outline"
@@ -481,7 +499,7 @@ export default function DashboardPage() {
                                                 }}
                                             >
                                                 <Play className="w-3 h-3 mr-1" />
-                                                {t(i18nMap.preview)}
+                                                <span suppressHydrationWarning>{I18N[i18nMap.preview] || '预览'}</span>
                                             </Button>
                                             <Button
                                                 variant="outline"
@@ -493,7 +511,7 @@ export default function DashboardPage() {
                                                 }}
                                             >
                                                 <Trash2 className="w-3 h-3 mr-1" />
-                                                {t(i18nMap.deleteBtn)}
+                                                <span suppressHydrationWarning>{I18N[i18nMap.deleteBtn] || '删除'}</span>
                                             </Button>
                                         </div>
                                     </div>
