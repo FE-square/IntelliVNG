@@ -200,7 +200,7 @@ export default function SummaryPage() {
                                         </div>
                                     </div>
                                     <div>
-                                        <span className="font-medium text-gray-700">剧情风格：</span>
+                                        <span className="font-medium text-gray-700">{t('key.summary.plotStyles')}</span>
                                         <div className="flex flex-wrap gap-2 mt-1">
                                             {themeSetting.styles.map((style, idx) => (
                                                 <span key={idx} className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
@@ -211,7 +211,7 @@ export default function SummaryPage() {
                                     </div>
                                     {themeSetting.tone && (
                                         <div>
-                                            <span className="font-medium text-gray-700">整体基调：</span>
+                                            <span className="font-medium text-gray-700">{t('key.summary.overallTone')}</span>
                                             <span className="text-gray-600">{themeSetting.tone}</span>
                                         </div>
                                     )}
@@ -224,7 +224,7 @@ export default function SummaryPage() {
                                 size="sm"
                                 onClick={() => router.push('/setup/theme')}
                             >
-                                {themeSetting ? '编辑主题风格' : '+ 设定主题风格'}
+                                {themeSetting ? t('key.summary.editTheme') : t('key.summary.addTheme')}
                             </Button>
                         </div>
                     </CardContent>
@@ -235,14 +235,14 @@ export default function SummaryPage() {
                     <CardHeader className="bg-gradient-to-br from-green-50 to-teal-50">
                         <CardTitle className="flex items-center gap-2 text-slate-800">
                             <Image className="w-5 h-5" />
-                            场景列表 ({scenes.length})
+                            {t('key.summary.scenesList', { count: scenes.length })}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {scenes.length === 0 ? (
                             <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded">
                                 <AlertCircle className="w-5 h-5" />
-                                <span>还没有定义场景，请先创建至少一个场景</span>
+                                <span>{t('key.summary.noScenes')}</span>
                             </div>
                         ) : (
                             <div className="grid md:grid-cols-2 gap-4">
@@ -250,10 +250,10 @@ export default function SummaryPage() {
                                     <div key={scene.id} className="border rounded-lg p-4 bg-gray-50">
                                         <h3 className="font-semibold text-lg text-gray-900 mb-2">{scene.name}</h3>
                                         <div className="text-sm text-gray-600 space-y-1">
-                                            <div><span className="font-medium">类型：</span>{scene.type}</div>
-                                            <div><span className="font-medium">氛围：</span>{scene.atmosphere}</div>
+                                            <div><span className="font-medium">{t('key.summary.sceneType')}</span>{scene.type}</div>
+                                            <div><span className="font-medium">{t('key.summary.sceneAtmosphere')}</span>{scene.atmosphere}</div>
                                             {scene.details && (
-                                                <div className="text-xs"><span className="font-medium">细节：</span>{scene.details}</div>
+                                                <div className="text-xs"><span className="font-medium">{t('key.summary.sceneDetails')}</span>{scene.details}</div>
                                             )}
                                         </div>
                                     </div>
@@ -266,7 +266,7 @@ export default function SummaryPage() {
                                 size="sm"
                                 onClick={() => router.push('/setup/scenes')}
                             >
-                                + 添加/编辑场景
+                                {t('key.summary.editScenes')}
                             </Button>
                         </div>
                     </CardContent>
@@ -277,14 +277,14 @@ export default function SummaryPage() {
                     <CardHeader className="bg-gradient-to-br from-indigo-50 to-purple-50">
                         <CardTitle className="flex items-center gap-2 text-slate-800">
                             <Users className="w-5 h-5" />
-                            角色列表 ({characters.length})
+                            {t('key.summary.charactersList', { count: characters.length })}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {characters.length === 0 ? (
                             <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded">
                                 <AlertCircle className="w-5 h-5" />
-                                <span>还没有定义角色，请先创建至少一个角色</span>
+                                <span>{t('key.summary.noCharacters')}</span>
                             </div>
                         ) : (
                             <div className="grid md:grid-cols-2 gap-4">
@@ -293,15 +293,15 @@ export default function SummaryPage() {
                                         <div className="flex items-start justify-between mb-2">
                                             <h3 className="font-semibold text-lg text-gray-900">{char.displayName}</h3>
                                             <span className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded">
-                                                {char.gender === 'male' || char.gender === '男' ? '男' : char.gender === 'female' || char.gender === '女' ? '女' : '其他'}
+                                                {char.gender === 'male' || char.gender === '男' ? t('key.summary.genderMale') : char.gender === 'female' || char.gender === '女' ? t('key.summary.genderFemale') : t('key.summary.genderOther')}
                                             </span>
                                         </div>
-                                        <p className="text-sm text-gray-600 mb-2">{char.description || '无描述'}</p>
+                                        <p className="text-sm text-gray-600 mb-2">{char.description || t('key.summary.noDescription')}</p>
                                         <div className="text-xs text-gray-500 space-y-1">
-                                            {char.identity && <div>身份：{char.identity}</div>}
-                                            {char.age && <div>年龄：{char.age}</div>}
+                                            {char.identity && <div>{t('key.summary.identity')}{char.identity}</div>}
+                                            {char.age && <div>{t('key.summary.age')}{char.age}</div>}
                                             {char.personality?.traits && char.personality.traits.length > 0 && (
-                                                <div>性格：{char.personality.traits.join('、')}</div>
+                                                <div>{t('key.summary.personality')}{char.personality.traits.join('、')}</div>
                                             )}
                                         </div>
                                     </div>
@@ -314,7 +314,7 @@ export default function SummaryPage() {
                                 size="sm"
                                 onClick={() => router.push('/setup/characters')}
                             >
-                                + 添加/编辑角色
+                                {t('key.summary.editCharacters')}
                             </Button>
                         </div>
                     </CardContent>
@@ -325,15 +325,14 @@ export default function SummaryPage() {
                     <CardHeader className="bg-gradient-to-br from-green-50 to-teal-50">
                         <CardTitle className="flex items-center gap-2 text-slate-800">
                             <Wand2 className="w-5 h-5" />
-                            确认并生成
+                            {t('key.summary.confirmAndGenerate')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-center mb-6">
-                            <h3 className="text-2xl font-bold text-slate-900 mb-2">准备好了吗？</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 mb-2">{t('key.summary.readyQuestion')}</h3>
                             <p className="text-slate-600">
-                                AI 将基于你定义的 {characters.length} 个角色、世界观设定、{scenes.length} 个场景和主题风格，
-                                生成一个包含单开头+多分支+多结尾的完整故事
+                                {t('key.summary.generateHint', { characters: characters.length, scenes: scenes.length })}
                             </p>
                         </div>
                         <Button
@@ -342,16 +341,16 @@ export default function SummaryPage() {
                             disabled={isGenerating || !canGenerate}
                         >
                             <Wand2 className="w-5 h-5 mr-2" />
-                            {isGenerating ? '正在生成剧情...' : '开始 AI 生成 ✨'}
+                            {isGenerating ? t('key.summary.generating') : t('key.summary.generateStory')}
                         </Button>
                         {isGenerating && (
                             <p className="text-center text-sm text-slate-500 mt-3">
-                                这可能需要 10-30 秒，请耐心等待...
+                                {t('key.summary.generatingWait')}
                             </p>
                         )}
                         {!canGenerate && (
                             <p className="text-center text-sm text-amber-600 mt-3">
-                                请完成角色、世界观、场景和主题风格的设定
+                                {t('key.summary.completeSettings')}
                             </p>
                         )}
                     </CardContent>
