@@ -6,6 +6,7 @@ import { ArrowLeft, Wand2, Users, Globe, Image, AlertCircle, Palette } from 'luc
 import { useSetupStore } from '@/stores/setupStore';
 import { useState } from 'react';
 import { saveProject } from '@/lib/projectStorage';
+import { t } from '@/i18n/client';
 
 export default function SummaryPage() {
     const router = useRouter();
@@ -16,19 +17,19 @@ export default function SummaryPage() {
     const handleGenerate = async () => {
         // 验证必要信息
         if (characters.length === 0) {
-            toast.warning('请至少定义一个角色');
+            toast.warning(t('key.summary.validateCharacters'));
             return;
         }
         if (!worldSetting) {
-            toast.warning('请定义世界观');
+            toast.warning(t('key.summary.validateWorld'));
             return;
         }
         if (scenes.length === 0) {
-            toast.warning('请至少定义一个场景');
+            toast.warning(t('key.summary.validateScenes'));
             return;
         }
         if (!themeSetting || themeSetting.themes.length === 0 || themeSetting.styles.length === 0) {
-            toast.warning('请定义故事主题风格');
+            toast.warning(t('key.summary.validateTheme'));
             return;
         }
 
@@ -80,11 +81,11 @@ export default function SummaryPage() {
                 router.push(`/generate-assets?projectId=${result.data.id}`);
             } else {
                 console.error('[Summary] Generation failed:', result.error);
-                toast.error('生成失败', result.error || '未知错误');
+                toast.error(t('key.summary.generateFailed'), result.error || '未知错误');
             }
         } catch (error) {
             console.error('[Summary] Exception:', error);
-            toast.error('生成失败', '请检查网络连接和后端服务。' + (error instanceof Error ? error.message : String(error)));
+            toast.error(t('key.summary.generateFailed'), t('key.summary.networkError') + (error instanceof Error ? error.message : String(error)));
         } finally {
             setIsGenerating(false);
         }
@@ -103,8 +104,8 @@ export default function SummaryPage() {
                                 <Wand2 className="w-8 h-8 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-1">设定汇总</h1>
-                                <p className="text-slate-600">确认你的角色、世界观、场景和主题风格设定,准备生成剧情</p>
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-1">{t('key.summary.pageTitle')}</h1>
+                                <p className="text-slate-600">{t('key.summary.pageDescription')}</p>
                             </div>
                         </div>
                     </div>
@@ -114,7 +115,7 @@ export default function SummaryPage() {
                         onClick={() => router.push('/setup')}
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        返回
+                        {t('key.summary.back')}
                     </Button>
                 </div>
 
@@ -123,36 +124,36 @@ export default function SummaryPage() {
                     <CardHeader className="bg-gradient-to-br from-purple-50 to-blue-50">
                         <CardTitle className="flex items-center gap-2 text-slate-800">
                             <Globe className="w-5 h-5" />
-                            世界观设定
+                            {t('key.summary.worldSetting')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {!worldSetting ? (
                             <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded">
                                 <AlertCircle className="w-5 h-5" />
-                                <span>还没有定义世界观，请先设定世界观</span>
+                                <span>{t('key.summary.noWorld')}</span>
                             </div>
                         ) : (
                             <div className="border rounded-lg p-4 bg-gray-50">
                                 <h3 className="font-semibold text-lg text-gray-900 mb-3">{worldSetting.name}</h3>
                                 <div className="grid md:grid-cols-2 gap-3 text-sm">
                                     <div>
-                                        <span className="font-medium text-gray-700">时代：</span>
+                                        <span className="font-medium text-gray-700">{t('key.summary.era')}</span>
                                         <span className="text-gray-600">{worldSetting.era}</span>
                                     </div>
                                     <div>
-                                        <span className="font-medium text-gray-700">地域：</span>
+                                        <span className="font-medium text-gray-700">{t('key.summary.location')}</span>
                                         <span className="text-gray-600">{worldSetting.location}</span>
                                     </div>
                                     {worldSetting.rules && (
                                         <div className="md:col-span-2">
-                                            <span className="font-medium text-gray-700">核心规则：</span>
+                                            <span className="font-medium text-gray-700">{t('key.summary.coreRules')}</span>
                                             <span className="text-gray-600">{worldSetting.rules}</span>
                                         </div>
                                     )}
                                     {worldSetting.socialStructure && (
                                         <div className="md:col-span-2">
-                                            <span className="font-medium text-gray-700">社会结构：</span>
+                                            <span className="font-medium text-gray-700">{t('key.summary.socialStructure')}</span>
                                             <span className="text-gray-600">{worldSetting.socialStructure}</span>
                                         </div>
                                     )}
@@ -165,7 +166,7 @@ export default function SummaryPage() {
                                 size="sm"
                                 onClick={() => router.push('/setup/world')}
                             >
-                                {worldSetting ? '编辑世界观' : '+ 设定世界观'}
+                                {worldSetting ? t('key.summary.editWorld') : t('key.summary.addWorld')}
                             </Button>
                         </div>
                     </CardContent>
@@ -176,20 +177,20 @@ export default function SummaryPage() {
                     <CardHeader className="bg-gradient-to-br from-pink-50 to-rose-50">
                         <CardTitle className="flex items-center gap-2 text-slate-800">
                             <Palette className="w-5 h-5" />
-                            故事主题风格
+                            {t('key.summary.themeSetting')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {!themeSetting || themeSetting.themes.length === 0 ? (
                             <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded">
                                 <AlertCircle className="w-5 h-5" />
-                                <span>还没有定义主题风格，请先设定主题风格</span>
+                                <span>{t('key.summary.noTheme')}</span>
                             </div>
                         ) : (
                             <div className="border rounded-lg p-4 bg-gray-50">
                                 <div className="space-y-3 text-sm">
                                     <div>
-                                        <span className="font-medium text-gray-700">核心主题：</span>
+                                        <span className="font-medium text-gray-700">{t('key.summary.coreThemes')}</span>
                                         <div className="flex flex-wrap gap-2 mt-1">
                                             {themeSetting.themes.map((theme, idx) => (
                                                 <span key={idx} className="px-2 py-1 bg-pink-100 text-pink-700 rounded text-xs">

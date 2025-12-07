@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@vng/ui';
 import { Users, Globe, Image, FileText, Palette, FolderOpen } from 'lucide-react';
+import { t } from '@/i18n/client';
 
 /**
  * 设置引导页 - 让用户选择开始定义角色还是背景
@@ -20,7 +21,7 @@ export default function SetupPage() {
                         className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/')}
                     >
-                        ← 返回首页
+                        {t('key.setup.backToHome')}
                     </Button>
                 </div>
 
@@ -29,10 +30,10 @@ export default function SetupPage() {
                         <Palette className="w-10 h-10 text-white" />
                     </div>
                     <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-                        开始创作你的视觉小说
+                        {t('key.setup.title')}
                     </h1>
                     <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-                        先定义角色、世界观和场景，AI 将基于你的设定生成精彩的多分支剧情
+                        {t('key.setup.description')}
                     </p>
                 </div>
 
@@ -47,18 +48,18 @@ export default function SetupPage() {
                                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                                     <Globe className="w-6 h-6 text-white" />
                                 </div>
-                                <CardTitle className="text-xl text-slate-800">世界观设定</CardTitle>
+                                <CardTitle className="text-xl text-slate-800">{t('key.setup.world.title')}</CardTitle>
                             </div>
                             <CardDescription className="text-sm text-slate-600">
-                                定义时代、地域、社会规则
+                                {t('key.setup.world.description')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ul className="space-y-1 text-xs text-slate-500">
-                                <li>✓ 时代背景</li>
-                                <li>✓ 地域设定</li>
-                                <li>✓ 核心规则</li>
-                                <li>✓ 社会结构</li>
+                                <li>{t('key.setup.world.item1')}</li>
+                                <li>{t('key.setup.world.item2')}</li>
+                                <li>{t('key.setup.world.item3')}</li>
+                                <li>{t('key.setup.world.item4')}</li>
                             </ul>
                         </CardContent>
                     </Card>
@@ -73,18 +74,18 @@ export default function SetupPage() {
                                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                                     <Palette className="w-6 h-6 text-white" />
                                 </div>
-                                <CardTitle className="text-xl text-slate-800">故事主题风格</CardTitle>
+                                <CardTitle className="text-xl text-slate-800">{t('key.setup.theme.title')}</CardTitle>
                             </div>
                             <CardDescription className="text-sm text-slate-600">
-                                核心主题与整体风格基调
+                                {t('key.setup.theme.description')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ul className="space-y-1 text-xs text-slate-500">
-                                <li>✓ 核心主题</li>
-                                <li>✓ 剧情风格</li>
-                                <li>✓ 整体基调</li>
-                                <li>✓ 情感氛围</li>
+                                <li>{t('key.setup.theme.item1')}</li>
+                                <li>{t('key.setup.theme.item2')}</li>
+                                <li>{t('key.setup.theme.item3')}</li>
+                                <li>{t('key.setup.theme.item4')}</li>
                             </ul>
                         </CardContent>
                     </Card>
@@ -99,18 +100,18 @@ export default function SetupPage() {
                                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                                     <Image className="w-6 h-6 text-white" />
                                 </div>
-                                <CardTitle className="text-xl text-slate-800">场景设定</CardTitle>
+                                <CardTitle className="text-xl text-slate-800">{t('key.setup.scenes.title')}</CardTitle>
                             </div>
                             <CardDescription className="text-sm text-slate-600">
-                                关键场景的类型与氛围
+                                {t('key.setup.scenes.description')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ul className="space-y-1 text-xs text-slate-500">
-                                <li>✓ 场景类型</li>
-                                <li>✓ 氛围设定</li>
-                                <li>✓ 环境细节</li>
-                                <li>✓ 场景描述</li>
+                                <li>{t('key.setup.scenes.item1')}</li>
+                                <li>{t('key.setup.scenes.item2')}</li>
+                                <li>{t('key.setup.scenes.item3')}</li>
+                                <li>{t('key.setup.scenes.item4')}</li>
                             </ul>
                         </CardContent>
                     </Card>
@@ -125,18 +126,18 @@ export default function SetupPage() {
                                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                                     <Users className="w-6 h-6 text-white" />
                                 </div>
-                                <CardTitle className="text-xl text-slate-800">角色设定</CardTitle>
+                                <CardTitle className="text-xl text-slate-800">{t('key.setup.characters.title')}</CardTitle>
                             </div>
                             <CardDescription className="text-sm text-slate-600">
-                                角色的外观、性格、技能
+                                {t('key.setup.characters.description')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ul className="space-y-1 text-xs text-slate-500">
-                                <li>✓ 基础信息</li>
-                                <li>✓ 外观特征</li>
-                                <li>✓ 性格属性</li>
-                                <li>✓ 核心特质</li>
+                                <li>{t('key.setup.characters.item1')}</li>
+                                <li>{t('key.setup.characters.item2')}</li>
+                                <li>{t('key.setup.characters.item3')}</li>
+                                <li>{t('key.setup.characters.item4')}</li>
                             </ul>
                         </CardContent>
                     </Card>
@@ -151,18 +152,18 @@ export default function SetupPage() {
                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                                 <FileText className="w-6 h-6 text-white" />
                             </div>
-                            <CardTitle className="text-xl text-slate-800">确认并生成</CardTitle>
+                            <CardTitle className="text-xl text-slate-800">{t('key.setup.summary.title')}</CardTitle>
                         </div>
                         <CardDescription className="text-sm text-slate-600">
-                            查看汇总并生成AI剧情
+                            {t('key.setup.summary.description')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <ul className="space-y-1 text-xs text-slate-500">
-                            <li>✓ 查看设定汇总</li>
-                            <li>✓ 生成多分支剧情</li>
-                            <li>✓ 可视化编辑器</li>
-                            <li>✓ 导出游戏项目</li>
+                            <li>{t('key.setup.summary.item1')}</li>
+                            <li>{t('key.setup.summary.item2')}</li>
+                            <li>{t('key.setup.summary.item3')}</li>
+                            <li>{t('key.setup.summary.item4')}</li>
                         </ul>
                     </CardContent>
                 </Card>
