@@ -103,11 +103,11 @@ function CharactersPageContent() {
     // AI生成角色立绘（流式状态）
     const handleGenerateSprite = async () => {
         if (!formData.displayName || !formData.description) {
-            toast.warning(t('key.characters.warning.fillNameDesc'));
+            toast.warning(getText('key.characters.warning.fillNameDesc', '请先填写角色名称和描述'));
             return;
         }
 
-        setSpriteStatus({ status: 'pending', message: t('key.characters.sprite.preparing'), progress: 0 });
+        setSpriteStatus({ status: 'pending', message: getText('key.characters.sprite.preparing', '准备生成...'), progress: 0 });
         
         try {
             // 构建prompt 
@@ -164,14 +164,14 @@ function CharactersPageContent() {
                                     defaultSpriteId: prev.defaultSpriteId || newSprite.id,
                                 }));
                                 
-                                setSpriteStatus({ status: 'succeeded', message: t('key.characters.sprite.completed'), progress: 100 });
+                                setSpriteStatus({ status: 'succeeded', message: getText('key.characters.sprite.completed', '生成完成'), progress: 100 });
                             } else if (data.status === 'FAILED') {
-                                throw new Error(data.error || t('key.characters.sprite.failed'));
+                                throw new Error(data.error || getText('key.characters.sprite.failed', '生成失败'));
                             } else if (data.status) {
                                 // 更新进度
                                 setSpriteStatus({
                                     status: data.status.toLowerCase() as any,
-                                    message: data.message || t('key.characters.sprite.generating'),
+                                    message: data.message || getText('key.characters.sprite.generating', '生成中...'),
                                     progress: data.progress || 0,
                                 });
                             }
@@ -185,17 +185,17 @@ function CharactersPageContent() {
             console.error('生成失败:', error);
             setSpriteStatus({ 
                 status: 'failed', 
-                message: error instanceof Error ? error.message : t('key.characters.sprite.failed'), 
+                message: error instanceof Error ? error.message : getText('key.characters.sprite.failed', '生成失败'), 
                 progress: 0 
             });
-            toast.error(t('key.characters.sprite.failed'), error instanceof Error ? error.message : t('key.characters.sprite.retry'));
+            toast.error(getText('key.characters.sprite.failed', '立绘生成失败'), error instanceof Error ? error.message : getText('key.characters.sprite.retry', '请重试'));
         }
     };
 
     // AI生成角色头像（基于立绘参考图）
     const handleGenerateAvatar = async () => {
         if (!formData.displayName || !formData.description) {
-            toast.warning(t('key.characters.warning.fillNameDesc'));
+            toast.warning(getText('key.characters.warning.fillNameDesc', '请先填写角色名称和描述'));
             return;
         }
 
@@ -205,7 +205,7 @@ function CharactersPageContent() {
 
         setAvatarStatus({ 
             status: 'pending', 
-            message: hasReference ? t('key.characters.avatar.preparingRef') : t('key.characters.avatar.preparing'), 
+            message: hasReference ? getText('key.characters.avatar.preparingRef', '基于立绘准备生成...') : getText('key.characters.avatar.preparing', '准备生成...'), 
             progress: 0 
         });
         
@@ -258,13 +258,13 @@ function CharactersPageContent() {
                                     avatarUrl: data.imageUrl,
                                 }));
                                 
-                                setAvatarStatus({ status: 'succeeded', message: t('key.characters.avatar.completed'), progress: 100 });
+                                setAvatarStatus({ status: 'succeeded', message: getText('key.characters.avatar.completed', '生成完成'), progress: 100 });
                             } else if (data.status === 'FAILED') {
-                                throw new Error(data.error || t('key.characters.avatar.failed'));
+                                throw new Error(data.error || getText('key.characters.avatar.failed', '生成失败'));
                             } else if (data.status) {
                                 setAvatarStatus({
                                     status: data.status.toLowerCase() as any,
-                                    message: data.message || t('key.characters.avatar.generating'),
+                                    message: data.message || getText('key.characters.avatar.generating', '生成中...'),
                                     progress: data.progress || 0,
                                 });
                             }
@@ -278,17 +278,17 @@ function CharactersPageContent() {
             console.error('生成失败:', error);
             setAvatarStatus({ 
                 status: 'failed', 
-                message: error instanceof Error ? error.message : t('key.characters.avatar.failed'), 
+                message: error instanceof Error ? error.message : getText('key.characters.avatar.failed', '生成失败'), 
                 progress: 0 
             });
-            toast.error(t('key.characters.avatar.failed'), error instanceof Error ? error.message : t('key.characters.avatar.retry'));
+            toast.error(getText('key.characters.avatar.failed', '头像生成失败'), error instanceof Error ? error.message : getText('key.characters.avatar.retry', '请重试'));
         }
     };
 
     // 一键生成：先立绘后头像
     const handleGenerateAll = async () => {
         if (!formData.displayName || !formData.description) {
-            toast.warning(t('key.characters.warning.fillNameDesc'));
+            toast.warning(getText('key.characters.warning.fillNameDesc', '请先填写角色名称和描述'));
             return;
         }
 
@@ -304,7 +304,7 @@ function CharactersPageContent() {
 
     const handleSaveCharacter = async () => {
         if (!formData.name || !formData.displayName) {
-            toast.warning(t('key.characters.warning.fillRequired'));
+            toast.warning(getText('key.characters.warning.fillRequired', '请填写必填项'));
             return;
         }
 
@@ -326,10 +326,10 @@ function CharactersPageContent() {
 
         if (editingId === 'new') {
             addCharacter(character);
-            toast.success(t('key.characters.save.createSuccess'), t('key.characters.save.assetsAdded'));
+            toast.success(getText('key.characters.save.createSuccess', '角色创建成功'), getText('key.characters.save.assetsAdded', '立绘和头像已添加'));
         } else {
             updateCharacter(editingId!, character);
-            toast.success(t('key.characters.save.updateSuccess'), t('key.characters.save.assetsSync'));
+            toast.success(getText('key.characters.save.updateSuccess', '角色更新成功'), getText('key.characters.save.assetsSync', '素材已同步'));
         }
 
         // ✅ 如果是编辑已有项目，同步更新sessionStorage中的项目数据
@@ -381,15 +381,15 @@ function CharactersPageContent() {
 
     const handleDelete = async (id: string) => {
         const confirmed = await confirm({
-            title: t('key.characters.delete.title'),
-            message: t('key.characters.delete.message'),
-            confirmText: t('key.characters.delete.confirm'),
-            cancelText: t('key.characters.delete.cancel'),
+            title: getText('key.characters.delete.title', '删除角色'),
+            message: getText('key.characters.delete.message', '确定要删除这个角色吗？'),
+            confirmText: getText('key.characters.delete.confirm', '删除'),
+            cancelText: getText('key.characters.delete.cancel', '取消'),
             variant: 'danger',
         });
         if (confirmed) {
             removeCharacter(id);
-            toast.success(t('key.characters.delete.success'));
+            toast.success(getText('key.characters.delete.success', '角色已删除'));
             
             // ✅ 如果是编辑已有项目，同步更新sessionStorage
             const editingProjectData = sessionStorage.getItem('editing_project');

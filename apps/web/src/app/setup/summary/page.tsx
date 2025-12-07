@@ -245,7 +245,7 @@ function SummaryPageContent() {
                     <CardHeader className="bg-gradient-to-br from-green-50 to-teal-50">
                         <CardTitle className="flex items-center gap-2 text-slate-800" suppressHydrationWarning>
                             <Image className="w-5 h-5" />
-                            {getText('key.summary.scenesList', `场景列表 (${scenes.length}个)`)}
+                            {getText('key.summary.scenesList', '场景列表').replace('{count}', scenes.length.toString()) || `场景列表 (${scenes.length}个)`}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -287,7 +287,7 @@ function SummaryPageContent() {
                     <CardHeader className="bg-gradient-to-br from-indigo-50 to-purple-50">
                         <CardTitle className="flex items-center gap-2 text-slate-800" suppressHydrationWarning>
                             <Users className="w-5 h-5" />
-                            {getText('key.summary.charactersList', `角色列表 (${characters.length}个)`)}
+                            {getText('key.summary.charactersList', '角色列表').replace('{count}', characters.length.toString()) || `角色列表 (${characters.length}个)`}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -344,7 +344,9 @@ function SummaryPageContent() {
                                 {getText('key.summary.readyQuestion', '准备好了吗？')}
                             </h3>
                             <p className="text-slate-600" suppressHydrationWarning>
-                                {getText('key.summary.generateHint', `系统将基于 ${characters.length} 个角色、${scenes.length} 个场景生成故事`)}
+                                {getText('key.summary.generateHint', 'AI 将基于你定义的角色、世界观设定、场景和主题风格，生成一个包含单开头+多分支+多结尾的完整故事')
+                                    .replace('{characters}', characters.length.toString())
+                                    .replace('{scenes}', scenes.length.toString()) || `系统将基于 ${characters.length} 个角色、${scenes.length} 个场景生成故事`}
                             </p>
                         </div>
                         <Button
