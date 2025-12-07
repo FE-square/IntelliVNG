@@ -230,6 +230,8 @@ export default function Home() {
 
     const streamAgentResponse = async (response: Response) => {
         if (!response.body) {
+            setIsQuickGenerating(false);
+            setIsAgentGenerating(false);
             throw new Error('无法建立智能体 SSE 连接');
         }
 
@@ -280,7 +282,12 @@ export default function Home() {
         await reader.cancel().catch(() => { });
     };
 
-    const requestScriptsGeneration = async (draft: DraftData, locale: string, mode = 'fast') => {
+    const requestScriptsGeneration = async (draft: DraftData, locale: string, mode = 'fast', time = 1) => {
+        if (time > 3) {
+            setIsQuickGenerating(false);
+            setIsAgentGenerating(false);
+            throw new Error('智能体服务异常 (generate-by-agents)');
+        }
         setSessionStatus('running');
         const controller = new AbortController();
         controllerRef.current = controller;
@@ -304,7 +311,9 @@ export default function Home() {
 
         if (!response.ok) {
             const errorPayload = await response.json().catch(() => ({}));
-            throw new Error(errorPayload.error || '智能体服务异常');
+            console.error('[智能体服务重连中]', errorPayload.error);
+            requestScriptsGeneration(draft, locale, mode, time + 1);
+            throw new Error(errorPayload.error || '智能体服务重连中 (generate-by-agents)');
         }
         if (mode === 'fast') {
             const result = await response.json();
