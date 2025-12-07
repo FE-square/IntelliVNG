@@ -9,12 +9,14 @@ import type { WorldSetting } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 import { I18N, t } from '@/i18n/client';
 import { useRouterWithParams } from '@/hooks/useRouterWithParams';
+import { useI18n } from '@/hooks/useI18n';
 
 function WorldSetupPageContent() {
     const router = useRouterWithParams();
     const toast = useToast();
     const { worldSetting, setWorldSetting, themeSetting } = useSetupStore();
     const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<WorldSetting>('world');
+    const { getText } = useI18n();
     
     const [formData, setFormData] = useState<Partial<WorldSetting>>({
         name: '',
@@ -80,10 +82,10 @@ function WorldSetupPageContent() {
                             </div>
                             <div>
                                 <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-1" suppressHydrationWarning>
-                                    {I18N['key.world.pageTitle'] || '世界观设定'}
+                                    {getText('key.world.pageTitle', '世界观设定')}
                                 </h1>
                                 <p className="text-slate-600" suppressHydrationWarning>
-                                    {I18N['key.world.pageDescription'] || '构建故事的宏观背景框架'}
+                                    {getText('key.world.pageDescription', '构建故事的宏观背景框架')}
                                 </p>
                             </div>
                         </div>
@@ -94,7 +96,7 @@ function WorldSetupPageContent() {
                         onClick={() => router.push('/setup')}
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        <span suppressHydrationWarning>{I18N['key.world.back'] || '返回'}</span>
+                        <span suppressHydrationWarning>{getText('key.world.back', '返回')}</span>
                     </Button>
                 </div>
 
@@ -103,7 +105,7 @@ function WorldSetupPageContent() {
                         <div className="flex items-center justify-between">
                             <CardTitle className="flex items-center gap-2 text-slate-800" suppressHydrationWarning>
                                 <Globe className="w-5 h-5" />
-                                {I18N['key.world.defineWorld'] || '定义世界观'}
+                                {getText('key.world.defineWorld', '定义世界观')}
                             </CardTitle>
                             {/* AI 自动补全按钮 */}
                             <Button
@@ -118,7 +120,7 @@ function WorldSetupPageContent() {
                                     <Sparkles className="w-4 h-4 text-amber-600" />
                                 )}
                                 <span className="text-amber-700 font-medium" suppressHydrationWarning>
-                                    {isAutocompleting ? (I18N['key.world.autoCompleting'] || 'AI补全中...') : (I18N['key.world.aiAutocomplete'] || 'AI帮我填')}
+                                    {isAutocompleting ? getText('key.world.autoCompleting', 'AI补全中...') : getText('key.world.aiAutocomplete', 'AI帮我填')}
                                 </span>
                             </Button>
                         </div>
@@ -127,12 +129,12 @@ function WorldSetupPageContent() {
                         {/* 基础信息 */}
                         <div>
                             <h3 className="font-semibold text-lg mb-3 text-purple-900" suppressHydrationWarning>
-                                {I18N['key.world.basicSettings'] || '基础设定'}
+                                {getText('key.world.basicSettings', '基础设定')}
                             </h3>
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
-                                        {I18N['key.world.nameLabel'] || '世界观名称 *'}
+                                        {getText('key.world.nameLabel', '世界观名称 *')}
                                     </label>
                                     <Input
                                         value={formData.name || ''}
@@ -142,7 +144,7 @@ function WorldSetupPageContent() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
-                                        {I18N['key.world.eraLabel'] || '时代背景 *'}
+                                        {getText('key.world.eraLabel', '时代背景 *')}
                                     </label>
                                     <Input
                                         value={formData.era || ''}
@@ -152,7 +154,7 @@ function WorldSetupPageContent() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
-                                        {I18N['key.world.locationLabel'] || '地域范围 *'}
+                                        {getText('key.world.locationLabel', '地域范围 *')}
                                     </label>
                                     <Input
                                         value={formData.location || ''}
@@ -166,12 +168,12 @@ function WorldSetupPageContent() {
                         {/* 核心规则 */}
                         <div>
                             <h3 className="font-semibold text-lg mb-3 text-indigo-900" suppressHydrationWarning>
-                                {I18N['key.world.coreRules'] || '核心规则'}
+                                {getText('key.world.coreRules', '核心规则')}
                             </h3>
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
-                                        {I18N['key.world.rulesLabel'] || '规则体系'}
+                                        {getText('key.world.rulesLabel', '规则体系')}
                                     </label>
                                     <textarea
                                         className="w-full border rounded px-3 py-2 min-h-[100px]"
@@ -182,7 +184,7 @@ function WorldSetupPageContent() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
-                                        {I18N['key.world.socialStructureLabel'] || '社会结构'}
+                                        {getText('key.world.socialStructureLabel', '社会结构')}
                                     </label>
                                     <textarea
                                         className="w-full border rounded px-3 py-2 min-h-[80px]"
@@ -197,7 +199,7 @@ function WorldSetupPageContent() {
                         {/* 历史背景 */}
                         <div>
                             <h3 className="font-semibold text-lg mb-3 text-blue-900" suppressHydrationWarning>
-                                {I18N['key.world.historySection'] || '历史背景'}
+                                {getText('key.world.historySection', '历史背景')}
                             </h3>
                             <textarea
                                 className="w-full border rounded px-3 py-2 min-h-[120px]"
@@ -210,7 +212,7 @@ function WorldSetupPageContent() {
                         {/* 补充说明 */}
                         <div>
                             <h3 className="font-semibold text-lg mb-3 text-purple-900" suppressHydrationWarning>
-                                {I18N['key.world.supplementSection'] || '补充说明'}
+                                {getText('key.world.supplementSection', '补充说明')}
                             </h3>
                             <textarea
                                 className="w-full border rounded px-3 py-2 min-h-[100px]"
@@ -227,7 +229,7 @@ function WorldSetupPageContent() {
                                 onClick={handleSave}
                             >
                                 <Save className="w-5 h-5 mr-2" />
-                                <span suppressHydrationWarning>{I18N['key.world.saveButton'] || '保存世界观设定'}</span>
+                                <span suppressHydrationWarning>{getText('key.world.saveButton', '保存世界观设定')}</span>
                             </Button>
                         </div>
                     </CardContent>

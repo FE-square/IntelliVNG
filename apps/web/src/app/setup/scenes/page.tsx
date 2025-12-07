@@ -9,12 +9,14 @@ import type { Scene } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 import { I18N, t } from '@/i18n/client';
 import { useRouterWithParams } from '@/hooks/useRouterWithParams';
+import { useI18n } from '@/hooks/useI18n';
 
 function ScenesPageContent() {
     const router = useRouterWithParams();
     const toast = useToast();
     const { scenes, addScene, updateScene, removeScene, worldSetting, themeSetting } = useSetupStore();
     const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<Scene>('scene');
+    const { getText } = useI18n();
     
     const [editingId, setEditingId] = useState<string | null>(null);
     const [currentScene, setCurrentScene] = useState<Scene>({
@@ -150,10 +152,10 @@ function ScenesPageContent() {
                             </div>
                             <div>
                                 <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-1" suppressHydrationWarning>
-                                    {I18N['key.scenes.pageTitle'] || '场景设定'}
+                                    {getText('key.scenes.pageTitle', '场景设定')}
                                 </h1>
                                 <p className="text-slate-600" suppressHydrationWarning>
-                                    {I18N['key.scenes.pageDescription'] || '定义故事发生的空间背景'}
+                                    {getText('key.scenes.pageDescription', '定义故事发生的空间背景')}
                                 </p>
                             </div>
                         </div>
@@ -164,7 +166,7 @@ function ScenesPageContent() {
                         onClick={() => router.push('/setup')}
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        <span suppressHydrationWarning>{I18N['key.scenes.back'] || '返回'}</span>
+                        <span suppressHydrationWarning>{getText('key.scenes.back', '返回')}</span>
                     </Button>
                 </div>
 
@@ -174,7 +176,7 @@ function ScenesPageContent() {
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="font-semibold text-lg text-slate-800" suppressHydrationWarning>
-                                    {editingId ? ('✏️ ' + (I18N['key.scenes.editScene'] || '编辑场景')) : ('🌟 添加新场景')}
+                                    {editingId ? ('✏️ ' + getText('key.scenes.editScene', '编辑场景')) : ('🌟 添加新场景')}
                                 </h3>
                                 {/* AI 自动补全按钮 */}
                                 <Button
@@ -281,7 +283,7 @@ function ScenesPageContent() {
                                             >
                                                 <Wand2 className="w-4 h-4" />
                                                 <span suppressHydrationWarning>
-                                                    {isGeneratingBackground ? (I18N['key.scenes.generating'] || 'AI生成中...') : (I18N['key.scenes.generateBackground'] || 'AI生成背景图')}
+                                                    {isGeneratingBackground ? getText('key.scenes.generating', 'AI生成中...') : getText('key.scenes.generateBackground', 'AI生成背景图')}
                                                 </span>
                                             </Button>
                                         </div>
@@ -319,7 +321,7 @@ function ScenesPageContent() {
                                             variant="outline"
                                             className="flex-1"
                                         >
-                                            <span suppressHydrationWarning>{I18N['key.scenes.cancel'] || '取消编辑'}</span>
+                                            <span suppressHydrationWarning>{getText('key.scenes.cancel', '取消编辑')}</span>
                                         </Button>
                                     )}
                                     <Button
@@ -329,7 +331,7 @@ function ScenesPageContent() {
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
                                         <span suppressHydrationWarning>
-                                            {editingId ? (I18N['key.scenes.updateScene'] || '保存修改') : (I18N['key.scenes.addScene'] || '添加场景')}
+                                            {editingId ? getText('key.scenes.updateScene', '保存修改') : getText('key.scenes.addScene', '添加场景')}
                                         </span>
                                     </Button>
                                 </div>
@@ -340,13 +342,13 @@ function ScenesPageContent() {
                     {/* 已添加的场景列表 */}
                     <div className="space-y-4">
                         <h3 className="font-semibold text-lg text-slate-800" suppressHydrationWarning>
-                            {I18N['key.scenes.scenesList'] || '场景列表'} ({scenes.length})
+                            {getText('key.scenes.scenesList', '场景列表')} ({scenes.length})
                         </h3>
                         {scenes.length === 0 ? (
                             <Card className="p-8 text-center text-slate-500 shadow-lg border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-green-50">
                                 <Wand2 className="w-16 h-16 mx-auto mb-3 text-slate-300" />
                                 <p className="font-medium" suppressHydrationWarning>
-                                    {I18N['key.scenes.noScenes'] || '还没有添加场景'}
+                                    {getText('key.scenes.noScenes', '还没有添加场景')}
                                 </p>
                                 <p className="text-sm mt-1" suppressHydrationWarning>点击左侧表单添加第一个场景</p>
                             </Card>

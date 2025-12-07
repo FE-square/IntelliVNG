@@ -59,7 +59,9 @@ export function t(key: string, params?: Record<string, string | number>): string
 export const I18N = new Proxy({} as Record<string, string>, {
   get(_target, prop: string) {
     const i18n = getI18N();
-    return i18n[prop] || prop;
+    // SSR 时返回空字符串，避免显示 key
+    // CSR 时返回翻译文本或空字符串
+    return i18n[prop] || '';
   },
   has(_target, prop: string) {
     const i18n = getI18N();

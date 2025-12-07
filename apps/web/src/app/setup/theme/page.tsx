@@ -9,6 +9,7 @@ import type { ThemeSetting } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 import { I18N, t } from '@/i18n/client';
 import { useRouterWithParams } from '@/hooks/useRouterWithParams';
+import { useI18n } from '@/hooks/useI18n';
 
 // 预设主题选项
 const THEME_OPTIONS = [
@@ -43,6 +44,7 @@ function ThemeSetupPageContent() {
     const toast = useToast();
     const { themeSetting, setThemeSetting, worldSetting, characters } = useSetupStore();
     const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<ThemeSetting>('theme');
+    const { getText } = useI18n();
     
     const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
     const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
@@ -162,10 +164,10 @@ function ThemeSetupPageContent() {
                             </div>
                             <div>
                                 <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent mb-1" suppressHydrationWarning>
-                                    {I18N['key.theme.pageTitle'] || '故事主题风格'}
+                                    {getText('key.theme.pageTitle', '故事主题风格')}
                                 </h1>
                                 <p className="text-slate-600" suppressHydrationWarning>
-                                    {I18N['key.theme.pageDescription'] || '定义故事的情感基调和艺术氛围'}
+                                    {getText('key.theme.pageDescription', '定义故事的情感基调和艺术氛围')}
                                 </p>
                             </div>
                         </div>
@@ -184,7 +186,7 @@ function ThemeSetupPageContent() {
                                 <Sparkles className="w-4 h-4 mr-2 text-amber-600" />
                             )}
                             <span className="text-amber-700 font-medium" suppressHydrationWarning>
-                                {isAutocompleting ? (I18N['key.theme.aiSuggesting'] || 'AI推荐中...') : (I18N['key.theme.aiSuggest'] || 'AI帮我选')}
+                                {isAutocompleting ? getText('key.theme.aiSuggesting', 'AI推荐中...') : getText('key.theme.aiSuggest', 'AI帮我选')}
                             </span>
                         </Button>
                         <Button
@@ -193,7 +195,7 @@ function ThemeSetupPageContent() {
                             onClick={() => router.push('/setup')}
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
-                            <span suppressHydrationWarning>{I18N['key.theme.back'] || '返回'}</span>
+                            <span suppressHydrationWarning>{getText('key.theme.back', '返回')}</span>
                         </Button>
                     </div>
                 </div>
@@ -204,7 +206,7 @@ function ThemeSetupPageContent() {
                         <CardHeader className="bg-gradient-to-br from-pink-50 to-rose-50">
                             <CardTitle className="flex items-center gap-2 text-slate-800">
                                 <Palette className="w-5 h-5" />
-                                <span suppressHydrationWarning>{I18N['key.theme.coreThemesMulti'] || '核心主题(可多选)'}</span>
+                                <span suppressHydrationWarning>{getText('key.theme.coreThemesMulti', '核心主题(可多选)')}</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -227,7 +229,7 @@ function ThemeSetupPageContent() {
                             {/* 自定义主题 */}
                             <div>
                                 <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
-                                    {I18N['key.theme.customTheme'] || '自定义主题'}
+                                    {getText('key.theme.customTheme', '自定义主题')}
                                 </label>
                                 <div className="flex gap-2">
                                     <Input
@@ -246,7 +248,7 @@ function ThemeSetupPageContent() {
                             {selectedThemes.length > 0 && (
                                 <div>
                                     <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
-                                        {I18N['key.theme.selectedThemes'] || '已选择的主题'}
+                                        {getText('key.theme.selectedThemes', '已选择的主题')}
                                     </label>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedThemes.map(theme => (
@@ -274,7 +276,7 @@ function ThemeSetupPageContent() {
                         <CardHeader className="bg-gradient-to-br from-purple-50 to-blue-50">
                             <CardTitle className="flex items-center gap-2 text-slate-800">
                                 <Palette className="w-5 h-5" />
-                                <span suppressHydrationWarning>{I18N['key.theme.plotStylesMulti'] || '剧情风格(可多选)'}</span>
+                                <span suppressHydrationWarning>{getText('key.theme.plotStylesMulti', '剧情风格(可多选)')}</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -297,7 +299,7 @@ function ThemeSetupPageContent() {
                             {/* 自定义风格 */}
                             <div>
                                 <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
-                                    {I18N['key.theme.customStyle'] || '自定义风格'}
+                                    {getText('key.theme.customStyle', '自定义风格')}
                                 </label>
                                 <div className="flex gap-2">
                                     <Input
@@ -316,7 +318,7 @@ function ThemeSetupPageContent() {
                             {selectedStyles.length > 0 && (
                                 <div>
                                     <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
-                                        {I18N['key.theme.selectedStyles'] || '已选择的风格'}
+                                        {getText('key.theme.selectedStyles', '已选择的风格')}
                                     </label>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedStyles.map(style => (
@@ -343,13 +345,13 @@ function ThemeSetupPageContent() {
                     <Card className="shadow-lg border-2 border-slate-200">
                         <CardHeader className="bg-gradient-to-br from-amber-50 to-yellow-50">
                             <CardTitle className="text-slate-800" suppressHydrationWarning>
-                                {I18N['key.theme.supplementSection'] || '补充说明(可选)'}
+                                {getText('key.theme.supplementSection', '补充说明(可选)')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
-                                    {I18N['key.theme.overallToneLabel'] || '整体基调'}
+                                    {getText('key.theme.overallToneLabel', '整体基调')}
                                 </label>
                                 <Input
                                     value={tone}
@@ -359,7 +361,7 @@ function ThemeSetupPageContent() {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
-                                    {I18N['key.theme.otherDescription'] || '其他说明'}
+                                    {getText('key.theme.otherDescription', '其他说明')}
                                 </label>
                                 <textarea
                                     className="w-full border rounded px-3 py-2 min-h-[100px]"
@@ -377,7 +379,7 @@ function ThemeSetupPageContent() {
                             className="flex-1 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 h-12 text-lg shadow-lg"
                             onClick={handleSave}
                         >
-                            <span suppressHydrationWarning>{I18N['key.theme.saveButton'] || '保存主题风格设定'}</span>
+                            <span suppressHydrationWarning>{getText('key.theme.saveButton', '保存主题风格设定')}</span>
                         </Button>
                     </div>
                 </div>
@@ -389,13 +391,13 @@ function ThemeSetupPageContent() {
                         className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
-                        <span suppressHydrationWarning>{I18N['key.theme.backToSetup'] || '← 返回设置'}</span>
+                        <span suppressHydrationWarning>{getText('key.theme.backToSetup', '← 返回设置')}</span>
                     </Button>
                     <Button
                         className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg"
                         onClick={() => router.push('/setup/scenes')}
                     >
-                        <span suppressHydrationWarning>{I18N['key.theme.nextStep'] || '下一步:定义场景 →'}</span>
+                        <span suppressHydrationWarning>{getText('key.theme.nextStep', '下一步:定义场景 →')}</span>
                     </Button>
                 </div>
             </div>
