@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, useToast, useConfirmDialog } from '@vng/ui';
 import { Plus, Trash2, Save, ArrowLeft, Users, Wand2, Sparkles, Loader2 } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
@@ -11,6 +10,8 @@ import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 import { saveProject } from '@/lib/projectStorage';
 import { getEditingProjectBase, buildFullProject } from '@/lib/setupUtils';
 import { t } from '@/i18n/client';
+import { useRouterWithParams } from '@/hooks/useRouterWithParams';
+import { useI18n } from '@/hooks/useI18n';
 
 // 生成状态类型
 interface GenerationStatus {
@@ -19,12 +20,13 @@ interface GenerationStatus {
     progress: number;
 }
 
-export default function CharactersPage() {
-    const router = useRouter();
+function CharactersPageContent() {
+    const router = useRouterWithParams();
     const toast = useToast();
     const { confirm, DialogComponent } = useConfirmDialog();
     const { characters, addCharacter, updateCharacter, removeCharacter, worldSetting, themeSetting } = useSetupStore();
     const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<Character>('character');
+    const { getText } = useI18n();
     
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState<Partial<Character>>({
@@ -284,7 +286,7 @@ export default function CharactersPage() {
     };
 
     // 一键生成：先立绘后头像
-    const handleGenerateBoth = async () => {
+    const handleGenerateAll = async () => {
         if (!formData.displayName || !formData.description) {
             toast.warning(t('key.characters.warning.fillNameDesc'));
             return;
@@ -300,7 +302,7 @@ export default function CharactersPage() {
         await handleGenerateAvatar();
     };
 
-    const handleSave = async () => {
+    const handleSaveCharacter = async () => {
         if (!formData.name || !formData.displayName) {
             toast.warning(t('key.characters.warning.fillRequired'));
             return;
@@ -424,6 +426,10 @@ export default function CharactersPage() {
         }
     };
 
+    const handleCancel = () => {
+        setEditingId(null);
+    };
+
     // 状态指示器组件
     const StatusIndicator = ({ status, label }: { status: GenerationStatus; label: string }) => {
         if (status.status === 'idle') return null;
@@ -467,8 +473,12 @@ export default function CharactersPage() {
                                 <Users className="w-8 h-8 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">角色定义</h1>
-                                <p className="text-slate-600">设置角色的详细信息,让 AI 更好地理解你的角色</p>
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1" suppressHydrationWarning>
+                                    {getText('key.characters.pageTitle', '角色定义')}
+                                </h1>
+                                <p className="text-slate-600" suppressHydrationWarning>
+                                    {getText('key.characters.pageDescription', '设置角色的详细信息,让 AI 更好地理解你的角色')}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -478,29 +488,34 @@ export default function CharactersPage() {
                         onClick={() => router.back()}
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        返回
+                        <span suppressHydrationWarning>{getText('key.common.back', '返回')}</span>
                     </Button>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-6">
                     {/* 左侧:角色列表 */}
                     <div className="md:col-span-1 space-y-4">
-                        <Card className="shadow-lg border-2 border-slate-200">
-                            <CardHeader className="bg-gradient-to-br from-purple-50 to-indigo-50">
-                                <CardTitle className="flex items-center justify-between">
-                                    <span className="text-slate-800">角色列表 ({characters.length})</span>
-                                    <Button size="sm" onClick={handleNewCharacter} className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600">
-                                        <Plus className="w-4 h-4 mr-1" />
-                                        新增
-                                    </Button>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
-                                {characters.length === 0 && (
-                                    <p className="text-gray-500 text-sm text-center py-4">
-                                        还没有角色，点击「新增」创建第一个角色
-                                    </p>
-                                )}
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-semibold text-lg text-slate-800">
+                                <span className="text-slate-800" suppressHydrationWarning>{getText('key.characters.charactersList', '角色列表')} ({characters.length})</span>
+                            </h3>
+                            <Button
+                                onClick={handleNewCharacter}
+                                size="sm"
+                                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                            >
+                                <Plus className="w-4 h-4 mr-1" />
+                                <span suppressHydrationWarning>{getText('key.characters.addCharacter', '新增')}</span>
+                            </Button>
+                        </div>
+                        {characters.length === 0 ? (
+                            <div className="p-8 text-center text-slate-500 rounded-lg border-2 border-dashed">
+                                <p suppressHydrationWarning>
+                                    {getText('key.characters.noCharacters', '还没有角色，点击「新增」创建第一个角色')}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2 max-h-[600px] overflow-y-auto">
                                 {characters.map((char) => (
                                     <div
                                         key={char.id}
@@ -528,7 +543,7 @@ export default function CharactersPage() {
                                             
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="font-medium text-gray-900 truncate">{char.displayName}</h3>
-                                                <p className="text-xs text-gray-500 truncate">{char.identity || '未设置身份'}</p>
+                                                <p className="text-xs text-gray-500 truncate">{char.identity || getText('key.characters.noIdentity', '未设置身份')}</p>
                                             </div>
                                             
                                             <Button
@@ -544,8 +559,8 @@ export default function CharactersPage() {
                                         </div>
                                     </div>
                                 ))}
-                            </CardContent>
-                        </Card>
+                            </div>
+                        )}
                     </div>
 
                     {/* 右侧:编辑表单 */}
@@ -554,8 +569,8 @@ export default function CharactersPage() {
                             <Card className="shadow-lg border-2 border-slate-200">
                                 <CardHeader className="bg-gradient-to-br from-purple-50 to-pink-50">
                                     <div className="flex items-center justify-between">
-                                        <CardTitle className="text-slate-800">
-                                            {editingId === 'new' ? '🌟 创建新角色' : '✏️ 编辑角色'}
+                                        <CardTitle className="text-slate-800" suppressHydrationWarning>
+                                            {editingId === 'new' ? getText('key.characters.createNew', '🌟 创建新角色') : getText('key.characters.edit', '✏️ 编辑角色')}
                                         </CardTitle>
                                         {/* AI 自动补全按钮 */}
                                         <Button
@@ -569,8 +584,8 @@ export default function CharactersPage() {
                                             ) : (
                                                 <Sparkles className="w-4 h-4 text-amber-600" />
                                             )}
-                                            <span className="text-amber-700 font-medium">
-                                                {isAutocompleting ? 'AI补全中...' : 'AI帮我填'}
+                                            <span className="text-amber-700 font-medium" suppressHydrationWarning>
+                                                {isAutocompleting ? getText('key.common.aiAutocompleting', 'AI补全中...') : getText('key.common.aiAutocomplete', 'AI帮我填')}
                                             </span>
                                         </Button>
                                     </div>
@@ -578,10 +593,14 @@ export default function CharactersPage() {
                                 <CardContent className="space-y-6 max-h-[700px] overflow-y-auto">
                                     {/* 基础信息 */}
                                     <div>
-                                        <h3 className="font-semibold text-lg mb-3 text-indigo-900">基础信息</h3>
+                                        <h3 className="font-semibold text-lg mb-3 text-indigo-900" suppressHydrationWarning>
+                                            {getText('key.characters.basicInfo', '基础信息')}
+                                        </h3>
                                         <div className="grid md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">角色姓名 *</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.nameLabel', '角色姓名 *')}
+                                                </label>
                                                 <Input
                                                     value={formData.name || ''}
                                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -589,7 +608,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">显示名称 *</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.displayNameLabel', '显示名称 *')}
+                                                </label>
                                                 <Input
                                                     value={formData.displayName || ''}
                                                     onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
@@ -597,7 +618,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">性别</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.genderLabel', '性别')}
+                                                </label>
                                                 <select
                                                     className="w-full border rounded px-3 py-2"
                                                     value={formData.gender || 'male'}
@@ -609,7 +632,9 @@ export default function CharactersPage() {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">年龄</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.ageLabel', '年龄')}
+                                                </label>
                                                 <Input
                                                     value={formData.age || ''}
                                                     onChange={(e) => setFormData({ ...formData, age: e.target.value })}
@@ -617,7 +642,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium mb-1">身份/职业</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.identityLabel', '身份/职业')}
+                                                </label>
                                                 <Input
                                                     value={formData.identity || ''}
                                                     onChange={(e) => setFormData({ ...formData, identity: e.target.value })}
@@ -625,7 +652,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium mb-1">角色描述</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.descriptionLabel', '角色描述')}
+                                                </label>
                                                 <textarea
                                                     className="w-full border rounded px-3 py-2 min-h-[80px]"
                                                     value={formData.description || ''}
@@ -638,10 +667,14 @@ export default function CharactersPage() {
 
                                     {/* 外观特征 */}
                                     <div>
-                                        <h3 className="font-semibold text-lg mb-3 text-purple-900">外观特征</h3>
+                                        <h3 className="font-semibold text-lg mb-3 text-purple-900" suppressHydrationWarning>
+                                            {getText('key.characters.appearanceLabel', '外观特征')}
+                                        </h3>
                                         <div className="grid md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">发型</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.hairStyleLabel', '发型')}
+                                                </label>
                                                 <Input
                                                     value={formData.appearance?.hairStyle || ''}
                                                     onChange={(e) =>
@@ -654,7 +687,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">服饰</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.clothingLabel', '服饰')}
+                                                </label>
                                                 <Input
                                                     value={formData.appearance?.clothing || ''}
                                                     onChange={(e) =>
@@ -667,7 +702,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">五官风格</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.facialFeaturesLabel', '五官风格')}
+                                                </label>
                                                 <Input
                                                     value={formData.appearance?.facialFeatures || ''}
                                                     onChange={(e) =>
@@ -680,7 +717,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">体型</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.bodyTypeLabel', '体型')}
+                                                </label>
                                                 <Input
                                                     value={formData.appearance?.bodyType || ''}
                                                     onChange={(e) =>
@@ -693,7 +732,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium mb-1">其他特征</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.otherFeaturesLabel', '其他特征')}
+                                                </label>
                                                 <Input
                                                     value={formData.appearance?.otherFeatures || ''}
                                                     onChange={(e) =>
@@ -710,7 +751,9 @@ export default function CharactersPage() {
 
                                     {/* 视觉素材配置 */}
                                     <div>
-                                        <h3 className="font-semibold text-lg mb-3 text-blue-900">🎨 视觉素材</h3>
+                                        <h3 className="font-semibold text-lg mb-3 text-blue-900" suppressHydrationWarning>
+                                            {getText('key.characters.visualAssetsLabel', '🎨 视觉素材')}
+                                        </h3>
                                         
                                         {/* 一键生成提示 */}
                                         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-200 mb-4">
@@ -718,19 +761,21 @@ export default function CharactersPage() {
                                                 💡 <strong>推荐流程</strong>：先生成立绘，再基于立绘生成头像，保持角色形象一致性
                                             </p>
                                             <Button
-                                                onClick={handleGenerateBoth}
-                                                disabled={spriteStatus.status === 'running' || avatarStatus.status === 'running' || !formData.displayName}
-                                                className="w-full gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                                                onClick={handleGenerateAll}
+                                                disabled={spriteStatus.status === 'running' || avatarStatus.status === 'running'}
+                                                className="w-full gap-2 bg-gradient-to-r from-purple-600 to-pink-600"
                                             >
-                                                <Wand2 className="w-4 h-4" />
-                                                一键生成立绘 + 头像
+                                                <Sparkles className="w-4 h-4" />
+                                                <span suppressHydrationWarning>
+                                                    {getText('key.characters.generateAll', '一键生成立绘 + 头像')}
+                                                </span>
                                             </Button>
-                                        </div>
 
-                                        <div className="space-y-4">
                                             {/* AI生成立绘 */}
                                             <div>
-                                                <label className="block text-sm font-medium mb-2">角色立绘</label>
+                                                <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
+                                                    {getText('key.characters.spriteLabel', '角色立绘')}
+                                                </label>
                                                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
                                                     <p className="text-sm text-gray-600 mb-3">
                                                         基于角色外观描述，使用通义万相AI生成全身立绘
@@ -745,7 +790,9 @@ export default function CharactersPage() {
                                                         ) : (
                                                             <Wand2 className="w-4 h-4" />
                                                         )}
-                                                        {spriteStatus.status === 'running' ? '生成中...' : 'AI生成立绘'}
+                                                        <span suppressHydrationWarning>
+                                                            {spriteStatus.status === 'running' ? getText('key.characters.sprite.generating', '生成中...') : getText('key.characters.generateSprite', 'AI生成立绘')}
+                                                        </span>
                                                     </Button>
                                                     
                                                     <StatusIndicator status={spriteStatus} label="立绘生成" />
@@ -786,9 +833,11 @@ export default function CharactersPage() {
                                                 )}
                                             </div>
 
-                                            {/* 头像 */}
+                                            {/* AI生成头像 */}
                                             <div>
-                                                <label className="block text-sm font-medium mb-2">角色头像</label>
+                                                <label className="block text-sm font-medium mb-2" suppressHydrationWarning>
+                                                    {getText('key.characters.avatarLabel', '角色头像')}
+                                                </label>
                                                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
                                                     <p className="text-sm text-gray-600 mb-3">
                                                         {formData.sprites?.length ? 
@@ -806,7 +855,9 @@ export default function CharactersPage() {
                                                         ) : (
                                                             <Wand2 className="w-4 h-4" />
                                                         )}
-                                                        {avatarStatus.status === 'running' ? '生成中...' : 'AI生成头像'}
+                                                        <span suppressHydrationWarning>
+                                                            {avatarStatus.status === 'running' ? getText('key.characters.avatar.generating', '生成中...') : getText('key.characters.generateAvatar', 'AI生成头像')}
+                                                        </span>
                                                     </Button>
                                                     
                                                     <StatusIndicator status={avatarStatus} label="头像生成" />
@@ -814,7 +865,9 @@ export default function CharactersPage() {
                                                 
                                                 {/* 手动输入URL */}
                                                 <div className="mt-3">
-                                                    <label className="block text-xs text-gray-500 mb-1">或手动输入头像URL</label>
+                                                    <label className="block text-xs text-gray-500 mb-1" suppressHydrationWarning>
+                                                        {getText('key.characters.avatarUrlLabel', '或手动输入头像URL')}
+                                                    </label>
                                                     <Input
                                                         value={formData.avatarUrl || ''}
                                                         onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
@@ -839,10 +892,14 @@ export default function CharactersPage() {
 
                                     {/* 性格属性 */}
                                     <div>
-                                        <h3 className="font-semibold text-lg mb-3 text-pink-900">性格属性</h3>
+                                        <h3 className="font-semibold text-lg mb-3 text-pink-900" suppressHydrationWarning>
+                                            {getText('key.characters.personalityLabel', '性格属性')}
+                                        </h3>
                                         <div className="space-y-4">
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">性格标签</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.traitsLabel', '性格标签')}
+                                                </label>
                                                 <Input
                                                     value={formData.personality?.traits?.join(', ') || ''}
                                                     onChange={(e) =>
@@ -858,7 +915,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">性情倾向</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.temperamentLabel', '性情倾向')}
+                                                </label>
                                                 <Input
                                                     value={formData.personality?.temperament || ''}
                                                     onChange={(e) =>
@@ -871,7 +930,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">价值观</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.valuesLabel', '价值观')}
+                                                </label>
                                                 <Input
                                                     value={formData.personality?.values || ''}
                                                     onChange={(e) =>
@@ -888,10 +949,14 @@ export default function CharactersPage() {
 
                                     {/* 核心特质 */}
                                     <div>
-                                        <h3 className="font-semibold text-lg mb-3 text-green-900">核心特质</h3>
+                                        <h3 className="font-semibold text-lg mb-3 text-green-900" suppressHydrationWarning>
+                                            {getText('key.characters.coreTraitsLabel', '核心特质')}
+                                        </h3>
                                         <div className="space-y-4">
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">特殊技能</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.specialSkillsLabel', '特殊技能')}
+                                                </label>
                                                 <Input
                                                     value={formData.coreTraits?.specialSkills?.join(', ') || ''}
                                                     onChange={(e) =>
@@ -907,7 +972,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">执念/目标</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.obsessionLabel', '执念/目标')}
+                                                </label>
                                                 <Input
                                                     value={formData.coreTraits?.obsession || ''}
                                                     onChange={(e) =>
@@ -920,7 +987,9 @@ export default function CharactersPage() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">背景故事</label>
+                                                <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
+                                                    {getText('key.characters.backstoryLabel', '背景故事')}
+                                                </label>
                                                 <textarea
                                                     className="w-full border rounded px-3 py-2 min-h-[100px]"
                                                     value={formData.coreTraits?.backstory || ''}
@@ -938,20 +1007,24 @@ export default function CharactersPage() {
 
                                     {/* 操作按钮 */}
                                     <div className="flex gap-3 pt-4 border-t">
+                                        {editingId && (
+                                            <Button
+                                                onClick={handleCancel}
+                                                variant="outline"
+                                                className="flex-1"
+                                            >
+                                                <span suppressHydrationWarning>{getText('key.characters.cancel', '取消编辑')}</span>
+                                            </Button>
+                                        )}
                                         <Button
-                                            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-                                            onClick={handleSave}
+                                            onClick={handleSaveCharacter}
+                                            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600"
+                                            disabled={!formData.name || !formData.displayName}
                                         >
-                                            <span className="flex items-center">
-                                                <Save className="w-4 h-4 mr-2" />
-                                                保存角色
+                                            <Save className="w-4 h-4 mr-2" />
+                                            <span suppressHydrationWarning>
+                                                {editingId && editingId !== 'new' ? getText('key.characters.updateCharacter', '更新角色') : getText('key.characters.addCharacter', '添加角色')}
                                             </span>
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => setEditingId(null)}
-                                        >
-                                            取消
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -960,8 +1033,12 @@ export default function CharactersPage() {
                             <Card className="h-full flex items-center justify-center min-h-[400px] shadow-lg border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-purple-50">
                                 <div className="text-center text-slate-500">
                                     <Users className="w-20 h-20 mx-auto mb-4 text-slate-300" />
-                                    <p className="text-lg font-medium">请从左侧选择一个角色进行编辑</p>
-                                    <p className="text-sm mt-2">或点击「新增」按钮创建新角色</p>
+                                    <p className="text-lg font-medium" suppressHydrationWarning>
+                                        {getText('key.characters.selectHint', '请从左侧选择一个角色进行编辑')}
+                                    </p>
+                                    <p className="text-sm mt-2" suppressHydrationWarning>
+                                        {getText('key.characters.addHint', '或点击「新增」按钮创建新角色')}
+                                    </p>
                                 </div>
                             </Card>
                         )}
@@ -975,17 +1052,26 @@ export default function CharactersPage() {
                         className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
-                        ← 返回设置
+                        <span suppressHydrationWarning>{getText('key.common.backToSetup', '← 返回设置')}</span>
                     </Button>
                     <Button
                         className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
                         onClick={() => router.push('/setup/summary')}
                     >
-                        下一步:查看汇总 →
+                        <span suppressHydrationWarning>{getText('key.characters.nextStep', '下一步:查看汇总 →')}</span>
                     </Button>
                 </div>
             </div>
             {DialogComponent}
         </main>
+    );
+}
+
+// 用 Suspense 包裹以支持 useSearchParams
+export default function CharactersPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 flex items-center justify-center"><div className="text-lg"><span suppressHydrationWarning>{getText('key.common.loading', '加载中...')}</span></div></div>}>
+            <CharactersPageContent />
+        </Suspense>
     );
 }
