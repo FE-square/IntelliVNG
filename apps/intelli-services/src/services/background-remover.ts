@@ -14,10 +14,12 @@ const __dirname = dirname(__filename);
 export class BackgroundRemover {
     private pythonScript: string;
     private isAvailable: boolean = false;
+    private checkPromise: Promise<void>;
 
     constructor() {
         this.pythonScript = join(__dirname, '../scripts/remove_bg.py');
-        this.checkAvailability();
+        // 启动检查，但不阻塞构造函数
+        this.checkPromise = this.checkAvailability();
     }
 
     /**
@@ -25,17 +27,21 @@ export class BackgroundRemover {
      */
     private async checkAvailability(): Promise<void> {
         try {
-            const result = await this.executePython('{"url": "test"}');
-            // 如果没有抛出错误，说明环境可用
-            this.isAvailable = false; // 测试会失败，但能确认脚本可运行
+            console.log('[BackgroundRemover] 正在检测rembg环境...');
+            const testInput = JSON.stringify({ url: 'test' });
+            await this.executePython(testInput);
+            // 测试成功（虽然URL无效，但脚本能运行）
+            this.isAvailable = true;
+            console.log('[BackgroundRemover] ✅ rembg环境可用');
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : String(error);
-            if (errorMsg.includes('rembg not installed')) {
-                console.warn('[BackgroundRemover] rembg not installed. Background removal disabled.');
-                console.warn('[BackgroundRemover] To enable: pip install -r apps/intelli-services/scripts/requirements.txt');
+            if (errorMsg.includes('rembg not installed') || errorMsg.includes('No module named')) {
+                console.warn('[BackgroundRemover] ❌ rembg未安装，去背景功能已禁用');
+                console.warn('[BackgroundRemover] 安装方法: pip3 install -r apps/intelli-services/scripts/requirements.txt');
                 this.isAvailable = false;
             } else {
-                // 其他错误（如测试URL失败）说明环境可用
+                // 其他错误（如测试URL失败、SSL错误）说明脚本能运行，环境可用
+                console.log('[BackgroundRemover] ✅ rembg环境可用（测试URL失败是正常的）');
                 this.isAvailable = true;
             }
         }
@@ -81,13 +87,16 @@ export class BackgroundRemover {
      * 从URL去除背景
      */
     async removeBackgroundFromUrl(imageUrl: string): Promise<string> {
+        // 等待检查完成
+        await this.checkPromise;
+        
         if (!this.isAvailable) {
-            console.warn('[BackgroundRemover] Service not available, returning original URL');
+            console.warn('[BackgroundRemover] 服务不可用，返回原始URL');
             return imageUrl;
         }
 
         try {
-            console.log('[BackgroundRemover] Processing:', imageUrl);
+            console.log('[BackgroundRemover] 正在处理:', imageUrl.substring(0, 80) + '...');
             
             const input = JSON.stringify({ url: imageUrl });
             const output = await this.executePython(input);
@@ -101,11 +110,11 @@ export class BackgroundRemover {
             // 将base64数据转换为临时文件或返回data URL
             const dataUrl = `data:image/png;base64,${result.data}`;
             
-            console.log('[BackgroundRemover] Background removed successfully');
+            console.log('[BackgroundRemover] ✅ 背景已成功去除，返回透明PNG');
             return dataUrl;
 
         } catch (error) {
-            console.error('[BackgroundRemover] Failed to remove background:', error);
+            console.error('[BackgroundRemover] 去除背景失败:', error);
             // 失败时返回原始URL
             return imageUrl;
         }
