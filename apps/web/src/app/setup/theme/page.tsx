@@ -8,6 +8,7 @@ import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
 import type { ThemeSetting } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
+import { t } from '@/i18n/client';
 
 // 预设主题选项
 const THEME_OPTIONS = [
@@ -133,7 +134,7 @@ export default function ThemeSetupPage() {
 
     const handleSave = () => {
         if (selectedThemes.length === 0 || selectedStyles.length === 0) {
-            toast.warning('请至少选择一个主题和一个风格');
+            toast.warning(t('key.theme.warning.selectRequired'));
             return;
         }
 
@@ -146,7 +147,7 @@ export default function ThemeSetupPage() {
         };
 
         setThemeSetting(newThemeSetting);
-        toast.success('主题风格保存成功');
+        toast.success(t('key.theme.save.success'));
     };
 
     return (

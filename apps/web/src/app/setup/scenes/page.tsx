@@ -8,6 +8,7 @@ import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
 import type { Scene } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
+import { t } from '@/i18n/client';
 
 export default function ScenesPage() {
     const router = useRouter();
@@ -51,12 +52,12 @@ export default function ScenesPage() {
             if (editingId) {
                 // 编辑模式
                 updateScene(editingId, currentScene);
-                toast.success('场景更新成功', '背景图已自动同步到素材库 🎨');
+                toast.success(t('key.scenes.save.updateSuccess'), t('key.scenes.save.assetsSync'));
                 setEditingId(null);
             } else {
                 // 添加模式
                 addScene(currentScene);
-                toast.success('场景添加成功', '背景图已自动添加到素材库 🎨');
+                toast.success(t('key.scenes.save.addSuccess'), t('key.scenes.save.assetsAdded'));
             }
             
             // 重置表单
@@ -95,7 +96,7 @@ export default function ScenesPage() {
     // AI生成场景背景图
     const handleGenerateBackground = async () => {
         if (!currentScene.name || !currentScene.type) {
-            toast.warning('请先填写场景名称和类型');
+            toast.warning(t('key.scenes.warning.fillNameType'));
             return;
         }
 
@@ -115,13 +116,13 @@ export default function ScenesPage() {
             
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.details || '生成失败');
+                throw new Error(errorData.details || t('key.scenes.generate.failed'));
             }
             
             const { imageUrl } = await response.json();
             
             if (!imageUrl) {
-                throw new Error('未获取到图片URL');
+                throw new Error(t('key.scenes.generate.noUrl'));
             }
             
             setCurrentScene({
@@ -129,10 +130,10 @@ export default function ScenesPage() {
                 imageUrl,
             });
             
-            toast.success('背景图生成成功', '请点击「添加场景」按钮以保存到素材库 💾');
+            toast.success(t('key.scenes.generate.success'), t('key.scenes.generate.saveHint'));
         } catch (error) {
             console.error('生成失败:', error);
-            toast.error('生成失败', error instanceof Error ? error.message : '请重试');
+            toast.error(t('key.scenes.generate.failed'), error instanceof Error ? error.message : t('key.scenes.generate.retry'));
         } finally {
             setIsGeneratingBackground(false);
         }

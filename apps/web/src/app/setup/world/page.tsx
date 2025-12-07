@@ -8,6 +8,7 @@ import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
 import type { WorldSetting } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
+import { t } from '@/i18n/client';
 
 export default function WorldSetupPage() {
     const router = useRouter();
@@ -48,7 +49,7 @@ export default function WorldSetupPage() {
 
     const handleSave = () => {
         if (!formData.name || !formData.era || !formData.location) {
-            toast.warning('请至少填写世界观名称、时代和地域');
+            toast.warning(t('key.world.warning.fillRequired'));
             return;
         }
 
@@ -64,7 +65,7 @@ export default function WorldSetupPage() {
         };
 
         setWorldSetting(newWorldSetting);
-        toast.success('世界观设定保存成功');
+        toast.success(t('key.world.save.success'));
     };
 
     return (
