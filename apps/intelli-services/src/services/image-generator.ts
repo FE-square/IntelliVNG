@@ -1,6 +1,6 @@
 /**
  * AI图片生成服务
- * 使用通义万相(Wanx)生成角色立绘、头像、场景背景图
+ * 生成角色立绘、头像、场景背景图
  * 
  * 特性：
  * - 支持异步轮询模式，返回任务状态
@@ -197,12 +197,13 @@ export class ImageGenerator {
     /**
      * 基于参考图生成图片（图生图）
      * 用于根据立绘生成保持一致性的头像
+     * 使用 multimodal-generation/generation API，基于参考图+prompt生成新图片
      * 
      * @param prompt 提示词
      * @param refImageUrl 参考图URL（公网可访问）
      * @param type 图片类型
-     * @param size 尺寸
-     * @param refStrength 参考强度 0-1
+     * @param size 尺寸（注意：multimodal-generation API可能不支持自定义尺寸，会使用参考图尺寸）
+     * @param refStrength 参考强度 0-1（此参数在当前API中可能不支持，保留以兼容接口）
      * @param onStatus 状态回调
      */
     async generateWithReference(
@@ -215,7 +216,7 @@ export class ImageGenerator {
     ): Promise<GenerateImageResult> {
         const imageSize = size || DEFAULT_SIZES[type] || '1024*1024';
 
-        console.log(`[ImageGenerator] 基于参考图生成: type=${type}, refUrl=${refImageUrl.substring(0, 50)}...`);
+        console.log(`[ImageGenerator] 基于参考图生成: type=${type}, refUrl=${safeLogUrl(refImageUrl)}`);
         onStatus?.('PENDING', '准备基于参考图生成...', 0);
 
         if (!this.apiKey) {
@@ -228,94 +229,78 @@ export class ImageGenerator {
             };
         }
 
-        onStatus?.('RUNNING', '正在基于立绘生成头像...', 10);
+        onStatus?.('RUNNING', '正在基于参考图生成图片...', 10);
 
-        // 调用通义万相API（带参考图）
-        const apiResponse = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis', {
+        // 根据类型构建更具体的prompt
+        let enhancedPrompt = prompt;
+        if (type === 'avatar') {
+            enhancedPrompt = `${prompt}, 头像, 正面, 清晰的面部特征, 保持参考图的角色形象和风格`;
+        } else if (type === 'sprite') {
+            enhancedPrompt = `${prompt}, 角色立绘, 全身, 保持参考图的角色形象和风格`;
+        }
+
+        // 构建negative prompt
+        const negativePrompt = type === 'sprite' || type === 'avatar' 
+            ? 'complex background, detailed background, scenery, landscape, outdoor, indoor scene, room, furniture, props, objects, 复杂背景, 场景, 风景, 室内, 室外, 家具, 道具'
+            : ' ';
+
+        // 调用通义千问多模态生成API（基于参考图+prompt生成新图片）
+        const apiResponse = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${this.apiKey}`,
                 'Content-Type': 'application/json',
-                'X-DashScope-Async': 'enable',
             },
             body: JSON.stringify({
-                model: IMAGE_BASE_MODEL,
+                model: IMAGE_EDIT_MODEL,
                 input: {
-                    prompt: prompt,
-                    ref_img: refImageUrl,  // 参考图URL
-                    negative_prompt: 'complex background, detailed background, scenery, 复杂背景, 场景',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: [
+                                {
+                                    image: refImageUrl,
+                                },
+                                {
+                                    text: enhancedPrompt,
+                                },
+                            ],
+                        },
+                    ],
                 },
                 parameters: {
-                    size: imageSize,
                     n: 1,
-                    seed: Math.floor(Math.random() * 1000000),
-                    style: '<anime>',
-                    ref_mode: 'refonly',  // 仅参考风格/形象
-                    ref_strength: refStrength,  // 参考强度
+                    negative_prompt: negativePrompt,
+                    prompt_extend: false,
+                    watermark: false,
                 },
             }),
         });
 
         if (!apiResponse.ok) {
             const errorText = await apiResponse.text();
-            console.error('[ImageGenerator] API错误:', errorText);
+            console.error('[ImageGenerator] 基于参考图生成API错误:', errorText);
             onStatus?.('FAILED', `API请求失败: ${apiResponse.status}`, 0);
-            throw new Error(`API请求失败: ${apiResponse.status}`);
+            throw new Error(`基于参考图生成API请求失败: ${apiResponse.status}: ${errorText}`);
         }
 
         const data = await apiResponse.json();
+        console.log('[ImageGenerator] 基于参考图生成API响应:', JSON.stringify(data, null, 2));
 
-        // 异步模式：轮询获取结果
-        if (data.output?.task_id) {
-            const taskId = data.output.task_id;
-            console.log(`[ImageGenerator] 异步任务创建成功, task_id: ${taskId}`);
-            onStatus?.('RUNNING', `基于参考图生成中... (ID: ${taskId.substring(0, 8)}...)`, 20);
+        // 从响应中提取生成的图片URL
+        // 根据API返回格式，图片URL可能在不同位置
+        const imageUrl = data.output?.choices?.[0]?.message?.content?.[0]?.image ||
+                        data.output?.results?.[0]?.url ||
+                        data.output?.image;
 
-            // 轮询获取结果（最多等待180秒）
-            for (let i = 0; i < 180; i++) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                const progress = Math.min(20 + Math.floor((i / 60) * 70), 90);
-                onStatus?.('RUNNING', `AI正在基于立绘生成头像... (${i + 1}s)`, progress);
-
-                const resultResponse = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${this.apiKey}`,
-                    },
-                });
-
-                if (!resultResponse.ok) {
-                    continue;
-                }
-
-                const resultData = await resultResponse.json();
-                const taskStatus = resultData.output?.task_status;
-                console.log(`[ImageGenerator] 任务状态: ${taskStatus}`);
-
-                if (taskStatus === 'SUCCEEDED') {
-                    const imageUrl = resultData.output.results?.[0]?.url;
-                    console.log(`[ImageGenerator] 参考图生成成功: ${safeLogUrl(imageUrl)}`);
-                    onStatus?.('SUCCEEDED', '头像生成完成！', 100);
-                    return {
-                        imageUrl,
-                        prompt,
-                        type,
-                        taskId,
-                    };
-                } else if (taskStatus === 'FAILED') {
-                    const errorMsg = resultData.output?.message || '图片生成失败';
-                    onStatus?.('FAILED', errorMsg, 0);
-                    throw new Error(errorMsg);
-                }
-            }
-
-            onStatus?.('FAILED', '生成超时,请稍后重试', 0);
-            throw new Error('生成超时,请稍后重试');
+        if (!imageUrl) {
+            console.error('[ImageGenerator] 无法从响应中获取生成的图片URL:', data);
+            onStatus?.('FAILED', '生成失败: 无法获取生成的图片', 0);
+            throw new Error('基于参考图生成失败: 无法获取生成的图片URL');
         }
 
-        // 同步模式直接返回
-        const imageUrl = data.output?.results?.[0]?.url;
-        onStatus?.('SUCCEEDED', '头像生成完成！', 100);
+        console.log(`[ImageGenerator] 基于参考图生成成功: ${safeLogUrl(imageUrl)}`);
+        onStatus?.('SUCCEEDED', '图片生成完成！', 100);
         return {
             imageUrl,
             prompt,

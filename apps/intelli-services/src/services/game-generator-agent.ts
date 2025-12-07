@@ -176,7 +176,6 @@ export class GameGeneratorAgent {
   async generateFromSetup(
     characters: any[],
     worldSetting: any,
-    scenes?: any[],
     themeSetting?: any,
     locale: Locale = DEFAULT_LOCALE
   ): Promise<GameProject> {
