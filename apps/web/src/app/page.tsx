@@ -87,6 +87,11 @@ export default function Home() {
     const progressListRef = useRef<HTMLDivElement | null>(null);
     const agentsSectionVisibleRef = useRef(false);
     const [lastLocale, setLastLocale] = useState('zh-CN');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         return () => {
@@ -414,13 +419,13 @@ export default function Home() {
                             </div>
                         </div>
                         <CardTitle className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600">
-                            {t('key.home.title')}
+                            {mounted ? t('key.home.title') : ''}
                         </CardTitle>
                         <CardDescription className="text-xl mt-3 text-slate-600">
-                            {t('key.home.subtitle')}
+                            {mounted ? t('key.home.subtitle') : ''}
                         </CardDescription>
                         <p className="text-sm mt-2 text-slate-500">
-                            {t('key.home.quickMode.description')}
+                            {mounted ? t('key.home.quickMode.description') : ''}
                         </p>
                     </CardHeader>
 
@@ -433,17 +438,17 @@ export default function Home() {
                                     <CardContent className="p-4">
                                         <div className="flex items-center gap-2 mb-3">
                                             <Zap className="w-5 h-5 text-amber-600" />
-                                            <h3 className="font-semibold text-amber-900">{t('key.home.autoMode.title')}</h3>
-                                            <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">{t('key.home.autoMode.badge')}</span>
+                                            <h3 className="font-semibold text-amber-900">{mounted ? t('key.home.autoMode.title') : ''}</h3>
+                                            <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">{mounted ? t('key.home.autoMode.badge') : ''}</span>
                                         </div>
-                                        <p className="text-sm text-amber-700 mb-3">{t('key.home.autoMode.description')}</p>
+                                        <p className="text-sm text-amber-700 mb-3">{mounted ? t('key.home.autoMode.description') : ''}</p>
                                         <div className="space-y-2">
                                             <textarea
                                                 className="w-full px-4 py-3 border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
                                                 rows={3}
                                                 value={quickPrompt}
                                                 onChange={(e) => setQuickPrompt(e.target.value)}
-                                                placeholder={t('key.home.autoMode.placeholder')}
+                                                placeholder={mounted ? (t('key.home.autoMode.placeholder') || '') : ''}
                                                 disabled={isDraftGenerating}
                                             />
                                             <div className="flex items-center gap-2">
@@ -457,7 +462,9 @@ export default function Home() {
                                                     ) : (
                                                         <Zap className="w-5 h-5 mr-2" />
                                                     )}
-                                                    {isQuickGenerating ? t('key.home.autoMode.generating') : t('key.home.autoMode.buttonFast')}
+                                                    {isQuickGenerating 
+                                                        ? (mounted ? t('key.home.autoMode.generating') : '') 
+                                                        : (mounted ? t('key.home.autoMode.buttonFast') : '')}
                                                 </Button>
                                                 <Button
                                                     className="w-full h-12 bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 shadow-lg"
@@ -469,7 +476,9 @@ export default function Home() {
                                                     ) : (
                                                         <BrainCircuit className="w-5 h-5 mr-2" />
                                                     )}
-                                                    {isAgentGenerating ? t('key.home.autoMode.generatingAgent') : t('key.home.autoMode.buttonAgent')}
+                                                    {isAgentGenerating 
+                                                        ? (mounted ? t('key.home.autoMode.generatingAgent') : '') 
+                                                        : (mounted ? t('key.home.autoMode.buttonAgent') : '')}
                                                 </Button>
                                             </div>
                                         </div>
@@ -483,7 +492,7 @@ export default function Home() {
                                     onClick={() => router.push('/setup')}
                                 >
                                     <Settings className="w-5 h-5 mr-2" />
-                                    {t('key.home.professionalMode.button')}
+                                    {mounted ? t('key.home.professionalMode.button') : ''}
                                 </Button>
                             </>
 
@@ -493,13 +502,13 @@ export default function Home() {
                                 onClick={() => router.push('/dashboard')}
                             >
                                 <FolderOpen className="w-5 h-5 mr-2" />
-                                {t('key.home.button.viewProjects')}
+                                {mounted ? t('key.home.button.viewProjects') : ''}
                             </Button>
                         </div>
 
                         {/* 额外说明 */}
                         <div className="text-center text-sm text-slate-500 pt-2">
-                            <p>{t('key.home.quickMode.info')}</p>
+                            <p>{mounted ? t('key.home.quickMode.info') : ''}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -510,17 +519,17 @@ export default function Home() {
                             <CardHeader>
                                 <CardTitle className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
                                     <BookOpen className="w-6 h-6 text-indigo-500" />
-                                    {t('key.home.draft.title')}
+                                    {mounted ? t('key.home.draft.title') : ''}
                                     {draftCached && draftData && (
                                         <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
-                                            {t('key.home.draft.cached')}
+                                            {mounted ? t('key.home.draft.cached') : ''}
                                         </span>
                                     )}
                                 </CardTitle>
                                 <CardDescription className="text-slate-600">
                                     {draftData
-                                        ? `${draftData.projectTitle} · ${draftData.summary || draftData.hook || t('key.home.draft.completed')}`
-                                        : t('key.home.draft.generating')}
+                                        ? `${draftData.projectTitle} · ${draftData.summary || draftData.hook || (mounted ? t('key.home.draft.completed') : '')}`
+                                        : (mounted ? t('key.home.draft.generating') : '')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
@@ -744,7 +753,7 @@ export default function Home() {
 
                 {/* 页脚 */}
                 <p className="text-slate-600 mt-8 text-sm">
-                    {t('key.home.footer')}
+                    {mounted ? t('key.home.footer') : ''}
                 </p>
             </main>
             {showDraftLoading && (

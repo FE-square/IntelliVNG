@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Save, Plus, Trash2, ArrowUp, ArrowDown, Image as ImageIcon, ChevronDown, ChevronUp, Wand2, Music, GitBranch } from 'lucide-react';
+import { X, Save, Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Music, GitBranch } from 'lucide-react';
 import type { StoryNode, Character, Dialogue, Scene, Choice } from '@vng/core';
 import { createId } from '@vng/core';
 import { Button, Card } from '@vng/ui';
@@ -27,10 +27,8 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
         visualAssets: node.visualAssets ? { ...node.visualAssets } : undefined,
     });
     const [selectedDialogues, setSelectedDialogues] = useState<Set<number>>(new Set());
-    const [showVisualAssets, setShowVisualAssets] = useState(false);
     const [showAudioAssets, setShowAudioAssets] = useState(false);
     const [showChoices, setShowChoices] = useState(false);
-    const [generatingCharacterId, setGeneratingCharacterId] = useState<string | null>(null);
     
     const currentScene = scenes.find(s => s.name === editedNode.sceneName);
     
@@ -46,144 +44,9 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
         });
     };
     
-    const autoAddCharacterSprites = () => {
-        const dialogueCharacterIds = new Set(
-            editedNode.dialogues.map(d => d.characterId).filter(id => id && id !== 'narrator')
-        );
-        const existingCharacterIds = new Set(
-            (editedNode.visualAssets?.characters || []).map(c => c.characterId)
-        );
-        
-        const newCharacterSprites = Array.from(dialogueCharacterIds)
-            .filter(id => !existingCharacterIds.has(id))
-            .map((characterId, index) => {
-                const character = characters.find(c => c.id === characterId);
-                return {
-                    characterId,
-                    spriteUrl: character?.sprites?.[0]?.imageUrl || character?.avatarUrl || '',
-                    position: { x: 30 + index * 25, y: 50 },
-                    scale: 1,
-                };
-            });
-        
-        if (newCharacterSprites.length > 0) {
-            setEditedNode({
-                ...editedNode,
-                visualAssets: {
-                    ...editedNode.visualAssets,
-                    characters: [
-                        ...(editedNode.visualAssets?.characters || []),
-                        ...newCharacterSprites,
-                    ],
-                },
-            });
-        }
-    };
+
     
-    const handleGenerateCharacterSprite = async (characterId: string, customState?: string) => {
-        if (!onGenerateImage) {
-            alert('图片生成功能不可用');
-            return;
-        }
-        
-        const character = characters.find(c => c.id === characterId);
-        if (!character || !character.displayName) {
-            alert('角色信息不完整');
-            return;
-        }
-        
-        setGeneratingCharacterId(characterId);
-        try {
-            // ✅ 智能构建prompt: 结合情节内容 + 角色状态 + 角色外观特征
-            let stateDescription = customState || '';
-            
-            // 如果没有自定义状态,尝试从情节内容中提取
-            if (!stateDescription) {
-                const nodeContext = [
-                    editedNode.title,
-                    editedNode.narration,
-                    ...editedNode.dialogues.filter(d => d.characterId === characterId).map(d => d.text)
-                ].filter(Boolean).join(', ');
-                
-                // 简单的关键词匹配
-                if (nodeContext.includes('受伤') || nodeContext.includes('伤痛') || nodeContext.includes('血')) {
-                    stateDescription = '受伤, 痛苦表情';
-                } else if (nodeContext.includes('开心') || nodeContext.includes('微笑') || nodeContext.includes('笑')) {
-                    stateDescription = '开心, 微笑';
-                } else if (nodeContext.includes('愤怒') || nodeContext.includes('生气') || nodeContext.includes('怒')) {
-                    stateDescription = '愤怒, 生气表情';
-                } else if (nodeContext.includes('悲伤') || nodeContext.includes('哭') || nodeContext.includes('泪')) {
-                    stateDescription = '悲伤, 哭泣';
-                } else if (nodeContext.includes('惊讶') || nodeContext.includes('惊讶') || nodeContext.includes('吃惊')) {
-                    stateDescription = '惊讶, 吃惊表情';
-                }
-            }
-            
-            // 构建prompt: 角色名 + 外观特征 + 当前状态 + 固定元素
-            const appearanceDesc = [
-                character.appearance?.hairStyle,
-                character.appearance?.clothing,
-                character.appearance?.facialFeatures,
-            ].filter(Boolean).join(', ');
-            
-            const prompt = [
-                character.displayName,
-                appearanceDesc || character.description,
-                stateDescription,
-                '全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量'
-            ].filter(Boolean).join(', ');
-            
-            console.log('[NodeEditPanel] 生成立绘 prompt:', prompt);
-            
-            // ✅ 使用角色原有立绘作为参考图(保持外观一致性)
-            const referenceSprite = character.sprites?.[0]?.imageUrl || character.avatarUrl;
-            
-            const imageUrl = await onGenerateImage(characterId, prompt, referenceSprite);
-            
-            if (!imageUrl) {
-                throw new Error('未获取到图片URL');
-            }
-            
-            const existingCharIndex = (editedNode.visualAssets?.characters || []).findIndex(
-                c => c.characterId === characterId
-            );
-            
-            if (existingCharIndex >= 0) {
-                const newCharacters = [...(editedNode.visualAssets?.characters || [])];
-                newCharacters[existingCharIndex] = {
-                    ...newCharacters[existingCharIndex],
-                    spriteUrl: imageUrl,
-                };
-                setEditedNode({
-                    ...editedNode,
-                    visualAssets: {
-                        ...editedNode.visualAssets,
-                        characters: newCharacters,
-                    },
-                });
-            } else {
-                setEditedNode({
-                    ...editedNode,
-                    visualAssets: {
-                        ...editedNode.visualAssets,
-                        characters: [
-                            ...(editedNode.visualAssets?.characters || []),
-                            {
-                                characterId,
-                                spriteUrl: imageUrl,
-                                position: { x: 50, y: 50 },
-                                scale: 1,
-                            },
-                        ],
-                    },
-                });
-            }
-        } catch (error) {
-            alert(`生成失败: ${error instanceof Error ? error.message : '请重试'}`);
-        } finally {
-            setGeneratingCharacterId(null);
-        }
-    };
+
 
     const handleSave = () => {
         onSave(editedNode);
@@ -258,15 +121,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
         setSelectedDialogues(newSelected);
     };
 
-    const handleUpdateBackground = (imageUrl: string) => {
-        setEditedNode({
-            ...editedNode,
-            visualAssets: {
-                ...editedNode.visualAssets,
-                backgroundImageUrl: imageUrl,
-            },
-        });
-    };
+
 
     // 分支选项管理
     const handleAddChoice = () => {
@@ -320,37 +175,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
         });
     };
 
-    const handleAddCharacterSprite = (characterId: string) => {
-        const character = characters.find(c => c.id === characterId);
-        if (!character) return;
 
-        const newCharacterSprite = {
-            characterId,
-            spriteUrl: character.sprites?.[0]?.imageUrl || character.avatarUrl || '',
-            position: { x: 50, y: 50 },
-            scale: 1,
-        };
-
-        setEditedNode({
-            ...editedNode,
-            visualAssets: {
-                ...editedNode.visualAssets,
-                characters: [...(editedNode.visualAssets?.characters || []), newCharacterSprite],
-            },
-        });
-    };
-
-    const handleRemoveCharacterSprite = (index: number) => {
-        const newCharacters = [...(editedNode.visualAssets?.characters || [])];
-        newCharacters.splice(index, 1);
-        setEditedNode({
-            ...editedNode,
-            visualAssets: {
-                ...editedNode.visualAssets,
-                characters: newCharacters,
-            },
-        });
-    };
 
     return (
         <div className="absolute top-0 right-0 h-full w-96 bg-white shadow-2xl border-l z-10 overflow-y-auto">
@@ -561,147 +386,6 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* 视觉素材区 */}
-                <div className="space-y-3 border-t pt-4">
-                    <button
-                        onClick={() => setShowVisualAssets(!showVisualAssets)}
-                        className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200"
-                    >
-                        <div className="flex items-center gap-2">
-                            <ImageIcon className="w-5 h-5 text-purple-600" />
-                            <span className="font-medium text-purple-900">🎨 视觉素材调整</span>
-                        </div>
-                        {showVisualAssets ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                    </button>
-
-                    {showVisualAssets && (
-                        <div className="space-y-4 bg-purple-50/50 p-4 rounded-lg">
-                            <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                                <Button
-                                    size="sm"
-                                    onClick={autoAddCharacterSprites}
-                                    className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
-                                >
-                                    🪄 自动关联出场角色
-                                </Button>
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-2">🌄 场景背景</label>
-                                <select
-                                    className="w-full border rounded px-3 py-2 text-sm"
-                                    value={editedNode.visualAssets?.backgroundImageUrl || ''}
-                                    onChange={(e) => handleUpdateBackground(e.target.value)}
-                                >
-                                    <option value="">从场景库选择背景</option>
-                                    {scenes.filter(s => s.imageUrl).map(scene => (
-                                        <option key={scene.id} value={scene.imageUrl}>
-                                            {scene.name} - {scene.type}
-                                        </option>
-                                    ))}
-                                </select>
-                                
-                                <input
-                                    type="text"
-                                    className="w-full border rounded px-3 py-2 text-sm mt-2"
-                                    placeholder="或直接输入背景图URL"
-                                    value={editedNode.visualAssets?.backgroundImageUrl || ''}
-                                    onChange={(e) => handleUpdateBackground(e.target.value)}
-                                />
-                                
-                                {editedNode.visualAssets?.backgroundImageUrl && (
-                                    <img
-                                        src={editedNode.visualAssets.backgroundImageUrl}
-                                        alt="背景预览"
-                                        className="w-full aspect-video object-cover rounded border-2 border-purple-300 mt-2"
-                                    />
-                                )}
-                            </div>
-
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="text-sm font-medium">👥 出场角色立绘</label>
-                                    <select
-                                        className="border rounded px-2 py-1 text-xs"
-                                        onChange={(e) => {
-                                            if (e.target.value) {
-                                                handleAddCharacterSprite(e.target.value);
-                                                e.target.value = '';
-                                            }
-                                        }}
-                                        defaultValue=""
-                                    >
-                                        <option value="">添加角色</option>
-                                        {characters.map(char => (
-                                            <option key={char.id} value={char.id}>{char.displayName}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                
-                                {/* 使用提示 */}
-                                {onGenerateImage && editedNode.visualAssets?.characters && editedNode.visualAssets.characters.length > 0 && (
-                                    <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
-                                        💡 点击角色卡片的<strong>"AI生成"</strong>按钮,根据情节内容生成新立绘(会保持角色外观特征)
-                                    </div>
-                                )}
-
-                                <div className="space-y-2">
-                                    {editedNode.visualAssets?.characters?.map((charSprite, index) => {
-                                        const character = characters.find(c => c.id === charSprite.characterId);
-                                        const isGenerating = generatingCharacterId === charSprite.characterId;
-                                        
-                                        return (
-                                            <Card key={index} className="p-3">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="w-12 h-16 flex-shrink-0">
-                                                        {charSprite.spriteUrl ? (
-                                                            <img
-                                                                src={charSprite.spriteUrl}
-                                                                alt={character?.displayName}
-                                                                className="w-full h-full object-cover rounded border"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-full h-full bg-gray-100 border-2 border-dashed rounded flex items-center justify-center text-gray-400 text-xs">
-                                                                无
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    
-                                                    <div className="flex-1 space-y-2">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-sm font-medium">{character?.displayName}</span>
-                                                            <div className="flex items-center gap-1">
-                                                                {onGenerateImage && (
-                                                                    <button
-                                                                        onClick={() => handleGenerateCharacterSprite(charSprite.characterId)}
-                                                                        disabled={isGenerating}
-                                                                        className="px-2 py-1 text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded disabled:opacity-50 flex items-center gap-1 hover:from-purple-600 hover:to-pink-600 transition-all"
-                                                                        title="根据情节内容智能生成立绘"
-                                                                    >
-                                                                        <Wand2 className="w-3 h-3" />
-                                                                        {isGenerating ? '生成中...' : 'AI生成'}
-                                                                    </button>
-                                                                )}
-                                                                <button
-                                                                    onClick={() => handleRemoveCharacterSprite(index)}
-                                                                    className="text-red-600 p-1 hover:bg-red-50 rounded"
-                                                                    title="移除角色"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Card>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* 音频配乐区 */}

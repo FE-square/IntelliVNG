@@ -20,6 +20,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     (function() {
       window.__APP_INITIAL_STATE__ = window.__APP_INITIAL_STATE__ || {};
       window.__APP_INITIAL_STATE__.I18N = ${JSON.stringify(messages)};
+      console.log('[I18N] Loaded locale: ${locale}, keys count:', Object.keys(window.__APP_INITIAL_STATE__.I18N).length);
     })();
   `;
 

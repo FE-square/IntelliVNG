@@ -16,8 +16,8 @@ import ReactFlow, {
     Panel,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Button, useConfirmDialog, ConfirmDialog } from '@vng/ui';
-import { ZoomIn, ZoomOut, Maximize2, AlertCircle, Plus, Undo, Redo } from 'lucide-react';
+import { Button, useConfirmDialog, ConfirmDialog, useToast } from '@vng/ui';
+import { ZoomIn, ZoomOut, Maximize2, AlertCircle, Plus, Undo, Redo, Wand2 } from 'lucide-react';
 import type { GameProject, StoryNode, Scene } from '@vng/core';
 import { StoryNodeComponent } from './StoryNodeComponent';
 import { NodeEditPanel } from './NodeEditPanel';
@@ -36,6 +36,8 @@ interface FlowEditorProps {
 export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }: FlowEditorProps) {
     const { zoomIn, zoomOut, fitView, getViewport } = useReactFlow();
     const { confirm, DialogComponent } = useConfirmDialog();
+    const toast = useToast();
+    const [isGeneratingAssets, setIsGeneratingAssets] = useState(false);
     
     const storyNodes: StoryNode[] = useMemo(() => {
         if (!project.script || project.script.length === 0) {
@@ -304,6 +306,157 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
         
         return issues;
     }, [nodes, edges, storyNodes]);
+    
+    // ✅ 一键补全视觉素材
+    const handleCompleteAssets = useCallback(async () => {
+        if (!onGenerateImage) {
+            toast.warning('未配置生成功能', '请检查配置');
+            return;
+        }
+        
+        setIsGeneratingAssets(true);
+        try {
+            let generatedCount = 0;
+            const updatedCharacters = [...project.characters];
+            const updatedBackgrounds = [...project.backgrounds];
+            
+            // 补全角色头像和立绘
+            for (let i = 0; i < updatedCharacters.length; i++) {
+                const char = updatedCharacters[i];
+                
+                // 补全头像
+                if (!char.avatarUrl) {
+                    toast.info('生成中', `正在生成 ${char.displayName} 的头像...`);
+                    try {
+                        const prompt = `头像特写, ${char.displayName}, ${char.description || ''}, 头像, 肖像`;
+                        const avatarUrl = await onGenerateImage('avatar-' + char.id, prompt);
+                        updatedCharacters[i] = { ...char, avatarUrl };
+                        generatedCount++;
+                    } catch (error) {
+                        console.error(`生成 ${char.displayName} 头像失败:`, error);
+                    }
+                }
+                
+                // 补全立绘
+                if (!char.sprites || char.sprites.length === 0) {
+                    toast.info('生成中', `正在生成 ${char.displayName} 的立绘...`);
+                    try {
+                        const prompt = `全身立绘, ${char.displayName}, ${char.description || ''}, 站立姿势, 透明背景`;
+                        const spriteUrl = await onGenerateImage('sprite-' + char.id, prompt, char.avatarUrl);
+                        updatedCharacters[i] = {
+                            ...updatedCharacters[i],
+                            sprites: [{
+                                id: `sprite-${char.id}-default`,
+                                imageUrl: spriteUrl,
+                                emotion: 'neutral',
+                            }]
+                        };
+                        generatedCount++;
+                    } catch (error) {
+                        console.error(`生成 ${char.displayName} 立绘失败:`, error);
+                    }
+                }
+            }
+            
+            // 补全场景背景图
+            for (let i = 0; i < updatedBackgrounds.length; i++) {
+                const bg = updatedBackgrounds[i];
+                if (!bg.imageUrl) {
+                    toast.info('生成中', `正在生成场景 ${bg.name} 的背景图...`);
+                    try {
+                        const prompt = `场景背景图, ${bg.name}, ${bg.description || ''}, 宽幅场景, 高质量`;
+                        const imageUrl = await onGenerateImage('background-' + bg.id, prompt);
+                        updatedBackgrounds[i] = { ...bg, imageUrl };
+                        generatedCount++;
+                    } catch (error) {
+                        console.error(`生成 ${bg.name} 背景图失败:`, error);
+                    }
+                }
+            }
+            
+            // ✅ 补全节点中缺失的视觉素材配置
+            const updatedScript = [...project.script];
+            for (let i = 0; i < updatedScript.length; i++) {
+                const node = updatedScript[i];
+                const needsAssets = !node.visualAssets || 
+                    (!node.visualAssets.backgroundImageUrl && 
+                     (!node.visualAssets.characters || node.visualAssets.characters.length === 0));
+                
+                if (needsAssets) {
+                    toast.info('配置中', `正在为节点「${node.title || node.id}」配置视觉素材...`);
+                    
+                    // 自动配置背景图
+                    let backgroundImageUrl = node.visualAssets?.backgroundImageUrl;
+                    if (!backgroundImageUrl) {
+                        // 优先使用节点关联的背景
+                        if (node.backgroundId) {
+                            const bg = updatedBackgrounds.find(b => b.id === node.backgroundId);
+                            backgroundImageUrl = bg?.imageUrl;
+                        } else if (node.sceneName) {
+                            const bg = updatedBackgrounds.find(b => b.name === node.sceneName);
+                            backgroundImageUrl = bg?.imageUrl;
+                        }
+                        // 如果还是没有，使用第一个可用的背景
+                        if (!backgroundImageUrl && updatedBackgrounds.length > 0) {
+                            backgroundImageUrl = updatedBackgrounds[0].imageUrl;
+                        }
+                    }
+                    
+                    // 自动配置角色立绘
+                    let characters = node.visualAssets?.characters || [];
+                    if (characters.length === 0) {
+                        // 从节点的对话中提取角色
+                        const characterIdsInDialogues = new Set(
+                            node.dialogues?.map(d => d.characterId).filter(Boolean) || []
+                        );
+                        
+                        characters = Array.from(characterIdsInDialogues).map(charId => {
+                            const char = updatedCharacters.find(c => c.id === charId);
+                            const sprite = char?.sprites?.[0];
+                            return {
+                                characterId: charId,
+                                spriteUrl: sprite?.imageUrl || char?.avatarUrl || '',
+                                position: { x: 50, y: 50 },
+                                scale: 1,
+                            };
+                        }).filter(c => c.spriteUrl); // 只保留有图片的
+                    }
+                    
+                    // 更新节点
+                    if (backgroundImageUrl || characters.length > 0) {
+                        updatedScript[i] = {
+                            ...node,
+                            visualAssets: {
+                                ...node.visualAssets,
+                                backgroundImageUrl: backgroundImageUrl || node.visualAssets?.backgroundImageUrl,
+                                characters: characters.length > 0 ? characters : node.visualAssets?.characters,
+                            }
+                        };
+                        generatedCount++;
+                    }
+                }
+            }
+            
+            // 更新项目
+            if (generatedCount > 0) {
+                const updatedProject = {
+                    ...project,
+                    characters: updatedCharacters,
+                    backgrounds: updatedBackgrounds,
+                    script: updatedScript,
+                };
+                onUpdate?.(updatedProject);
+                toast.success('补全完成', `成功生成/配置 ${generatedCount} 个素材 ✨`);
+            } else {
+                toast.info('无需补全', '所有素材都已完整');
+            }
+        } catch (error) {
+            console.error('[FlowEditor] 补全素材失败:', error);
+            toast.error('补全失败', '请重试');
+        } finally {
+            setIsGeneratingAssets(false);
+        }
+    }, [project, onGenerateImage, onUpdate, toast]);
 
     const onConnect = useCallback(
         (params: Connection) => {
@@ -648,6 +801,36 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                                 </div>
                             )}
                         </div>
+                        
+                        {/* ✅ 一键补全视觉素材按钮 */}
+                        {onGenerateImage && (() => {
+                            // 检查节点中未设置视觉素材的数量
+                            const nodesWithoutAssets = storyNodes.filter(n => 
+                                !n.visualAssets || 
+                                (!n.visualAssets.backgroundImageUrl && 
+                                 (!n.visualAssets.characters || n.visualAssets.characters.length === 0))
+                            ).length;
+                            
+                            // 检查角色和场景素材库的缺失
+                            const missingAvatars = project.characters.filter(c => !c.avatarUrl).length;
+                            const missingSprites = project.characters.filter(c => !c.sprites || c.sprites.length === 0).length;
+                            const missingBackgrounds = project.backgrounds.filter(bg => !bg.imageUrl).length;
+                            const totalMissing = missingAvatars + missingSprites + missingBackgrounds + nodesWithoutAssets;
+                            
+                            return (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleCompleteAssets}
+                                    disabled={isGeneratingAssets || totalMissing === 0}
+                                    className="w-full gap-2 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 hover:from-green-100 hover:to-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed text-green-700"
+                                    title="自动补全缺失的角色头像、立绘和场景背景图"
+                                >
+                                    <Wand2 className="w-4 h-4" />
+                                    {isGeneratingAssets ? '生成中...' : totalMissing > 0 ? `补全素材 (${totalMissing})` : '素材完整'}
+                                </Button>
+                            );
+                        })()}
                     </div>
                 </Panel>
             </ReactFlow>

@@ -19,7 +19,12 @@ export function getI18N(): Record<string, string> {
   if (typeof window === 'undefined') {
     return {};
   }
-  return window.__APP_INITIAL_STATE__?.I18N || {};
+  const i18n = window.__APP_INITIAL_STATE__?.I18N || {};
+  // 在开发环境下输出调试信息
+  if (process.env.NODE_ENV === 'development' && Object.keys(i18n).length === 0) {
+    console.warn('[I18N] window.__APP_INITIAL_STATE__.I18N is empty or not loaded');
+  }
+  return i18n;
 }
 
 /**

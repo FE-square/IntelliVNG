@@ -32,6 +32,8 @@ function GenerateAssetsPageContent() {
         type: 'avatar' | 'sprite' | 'background';
         status: 'pending' | 'generating' | 'success' | 'error';
         imageUrl?: string;
+        retryCount?: number; // ✅ 新增：重试次数
+        error?: string; // ✅ 新增：错误信息
     }>>([]);
 
     // 加载项目
@@ -157,11 +159,14 @@ function GenerateAssetsPageContent() {
                 }
             };
 
-            // 生成单个素材的函数
-            const generateSingleAsset = async (task: typeof tasks[0]) => {
+            // 生成单个素材的函数（带重试机制）
+            const MAX_RETRIES = 3; // 最多重试3次
+            const RETRY_DELAY = 2000; // 重试延迟2秒
+            
+            const generateSingleAsset = async (task: typeof tasks[0], retryCount = 0): Promise<void> => {
                 // 更新为生成中
                 setGeneratingItems(prev => prev.map(item => 
-                    item.id === task.id ? { ...item, status: 'generating' } : item
+                    item.id === task.id ? { ...item, status: 'generating', retryCount } : item
                 ));
 
                 try {
@@ -211,7 +216,7 @@ function GenerateAssetsPageContent() {
 
                     // 更新为成功
                     setGeneratingItems(prev => prev.map(item => 
-                        item.id === task.id ? { ...item, status: 'success', imageUrl: result.imageUrl } : item
+                        item.id === task.id ? { ...item, status: 'success', imageUrl: result.imageUrl, error: undefined } : item
                     ));
 
                     completedCount++;
@@ -222,11 +227,86 @@ function GenerateAssetsPageContent() {
                         type: task.type
                     });
                 } catch (error) {
-                    console.error(`[GenerateAssets] 生成 ${task.name} 失败:`, error);
+                    const errorMessage = error instanceof Error ? error.message : '未知错误';
+                    console.error(`[GenerateAssets] 生成 ${task.name} 失败 (尝试 ${retryCount + 1}/${MAX_RETRIES + 1}):`, errorMessage);
+                    
+                    // ✅ 重试逻辑：如果失败且未达到最大重试次数，则重试
+                    if (retryCount < MAX_RETRIES) {
+                        console.log(`[GenerateAssets] ${task.name} 将在 ${RETRY_DELAY}ms 后重试...`);
+                        setGeneratingItems(prev => prev.map(item => 
+                            item.id === task.id ? { ...item, status: 'generating', retryCount: retryCount + 1, error: `重试中... (${retryCount + 1}/${MAX_RETRIES})` } : item
+                        ));
+                        
+                        // 延迟后重试
+                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                        return generateSingleAsset(task, retryCount + 1);
+                    }
+                    
+                    // ✅ 兜底逻辑：达到最大重试次数后，使用占位图片
+                    console.warn(`[GenerateAssets] ${task.name} 重试失败，使用兜底图片`);
+                    const fallbackImageUrl = getFallbackImage(task.type);
+                    
+                    // 使用兜底图片更新项目数据
+                    if (task.type === 'avatar' && task.characterId) {
+                        const char = project.characters.find(c => c.id === task.characterId);
+                        if (char) {
+                            char.avatarUrl = fallbackImageUrl;
+                            console.log(`[GenerateAssets] 使用兜底头像: ${char.displayName}`);
+                        }
+                    } else if (task.type === 'sprite' && task.characterId) {
+                        const char = project.characters.find(c => c.id === task.characterId);
+                        if (char) {
+                            const spriteId = `sprite-${task.characterId}-fallback`;
+                            char.sprites = [{
+                                id: spriteId,
+                                emotion: 'neutral',
+                                imageUrl: fallbackImageUrl,
+                            }];
+                            char.defaultSpriteId = spriteId;
+                            console.log(`[GenerateAssets] 使用兜底立绘: ${char.displayName}`);
+                        }
+                    } else if (task.type === 'background' && task.backgroundId) {
+                        const bg = project.backgrounds.find(b => b.id === task.backgroundId);
+                        if (bg) {
+                            bg.imageUrl = fallbackImageUrl;
+                            console.log(`[GenerateAssets] 使用兜底背景: ${bg.name}`);
+                        }
+                    }
+                    
+                    // 标记为错误但继续流程
                     setGeneratingItems(prev => prev.map(item => 
-                        item.id === task.id ? { ...item, status: 'error' } : item
+                        item.id === task.id ? { 
+                            ...item, 
+                            status: 'error', 
+                            imageUrl: fallbackImageUrl, 
+                            error: `生成失败，已使用占位图 (${errorMessage})`,
+                            retryCount: MAX_RETRIES 
+                        } : item
                     ));
-                    toast.error(`${task.name} 生成失败`, error instanceof Error ? error.message : '未知错误');
+                    
+                    completedCount++;
+                    setGenerationProgress({
+                        current: completedCount,
+                        total: tasks.length,
+                        message: `已完成 ${completedCount}/${tasks.length} (含兜底)`,
+                        type: task.type
+                    });
+                    
+                    toast.warning(`${task.name} 使用占位图`, `生成失败已重试${MAX_RETRIES}次，可在编辑器中手动生成`);
+                }
+            };
+            
+            // ✅ 兜底图片函数
+            const getFallbackImage = (type: 'avatar' | 'sprite' | 'background'): string => {
+                switch (type) {
+                    case 'avatar':
+                        return 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + Math.random();
+                    case 'sprite':
+                        return 'https://placehold.co/512x768/e0e7ff/4f46e5?text=角色立绘占位图';
+                    case 'background':
+                        return 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1280&h=720&fit=crop';
+                    default:
+                        return 'https://placehold.co/600x400?text=占位图';
                 }
             };
 
@@ -272,11 +352,15 @@ function GenerateAssetsPageContent() {
 
             setCompleted(true);
             
-            const successCount = tasks.length - generatingItems.filter(i => i.status === 'error').length;
-            if (successCount === tasks.length) {
+            const successCount = generatingItems.filter(i => i.status === 'success').length;
+            const errorCount = generatingItems.filter(i => i.status === 'error').length;
+            
+            if (errorCount === 0) {
                 toast.success('所有视觉素材生成完成！', '项目已保存，可以进入编辑器了');
+            } else if (successCount > 0) {
+                toast.warning(`部分素材生成失败`, `成功 ${successCount}/${tasks.length}，${errorCount} 个使用占位图，可在编辑器中手动生成`);
             } else {
-                toast.warning(`部分素材生成失败`, `成功 ${successCount}/${tasks.length}，可在编辑器中手动生成`);
+                toast.error('所有素材生成失败', `已使用占位图，请在编辑器中手动生成`);
             }
 
         } catch (error) {
@@ -439,13 +523,24 @@ function GenerateAssetsPageContent() {
                                                     {item.type === 'background' && <MapPin className="w-5 h-5 text-green-600" />}
                                                 </div>
 
-                                                {/* 名称 */}
+                                                {/* 名称和错误信息 */}
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
+                                                    {/* ✅ 显示重试次数和错误信息 */}
+                                                    {item.retryCount !== undefined && item.retryCount > 0 && item.status === 'generating' && (
+                                                        <p className="text-xs text-amber-600 mt-0.5">
+                                                            重试中... ({item.retryCount}/3)
+                                                        </p>
+                                                    )}
+                                                    {item.error && item.status === 'error' && (
+                                                        <p className="text-xs text-red-600 mt-0.5 truncate" title={item.error}>
+                                                            {item.error}
+                                                        </p>
+                                                    )}
                                                 </div>
 
                                                 {/* 预览图 */}
-                                                {item.status === 'success' && item.imageUrl && (
+                                                {item.imageUrl && (
                                                     <img 
                                                         src={item.imageUrl} 
                                                         alt={item.name}
@@ -465,9 +560,13 @@ function GenerateAssetsPageContent() {
                                                         }}
                                                     >
                                                         {item.status === 'pending' && '等待中'}
-                                                        {item.status === 'generating' && '生成中'}
+                                                        {item.status === 'generating' && (
+                                                            item.retryCount && item.retryCount > 0 
+                                                                ? `重试 ${item.retryCount}/3` 
+                                                                : '生成中'
+                                                        )}
                                                         {item.status === 'success' && '已完成'}
-                                                        {item.status === 'error' && '失败'}
+                                                        {item.status === 'error' && '失败(已兜底)'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -478,13 +577,36 @@ function GenerateAssetsPageContent() {
                         )}
 
                         {/* 完成状态 */}
-                        {completed && (
-                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border-2 border-green-300 text-center">
-                                <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-600" />
-                                <h3 className="text-2xl font-bold text-green-900 mb-2">生成完成！</h3>
-                                <p className="text-green-700">所有视觉素材已成功生成</p>
-                            </div>
-                        )}
+                        {completed && (() => {
+                            const successCount = generatingItems.filter(i => i.status === 'success').length;
+                            const errorCount = generatingItems.filter(i => i.status === 'error').length;
+                            const totalCount = generatingItems.length;
+                            
+                            return (
+                                <div className={`p-6 rounded-lg border-2 text-center ${
+                                    errorCount === 0 
+                                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300'
+                                        : errorCount < totalCount
+                                        ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300'
+                                        : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-300'
+                                }`}>
+                                    <CheckCircle2 className={`w-16 h-16 mx-auto mb-4 ${
+                                        errorCount === 0 ? 'text-green-600' : 'text-amber-600'
+                                    }`} />
+                                    <h3 className={`text-2xl font-bold mb-2 ${
+                                        errorCount === 0 ? 'text-green-900' : 'text-amber-900'
+                                    }`}>
+                                        {errorCount === 0 ? '生成完成！' : '生成完成（部分使用占位图）'}
+                                    </h3>
+                                    <p className={errorCount === 0 ? 'text-green-700' : 'text-amber-700'}>
+                                        {errorCount === 0 
+                                            ? `所有 ${totalCount} 个视觉素材已成功生成` 
+                                            : `成功 ${successCount} 个，${errorCount} 个使用占位图（可在编辑器中手动生成）`
+                                        }
+                                    </p>
+                                </div>
+                            );
+                        })()}
 
                         {/* 操作按钮 */}
                         <div className="flex gap-3 pt-4">

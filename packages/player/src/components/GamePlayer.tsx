@@ -250,11 +250,6 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
                                 className="h-full object-contain"
                                 style={{
                                     filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))',
-                                    // ✅ 多层去除白色背景方案
-                                    // 方案1: 使用multiply混合模式,白色会变透明
-                                    mixBlendMode: 'darken' as const,
-                                    // 方案2: 增强对比度和亮度，让白色更接近纯白
-                                    // filter: 'contrast(1.1) brightness(1.05) drop-shadow(0 10px 20px rgba(0,0,0,0.5))',
                                 }}
                                 alt="立绘"
                             />

@@ -33,19 +33,54 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
     const [editingScene, setEditingScene] = useState<Background | null>(null);
     const [showSceneForm, setShowSceneForm] = useState(false);
     
-    // 主题风格状态
-    const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
-    const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
+    // ✅ 主题风格状态 - 从meta中加载
+    const [selectedThemes, setSelectedThemes] = useState<string[]>(
+        (project.meta as any)?.themes || []
+    );
+    const [selectedStyles, setSelectedStyles] = useState<string[]>(
+        (project.meta as any)?.styles || []
+    );
     
-    // 世界观编辑状态
-    const [worldForm, setWorldForm] = useState({
-        name: '',
-        era: '',
-        location: '',
-        rules: '',
-        socialStructure: '',
-        history: '',
-        description: '',
+    // ✅ 世界观编辑状态 - 从 backgrounds[0].worldSetting 或 scenes 中加载
+    const [worldForm, setWorldForm] = useState(() => {
+        // 尝试从scenes加载（如果存在）
+        const scenes = (project as any).scenes;
+        if (scenes && Array.isArray(scenes) && scenes.length > 0 && scenes[0].name) {
+            return {
+                name: scenes[0].name || '',
+                era: scenes[0].type || '',
+                location: scenes[0].atmosphere || '',
+                rules: '',
+                socialStructure: '',
+                history: '',
+                description: scenes[0].description || '',
+            };
+        }
+        
+        // 否则从 backgrounds[0].worldSetting 加载
+        const firstBg = project.backgrounds?.[0];
+        if (firstBg?.worldSetting) {
+            return {
+                name: firstBg.name || '',
+                era: firstBg.worldSetting.era || '',
+                location: firstBg.worldSetting.location || '',
+                rules: firstBg.worldSetting.rules || '',
+                socialStructure: '',
+                history: '',
+                description: firstBg.description || '',
+            };
+        }
+        
+        // 默认空值
+        return {
+            name: '',
+            era: '',
+            location: '',
+            rules: '',
+            socialStructure: '',
+            history: '',
+            description: '',
+        };
     });
     
     // 预设主题和风格选项
@@ -197,24 +232,109 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
     );
 
     // 角色编辑
-    const renderCharactersTab = () => (
+    const renderCharactersTab = () => {
+        // ✅ 统计缺少素材的角色
+        const missingAvatars = editingProject.characters?.filter(c => !c.avatarUrl) || [];
+        const missingSprites = editingProject.characters?.filter(c => !c.sprites || c.sprites.length === 0) || [];
+        const hasMissingAssets = missingAvatars.length > 0 || missingSprites.length > 0;
+        
+        return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-slate-800">👥 角色列表 ({editingProject.characters?.length || 0})</h3>
-                <Button size="sm" onClick={() => {
-                    setEditingCharacter({
-                        id: createId(),
-                        name: '',
-                        displayName: '',
-                        description: '',
-                        sprites: [],
-                        defaultSpriteId: '',
-                    } as Character);
-                    setShowCharacterForm(true);
-                }}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    添加角色
-                </Button>
+                <div className="flex gap-2">
+                    {/* ✅ 一键补全缺失素材按钮 - 始终显示，没有缺失时禁用 */}
+                    {onGenerateImage && (
+                        <Button 
+                            size="sm" 
+                            variant="outline"
+                            disabled={!hasMissingAssets}
+                            onClick={async () => {
+                                if (!confirm(`检测到 ${missingAvatars.length} 个角色缺少头像，${missingSprites.length} 个角色缺少立绘。\n\n是否一键生成所有缺失的素材？`)) {
+                                    return;
+                                }
+                                
+                                toast.info('开始生成缺失素材...', '请稍候');
+                                let successCount = 0;
+                                let errorCount = 0;
+                                
+                                // 生成缺失的头像
+                                for (const char of missingAvatars) {
+                                    try {
+                                        const prompt = `${char.displayName}, ${char.description}, 头像, 圆形, 高质量`;
+                                        const imageUrl = await onGenerateImage(char.id, prompt);
+                                        
+                                        // 更新角色
+                                        const updatedChars = editingProject.characters?.map(c => 
+                                            c.id === char.id ? { ...c, avatarUrl: imageUrl } : c
+                                        );
+                                        setEditingProject({ ...editingProject, characters: updatedChars });
+                                        successCount++;
+                                    } catch (error) {
+                                        console.error(`生成${char.displayName}头像失败:`, error);
+                                        errorCount++;
+                                    }
+                                }
+                                
+                                // 生成缺失的立绘
+                                for (const char of missingSprites) {
+                                    try {
+                                        const prompt = `${char.displayName}, ${char.description}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量`;
+                                        const imageUrl = await onGenerateImage(char.id, prompt, char.avatarUrl);
+                                        
+                                        const newSprite = {
+                                            id: createId(),
+                                            emotion: 'neutral' as const,
+                                            imageUrl: imageUrl,
+                                        };
+                                        
+                                        // 更新角色
+                                        const updatedChars = editingProject.characters?.map(c => 
+                                            c.id === char.id ? { 
+                                                ...c, 
+                                                sprites: [newSprite],
+                                                defaultSpriteId: newSprite.id
+                                            } : c
+                                        );
+                                        setEditingProject({ ...editingProject, characters: updatedChars });
+                                        successCount++;
+                                    } catch (error) {
+                                        console.error(`生成${char.displayName}立绘失败:`, error);
+                                        errorCount++;
+                                    }
+                                }
+                                
+                                if (errorCount === 0) {
+                                    toast.success('素材生成完成', `成功生成 ${successCount} 个素材`);
+                                } else {
+                                    toast.warning('部分素材生成失败', `成功 ${successCount} 个，失败 ${errorCount} 个`);
+                                }
+                            }}
+                            className="gap-1 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 hover:from-green-100 hover:to-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Wand2 className="w-3 h-3 text-green-600" />
+                            <span className="text-green-700">
+                                {hasMissingAssets 
+                                    ? `一键补全素材 (${missingAvatars.length + missingSprites.length})` 
+                                    : '所有角色已有素材'}
+                            </span>
+                        </Button>
+                    )}
+                    <Button size="sm" onClick={() => {
+                        setEditingCharacter({
+                            id: createId(),
+                            name: '',
+                            displayName: '',
+                            description: '',
+                            sprites: [],
+                            defaultSpriteId: '',
+                        } as Character);
+                        setShowCharacterForm(true);
+                    }}>
+                        <Plus className="w-4 h-4 mr-1" />
+                        添加角色
+                    </Button>
+                </div>
             </div>
 
             {showCharacterForm ? (
@@ -476,29 +596,105 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
             ) : null}
 
             <div className="grid gap-4">
-                {editingProject.characters?.map((char) => (
+                {editingProject.characters?.map((char) => {
+                    // ✅ 检测该角色缺少的素材
+                    const missingAvatar = !char.avatarUrl;
+                    const missingSprite = !char.sprites || char.sprites.length === 0;
+                    
+                    return (
                     <Card key={char.id} className="p-4 hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <h4 className="font-semibold text-lg">{char.displayName}</h4>
-                                    <span className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded">
-                                        {char.gender === 'male' ? '男' : char.gender === 'female' ? '女' : '其他'}
-                                    </span>
-                                    {char.age && <span className="text-xs text-slate-500">{char.age}岁</span>}
+                            <div className="flex gap-4 flex-1">
+                                {/* ✅ 头像预览 */}
+                                <div className="flex-shrink-0">
+                                    {char.avatarUrl ? (
+                                        <img src={char.avatarUrl} alt={char.displayName} className="w-16 h-16 rounded-full object-cover border-2 border-slate-200" />
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300">
+                                            <span className="text-slate-400 text-xs">无头像</span>
+                                        </div>
+                                    )}
                                 </div>
-                                <p className="text-sm text-slate-600 mb-2">{char.description}</p>
-                                {char.personality?.traits && char.personality.traits.length > 0 && (
-                                    <div className="flex flex-wrap gap-1">
-                                        {char.personality.traits.map((trait, i) => (
-                                            <span key={i} className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
-                                                {trait}
+                                
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h4 className="font-semibold text-lg">{char.displayName}</h4>
+                                        <span className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded">
+                                            {char.gender === 'male' ? '男' : char.gender === 'female' ? '女' : '其他'}
+                                        </span>
+                                        {char.age && <span className="text-xs text-slate-500">{char.age}岁</span>}
+                                        
+                                        {/* ✅ 缺失素材警告 */}
+                                        {(missingAvatar || missingSprite) && (
+                                            <span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded flex items-center gap-1">
+                                                ⚠️ {missingAvatar && '缺头像'} {missingAvatar && missingSprite && '·'} {missingSprite && '缺立绘'}
                                             </span>
-                                        ))}
+                                        )}
                                     </div>
-                                )}
+                                    <p className="text-sm text-slate-600 mb-2">{char.description}</p>
+                                    {char.personality?.traits && char.personality.traits.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                            {char.personality.traits.map((trait, i) => (
+                                                <span key={i} className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
+                                                    {trait}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                    
+                                    {/* ✅ 立绘数量显示 */}
+                                    <div className="text-xs text-slate-500 mt-2">
+                                        立绘: {char.sprites?.length || 0} 张
+                                    </div>
+                                </div>
                             </div>
                             <div className="flex gap-2">
+                                {/* ✅ 快速补全按钮 */}
+                                {(missingAvatar || missingSprite) && onGenerateImage && (
+                                    <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={async () => {
+                                            toast.info(`正在为 ${char.displayName} 生成素材...`);
+                                            let updated = { ...char };
+                                            
+                                            try {
+                                                // 生成头像
+                                                if (missingAvatar) {
+                                                    const prompt = `${char.displayName}, ${char.description}, 头像, 圆形, 高质量`;
+                                                    const imageUrl = await onGenerateImage(char.id, prompt);
+                                                    updated.avatarUrl = imageUrl;
+                                                }
+                                                
+                                                // 生成立绘
+                                                if (missingSprite) {
+                                                    const prompt = `${char.displayName}, ${char.description}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量`;
+                                                    const imageUrl = await onGenerateImage(char.id, prompt, updated.avatarUrl);
+                                                    const newSprite = {
+                                                        id: createId(),
+                                                        emotion: 'neutral' as const,
+                                                        imageUrl: imageUrl,
+                                                    };
+                                                    updated.sprites = [newSprite];
+                                                    updated.defaultSpriteId = newSprite.id;
+                                                }
+                                                
+                                                // 更新角色
+                                                const updatedChars = editingProject.characters?.map(c => 
+                                                    c.id === char.id ? updated : c
+                                                );
+                                                setEditingProject({ ...editingProject, characters: updatedChars });
+                                                toast.success('素材生成完成');
+                                            } catch (error) {
+                                                // 错误已在onGenerateImage中处理
+                                            }
+                                        }}
+                                        className="gap-1 text-green-600 hover:bg-green-50"
+                                    >
+                                        <Wand2 className="w-3 h-3" />
+                                        补全
+                                    </Button>
+                                )}
                                 <Button size="sm" variant="outline" onClick={() => {
                                     setEditingCharacter(char);
                                     setShowCharacterForm(true);
@@ -517,10 +713,11 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             </div>
                         </div>
                     </Card>
-                ))}
+                );})}
             </div>
         </div>
     );
+    };
 
     // 世界观编辑
     const renderWorldTab = () => (
@@ -651,22 +848,76 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
     );
 
     // 场景编辑
-    const renderScenesTab = () => (
+    const renderScenesTab = () => {
+        // ✅ 统计缺少背景图的场景
+        const missingBackgrounds = editingProject.backgrounds?.filter(bg => !bg.imageUrl) || [];
+        
+        return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-slate-800">🎬 场景背景 ({editingProject.backgrounds?.length || 0})</h3>
-                <Button size="sm" onClick={() => {
-                    setEditingScene({
-                        id: createId(),
-                        name: '',
-                        description: '',
-                        imageUrl: '',
-                    } as Background);
-                    setShowSceneForm(true);
-                }}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    添加场景
-                </Button>
+                <div className="flex gap-2">
+                    {/* ✅ 一键补全缺失背景图 - 始终显示，没有缺失时禁用 */}
+                    {onGenerateImage && (
+                        <Button 
+                            size="sm" 
+                            variant="outline"
+                            disabled={missingBackgrounds.length === 0}
+                            onClick={async () => {
+                                if (!confirm(`检测到 ${missingBackgrounds.length} 个场景缺少背景图。\n\n是否一键生成所有缺失的背景图？`)) {
+                                    return;
+                                }
+                                
+                                toast.info('开始生成背景图...', '请稍候');
+                                let successCount = 0;
+                                let errorCount = 0;
+                                
+                                for (const bg of missingBackgrounds) {
+                                    try {
+                                        const prompt = `${bg.name}, ${bg.description || ''}, 场景背景图, 横屏1920x1080, 动漫风格, 高质量, 无人物`;
+                                        const imageUrl = await onGenerateImage(bg.id, prompt);
+                                        
+                                        // 更新场景
+                                        const updatedBgs = editingProject.backgrounds?.map(b => 
+                                            b.id === bg.id ? { ...b, imageUrl } : b
+                                        );
+                                        setEditingProject({ ...editingProject, backgrounds: updatedBgs });
+                                        successCount++;
+                                    } catch (error) {
+                                        console.error(`生成${bg.name}背景图失败:`, error);
+                                        errorCount++;
+                                    }
+                                }
+                                
+                                if (errorCount === 0) {
+                                    toast.success('背景图生成完成', `成功生成 ${successCount} 张`);
+                                } else {
+                                    toast.warning('部分背景图生成失败', `成功 ${successCount} 张，失败 ${errorCount} 张`);
+                                }
+                            }}
+                            className="gap-1 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 hover:from-green-100 hover:to-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Wand2 className="w-3 h-3 text-green-600" />
+                            <span className="text-green-700">
+                                {missingBackgrounds.length > 0 
+                                    ? `一键补全背景图 (${missingBackgrounds.length})` 
+                                    : '所有场景已有背景图'}
+                            </span>
+                        </Button>
+                    )}
+                    <Button size="sm" onClick={() => {
+                        setEditingScene({
+                            id: createId(),
+                            name: '',
+                            description: '',
+                            imageUrl: '',
+                        } as Background);
+                        setShowSceneForm(true);
+                    }}>
+                        <Plus className="w-4 h-4 mr-1" />
+                        添加场景
+                    </Button>
+                </div>
             </div>
 
             {showSceneForm ? (
@@ -813,17 +1064,58 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
             ) : null}
 
             <div className="grid gap-4">
-                {editingProject.backgrounds?.map((bg) => (
+                {editingProject.backgrounds?.map((bg) => {
+                    const missingImage = !bg.imageUrl;
+                    
+                    return (
                     <Card key={bg.id} className="p-4 hover:shadow-md transition-shadow">
                         <div className="flex items-start gap-4">
-                            {bg.imageUrl && (
-                                <img src={bg.imageUrl} alt={bg.name} className="w-32 h-20 object-cover rounded" />
+                            {bg.imageUrl ? (
+                                <img src={bg.imageUrl} alt={bg.name} className="w-32 h-20 object-cover rounded border-2 border-slate-200" />
+                            ) : (
+                                <div className="w-32 h-20 bg-slate-100 rounded flex items-center justify-center border-2 border-dashed border-slate-300">
+                                    <span className="text-slate-400 text-xs">无背景图</span>
+                                </div>
                             )}
                             <div className="flex-1">
-                                <h4 className="font-semibold text-lg mb-1">{bg.name}</h4>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="font-semibold text-lg">{bg.name}</h4>
+                                    {missingImage && (
+                                        <span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded">
+                                            ⚠️ 缺背景图
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-sm text-slate-600">{bg.description || '无描述'}</p>
                             </div>
                             <div className="flex gap-2">
+                                {/* ✅ 快速生成背景图 */}
+                                {missingImage && onGenerateImage && (
+                                    <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={async () => {
+                                            toast.info(`正在为 ${bg.name} 生成背景图...`);
+                                            try {
+                                                const prompt = `${bg.name}, ${bg.description || ''}, 场景背景图, 横屏1920x1080, 动漫风格, 高质量, 无人物`;
+                                                const imageUrl = await onGenerateImage(bg.id, prompt);
+                                                
+                                                // 更新场景
+                                                const updatedBgs = editingProject.backgrounds?.map(b => 
+                                                    b.id === bg.id ? { ...b, imageUrl } : b
+                                                );
+                                                setEditingProject({ ...editingProject, backgrounds: updatedBgs });
+                                                toast.success('背景图生成完成');
+                                            } catch (error) {
+                                                // 错误已在onGenerateImage中处理
+                                            }
+                                        }}
+                                        className="gap-1 text-green-600 hover:bg-green-50"
+                                    >
+                                        <Wand2 className="w-3 h-3" />
+                                        生成
+                                    </Button>
+                                )}
                                 <Button size="sm" variant="outline" onClick={() => {
                                     setEditingScene(bg);
                                     setShowSceneForm(true);
@@ -842,10 +1134,11 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             </div>
                         </div>
                     </Card>
-                ))}
+                );})}
             </div>
         </div>
     );
+    };
 
     // 主题风格编辑
     const renderThemeTab = () => (
