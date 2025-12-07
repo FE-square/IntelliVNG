@@ -233,7 +233,7 @@ export default function ThemeSetupPage() {
                                     <Input
                                         value={customTheme}
                                         onChange={(e) => setCustomTheme(e.target.value)}
-                                        placeholder={I18N['key.theme.customThemePlaceholder'] || '输入自定义主题，如：时间旅行'}
+                                        placeholder="输入自定义主题,如:时间旅行"
                                         onKeyPress={(e) => e.key === 'Enter' && addCustomTheme()}
                                     />
                                     <Button onClick={addCustomTheme} size="sm">
@@ -303,7 +303,7 @@ export default function ThemeSetupPage() {
                                     <Input
                                         value={customStyle}
                                         onChange={(e) => setCustomStyle(e.target.value)}
-                                        placeholder={I18N['key.theme.customStylePlaceholder'] || '输入自定义风格，如：蒸汽朋克'}
+                                        placeholder="输入自定义风格,如:蒸汽朋克"
                                         onKeyPress={(e) => e.key === 'Enter' && addCustomStyle()}
                                     />
                                     <Button onClick={addCustomStyle} size="sm">
@@ -354,7 +354,7 @@ export default function ThemeSetupPage() {
                                 <Input
                                     value={tone}
                                     onChange={(e) => setTone(e.target.value)}
-                                    placeholder={I18N['key.theme.tonePlaceholder'] || '如：压抑悲伤、轻松幽默、紧张刺激'}
+                                    placeholder="如:压抑悲伤、轻松幽默、紧张刺激"
                                 />
                             </div>
                             <div>
@@ -365,7 +365,7 @@ export default function ThemeSetupPage() {
                                     className="w-full border rounded px-3 py-2 min-h-[100px]"
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
-                                    placeholder={I18N['key.theme.descriptionPlaceholder'] || '补充任何你希望 AI 了解的主题风格要求...'}
+                                    placeholder="补充任何你希望 AI 了解的主题风格要求..."
                                 />
                             </div>
                         </CardContent>
