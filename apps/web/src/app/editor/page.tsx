@@ -127,7 +127,15 @@ function EditorPageContent() {
     const [showNodesDropdown, setShowNodesDropdown] = useState(false);
     const [selectedCharacter, setSelectedCharacter] = useState<any>(null); // 选中的角色（用于查看立绘）
     const [selectedBackground, setSelectedBackground] = useState<any>(null); // 选中的场景（用于重新生成）
-    const [isGeneratingAsset, setIsGeneratingAsset] = useState(false); // 是否正在生成素材
+    const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false); // 是否正在生成头像
+    const [isGeneratingSprite, setIsGeneratingSprite] = useState(false); // 是否正在生成立绘
+    const [isGeneratingBackground, setIsGeneratingBackground] = useState(false); // 是否正在生成背景
+    const [showAvatarUrlInput, setShowAvatarUrlInput] = useState(false); // 显示头像URL输入框
+    const [showSpriteUrlInput, setShowSpriteUrlInput] = useState(false); // 显示立绘URL输入框
+    const [showBackgroundUrlInput, setShowBackgroundUrlInput] = useState(false); // 显示背景URL输入框
+    const [avatarUrlValue, setAvatarUrlValue] = useState(''); // 头像URL值
+    const [spriteUrlValue, setSpriteUrlValue] = useState(''); // 立绘URL值
+    const [backgroundUrlValue, setBackgroundUrlValue] = useState(''); // 背景URL值
     const [previewKey, setPreviewKey] = useState(0);  // ✅ 用于强制重新挂载GamePlayer
     const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);  // ✅ 最后保存时间
     const [isSaving, setIsSaving] = useState(false);  // ✅ 正在保存
@@ -357,9 +365,9 @@ function EditorPageContent() {
     
     // 重新生成角色立绘
     const handleRegenerateSprite = async (character: any) => {
-        if (isGeneratingAsset || !project) return;
+        if (isGeneratingSprite || !project) return;
         
-        setIsGeneratingAsset(true);
+        setIsGeneratingSprite(true);
         try {
             const prompt = `${character.displayName || character.name}, ${character.description}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量`;
             // ✅ 不使用参考图,让后端走抠图流程 generateSpriteWithTransparency
@@ -389,15 +397,15 @@ function EditorPageContent() {
         } catch (error) {
             console.error('[Editor] 立绘重新生成失败:', error);
         } finally {
-            setIsGeneratingAsset(false);
+            setIsGeneratingSprite(false);
         }
     };
     
     // 重新生成角色头像
     const handleRegenerateAvatar = async (character: any) => {
-        if (isGeneratingAsset || !project) return;
+        if (isGeneratingAvatar || !project) return;
         
-        setIsGeneratingAsset(true);
+        setIsGeneratingAvatar(true);
         try {
             const prompt = `${character.displayName || character.name}, ${character.description}, 头像特写, 圆形头像, 动漫风格, 纯白色背景, 简洁, 高质量`;
             // 如果有立绘，使用立绘作为参考图
@@ -418,15 +426,15 @@ function EditorPageContent() {
         } catch (error) {
             console.error('[Editor] 头像重新生成失败:', error);
         } finally {
-            setIsGeneratingAsset(false);
+            setIsGeneratingAvatar(false);
         }
     };
     
     // 重新生成场景背景
     const handleRegenerateBackground = async (background: any) => {
-        if (isGeneratingAsset || !project) return;
+        if (isGeneratingBackground || !project) return;
         
-        setIsGeneratingAsset(true);
+        setIsGeneratingBackground(true);
         try {
             const prompt = `${background.name}, ${background.description || ''}, 场景背景, 动漫风格, 高质量, 细节丰富`;
             const result = await handleGenerateImage(background.id, prompt, undefined, 'background');
@@ -445,7 +453,7 @@ function EditorPageContent() {
         } catch (error) {
             console.error('[Editor] 背景重新生成失败:', error);
         } finally {
-            setIsGeneratingAsset(false);
+            setIsGeneratingBackground(false);
         }
     };
     
@@ -1117,30 +1125,216 @@ function EditorPageContent() {
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                                {/* ✅ 重新生成按钮 */}
-                                <button
-                                    onClick={() => handleRegenerateAvatar(selectedCharacter)}
-                                    disabled={isGeneratingAsset}
-                                    className="px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                                >
-                                    📷 {isGeneratingAsset ? '生成中...' : '重生头像'}
-                                </button>
-                                <button
-                                    onClick={() => handleRegenerateSprite(selectedCharacter)}
-                                    disabled={isGeneratingAsset}
-                                    className="px-3 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                                >
-                                    🖼️ {isGeneratingAsset ? '生成中...' : '重生立绘'}
-                                </button>
-                                <button
-                                    onClick={() => setSelectedCharacter(null)}
-                                    className="text-slate-400 hover:text-slate-600 transition-colors text-2xl leading-none"
-                                >
-                                    ✕
-                                </button>
+                            <button
+                                onClick={() => setSelectedCharacter(null)}
+                                className="text-slate-400 hover:text-slate-600 transition-colors text-2xl leading-none flex-shrink-0"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        
+                        {/* ✅ 操作按钮区 - 分两行显示 */}
+                        <div className="mb-6 space-y-3">
+                            {/* 第一行：头像相关 */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 flex-1">
+                                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap">👤 头像：</span>
+                                    <button
+                                        onClick={() => handleRegenerateAvatar(selectedCharacter)}
+                                        disabled={isGeneratingAvatar}
+                                        className="flex-1 px-4 py-2.5 bg-white border-2 border-blue-200 text-slate-700 text-sm rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50"
+                                    >
+                                        📷 {isGeneratingAvatar ? '生成中...' : 'AI生成'}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowAvatarUrlInput(!showAvatarUrlInput);
+                                            setShowSpriteUrlInput(false);
+                                            setAvatarUrlValue('');
+                                        }}
+                                        className="flex-1 px-4 py-2.5 bg-white border-2 border-green-200 text-slate-700 text-sm rounded-lg hover:border-green-400 hover:bg-green-50 transition-all shadow-sm"
+                                    >
+                                        🔗 URL添加
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {/* 第二行：立绘相关 */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 flex-1">
+                                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap">🖼️ 立绘：</span>
+                                    <button
+                                        onClick={() => handleRegenerateSprite(selectedCharacter)}
+                                        disabled={isGeneratingSprite}
+                                        className="flex-1 px-4 py-2.5 bg-white border-2 border-purple-200 text-slate-700 text-sm rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50"
+                                    >
+                                        ✨ {isGeneratingSprite ? '生成中...' : 'AI生成'}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowSpriteUrlInput(!showSpriteUrlInput);
+                                            setShowAvatarUrlInput(false);
+                                            setSpriteUrlValue('');
+                                        }}
+                                        className="flex-1 px-4 py-2.5 bg-white border-2 border-orange-200 text-slate-700 text-sm rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all shadow-sm"
+                                    >
+                                        🔗 URL添加
+                                    </button>
+                                </div>
                             </div>
                         </div>
+                        
+                        {/* ✅ 头像URL输入框 */}
+                        {showAvatarUrlInput && (
+                            <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">输入头像图片URL</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={avatarUrlValue}
+                                        onChange={(e) => setAvatarUrlValue(e.target.value)}
+                                        placeholder="https://example.com/avatar.png"
+                                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && avatarUrlValue.trim()) {
+                                                const url = avatarUrlValue.trim();
+                                                const updatedCharacters = project.characters?.map(c => {
+                                                    if (c.id === selectedCharacter.id) {
+                                                        return { ...c, avatarUrl: url };
+                                                    }
+                                                    return c;
+                                                });
+                                                setProject({ ...project, characters: updatedCharacters } as GameProject);
+                                                setSelectedCharacter({ ...selectedCharacter, avatarUrl: url });
+                                                toast.success('头像添加成功', '已更新为指定URL的图片');
+                                                setShowAvatarUrlInput(false);
+                                                setAvatarUrlValue('');
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            if (!avatarUrlValue.trim()) {
+                                                toast.warning('请输入URL');
+                                                return;
+                                            }
+                                            const url = avatarUrlValue.trim();
+                                            const updatedCharacters = project.characters?.map(c => {
+                                                if (c.id === selectedCharacter.id) {
+                                                    return { ...c, avatarUrl: url };
+                                                }
+                                                return c;
+                                            });
+                                            setProject({ ...project, characters: updatedCharacters } as GameProject);
+                                            setSelectedCharacter({ ...selectedCharacter, avatarUrl: url });
+                                            toast.success('头像添加成功', '已更新为指定URL的图片');
+                                            setShowAvatarUrlInput(false);
+                                            setAvatarUrlValue('');
+                                        }}
+                                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors whitespace-nowrap"
+                                    >
+                                        确定
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowAvatarUrlInput(false);
+                                            setAvatarUrlValue('');
+                                        }}
+                                        className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors whitespace-nowrap"
+                                    >
+                                        取消
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* ✅ 立绘URL输入框 */}
+                        {showSpriteUrlInput && (
+                            <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">输入立绘图片URL</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={spriteUrlValue}
+                                        onChange={(e) => setSpriteUrlValue(e.target.value)}
+                                        placeholder="https://example.com/sprite.png"
+                                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && spriteUrlValue.trim()) {
+                                                const url = spriteUrlValue.trim();
+                                                const newSprite = {
+                                                    id: `sprite-${Date.now()}`,
+                                                    emotion: 'neutral' as const,
+                                                    imageUrl: url,
+                                                };
+                                                const updatedCharacters = project.characters?.map(c => {
+                                                    if (c.id === selectedCharacter.id) {
+                                                        return {
+                                                            ...c,
+                                                            sprites: [newSprite, ...(c.sprites || [])],
+                                                            defaultSpriteId: c.defaultSpriteId || newSprite.id,
+                                                        };
+                                                    }
+                                                    return c;
+                                                });
+                                                setProject({ ...project, characters: updatedCharacters } as GameProject);
+                                                const updatedChar = updatedCharacters?.find(c => c.id === selectedCharacter.id);
+                                                if (updatedChar) {
+                                                    setSelectedCharacter(updatedChar);
+                                                }
+                                                toast.success('立绘添加成功', '已添加到立绘列表');
+                                                setShowSpriteUrlInput(false);
+                                                setSpriteUrlValue('');
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            if (!spriteUrlValue.trim()) {
+                                                toast.warning('请输入URL');
+                                                return;
+                                            }
+                                            const url = spriteUrlValue.trim();
+                                            const newSprite = {
+                                                id: `sprite-${Date.now()}`,
+                                                emotion: 'neutral' as const,
+                                                imageUrl: url,
+                                            };
+                                            const updatedCharacters = project.characters?.map(c => {
+                                                if (c.id === selectedCharacter.id) {
+                                                    return {
+                                                        ...c,
+                                                        sprites: [newSprite, ...(c.sprites || [])],
+                                                        defaultSpriteId: c.defaultSpriteId || newSprite.id,
+                                                    };
+                                                }
+                                                return c;
+                                            });
+                                            setProject({ ...project, characters: updatedCharacters } as GameProject);
+                                            const updatedChar = updatedCharacters?.find(c => c.id === selectedCharacter.id);
+                                            if (updatedChar) {
+                                                setSelectedCharacter(updatedChar);
+                                            }
+                                            toast.success('立绘添加成功', '已添加到立绘列表');
+                                            setShowSpriteUrlInput(false);
+                                            setSpriteUrlValue('');
+                                        }}
+                                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors whitespace-nowrap"
+                                    >
+                                        确定
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowSpriteUrlInput(false);
+                                            setSpriteUrlValue('');
+                                        }}
+                                        className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors whitespace-nowrap"
+                                    >
+                                        取消
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         
                         {selectedCharacter.sprites && selectedCharacter.sprites.length > 0 ? (
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
@@ -1175,10 +1369,10 @@ function EditorPageContent() {
                                 <p className="text-lg">该角色暂无立绘</p>
                                 <button
                                     onClick={() => handleRegenerateSprite(selectedCharacter)}
-                                    disabled={isGeneratingAsset}
+                                    disabled={isGeneratingSprite}
                                     className="mt-4 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isGeneratingAsset ? '生成中...' : '生成立绘'}
+                                    {isGeneratingSprite ? '生成中...' : '生成立绘'}
                                 </button>
                             </div>
                         )}
@@ -1201,23 +1395,102 @@ function EditorPageContent() {
                                 <h3 className="text-2xl font-bold text-slate-800">{selectedBackground.name}</h3>
                                 <p className="text-sm text-slate-500">{selectedBackground.description || '暂无描述'}</p>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                                {/* ✅ 重新生成背景按钮 */}
-                                <button
-                                    onClick={() => handleRegenerateBackground(selectedBackground)}
-                                    disabled={isGeneratingAsset}
-                                    className="px-3 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                                >
-                                    🌄 {isGeneratingAsset ? '生成中...' : '重生背景'}
-                                </button>
-                                <button
-                                    onClick={() => setSelectedBackground(null)}
-                                    className="text-slate-400 hover:text-slate-600 transition-colors text-2xl leading-none"
-                                >
-                                    ✕
-                                </button>
+                            <button
+                                onClick={() => setSelectedBackground(null)}
+                                className="text-slate-400 hover:text-slate-600 transition-colors text-2xl leading-none flex-shrink-0"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        
+                        {/* ✅ 操作按钮区 */}
+                        <div className="mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 flex-1">
+                                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap">🌄 背景：</span>
+                                    <button
+                                        onClick={() => handleRegenerateBackground(selectedBackground)}
+                                        disabled={isGeneratingBackground}
+                                        className="flex-1 px-4 py-2.5 bg-white border-2 border-purple-200 text-slate-700 text-sm rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50"
+                                    >
+                                        ✨ {isGeneratingBackground ? '生成中...' : 'AI生成'}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowBackgroundUrlInput(!showBackgroundUrlInput);
+                                            setBackgroundUrlValue('');
+                                        }}
+                                        className="flex-1 px-4 py-2.5 bg-white border-2 border-cyan-200 text-slate-700 text-sm rounded-lg hover:border-cyan-400 hover:bg-cyan-50 transition-all shadow-sm"
+                                    >
+                                        🔗 URL添加
+                                    </button>
+                                </div>
                             </div>
                         </div>
+                        
+                        {/* ✅ 背景URL输入框 */}
+                        {showBackgroundUrlInput && (
+                            <div className="mb-4 p-4 bg-cyan-50 rounded-lg border border-cyan-200">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">输入背景图片URL</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={backgroundUrlValue}
+                                        onChange={(e) => setBackgroundUrlValue(e.target.value)}
+                                        placeholder="https://example.com/background.png"
+                                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && backgroundUrlValue.trim()) {
+                                                const url = backgroundUrlValue.trim();
+                                                const updatedBackgrounds = project.backgrounds?.map(bg => {
+                                                    if (bg.id === selectedBackground.id) {
+                                                        return { ...bg, imageUrl: url };
+                                                    }
+                                                    return bg;
+                                                });
+                                                setProject({ ...project, backgrounds: updatedBackgrounds } as GameProject);
+                                                setSelectedBackground({ ...selectedBackground, imageUrl: url });
+                                                toast.success('背景添加成功', '已更新为指定URL的图片');
+                                                setShowBackgroundUrlInput(false);
+                                                setBackgroundUrlValue('');
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            if (!backgroundUrlValue.trim()) {
+                                                toast.warning('请输入URL');
+                                                return;
+                                            }
+                                            const url = backgroundUrlValue.trim();
+                                            const updatedBackgrounds = project.backgrounds?.map(bg => {
+                                                if (bg.id === selectedBackground.id) {
+                                                    return { ...bg, imageUrl: url };
+                                                }
+                                                return bg;
+                                            });
+                                            setProject({ ...project, backgrounds: updatedBackgrounds } as GameProject);
+                                            setSelectedBackground({ ...selectedBackground, imageUrl: url });
+                                            toast.success('背景添加成功', '已更新为指定URL的图片');
+                                            setShowBackgroundUrlInput(false);
+                                            setBackgroundUrlValue('');
+                                        }}
+                                        className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors whitespace-nowrap"
+                                    >
+                                        确定
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowBackgroundUrlInput(false);
+                                            setBackgroundUrlValue('');
+                                        }}
+                                        className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors whitespace-nowrap"
+                                    >
+                                        取消
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         
                         {selectedBackground.imageUrl ? (
                             <div className="bg-slate-100 rounded-lg overflow-hidden max-h-[70vh]">
@@ -1233,10 +1506,10 @@ function EditorPageContent() {
                                 <p className="text-lg">该场景暂无背景图</p>
                                 <button
                                     onClick={() => handleRegenerateBackground(selectedBackground)}
-                                    disabled={isGeneratingAsset}
+                                    disabled={isGeneratingBackground}
                                     className="mt-4 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isGeneratingAsset ? '生成中...' : '生成背景'}
+                                    {isGeneratingBackground ? '生成中...' : '生成背景'}
                                 </button>
                             </div>
                         )}
