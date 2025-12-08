@@ -9,9 +9,8 @@ import type { Character, GameProject } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
 import { saveProject } from '@/lib/projectStorage';
 import { getEditingProjectBase, buildFullProject } from '@/lib/setupUtils';
-import { t } from '@/i18n/client';
+import { useI18N } from '@/components/I18nProvider';
 import { useRouterWithParams } from '@/hooks/useRouterWithParams';
-import { useI18n } from '@/hooks/useI18n';
 
 // 生成状态类型
 interface GenerationStatus {
@@ -26,7 +25,7 @@ function CharactersPageContent() {
     const { confirm, DialogComponent } = useConfirmDialog();
     const { characters, addCharacter, updateCharacter, removeCharacter, worldSetting, themeSetting } = useSetupStore();
     const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<Character>('character');
-    const { getText } = useI18n();
+    const { t, getText } = useI18N();
     
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState<Partial<Character>>({
@@ -103,11 +102,11 @@ function CharactersPageContent() {
     // AI生成角色立绘（流式状态）
     const handleGenerateSprite = async () => {
         if (!formData.displayName || !formData.description) {
-            toast.warning(getText('key.characters.warning.fillNameDesc', '请先填写角色名称和描述'));
+            toast.warning(t('key.characters.warning.fillNameDesc') || '请先填写角色名称和描述');
             return;
         }
 
-        setSpriteStatus({ status: 'pending', message: getText('key.characters.sprite.preparing', '准备生成...'), progress: 0 });
+        setSpriteStatus({ status: 'pending', message: t('key.characters.sprite.preparing') || '准备生成...', progress: 0 });
         
         try {
             // 构建prompt 
@@ -164,9 +163,9 @@ function CharactersPageContent() {
                                     defaultSpriteId: prev.defaultSpriteId || newSprite.id,
                                 }));
                                 
-                                setSpriteStatus({ status: 'succeeded', message: getText('key.characters.sprite.completed', '生成完成'), progress: 100 });
+                                setSpriteStatus({ status: 'succeeded', message: t('key.characters.sprite.completed') || '生成完成', progress: 100 });
                             } else if (data.status === 'FAILED') {
-                                throw new Error(data.error || getText('key.characters.sprite.failed', '生成失败'));
+                                throw new Error(data.error || t('key.characters.sprite.failed') || '生成失败');
                             } else if (data.status) {
                                 // 更新进度
                                 setSpriteStatus({
@@ -893,12 +892,12 @@ function CharactersPageContent() {
                                     {/* 性格属性 */}
                                     <div>
                                         <h3 className="font-semibold text-lg mb-3 text-pink-900" suppressHydrationWarning>
-                                            {getText('key.characters.personalityLabel', '性格属性')}
+                                            {t('key.characters.personalityLabel') || '性格属性'}
                                         </h3>
                                         <div className="space-y-4">
                                             <div>
                                                 <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
-                                                    {getText('key.characters.traitsLabel', '性格标签')}
+                                                    {t('key.characters.traitsLabel') || '性格标签'}
                                                 </label>
                                                 <Input
                                                     value={formData.personality?.traits?.join(', ') || ''}
@@ -916,7 +915,7 @@ function CharactersPageContent() {
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
-                                                    {getText('key.characters.temperamentLabel', '性情倾向')}
+                                                    {t('key.characters.temperamentLabel') || '性情倾向'}
                                                 </label>
                                                 <Input
                                                     value={formData.personality?.temperament || ''}
@@ -931,7 +930,7 @@ function CharactersPageContent() {
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
-                                                    {getText('key.characters.valuesLabel', '价值观')}
+                                                    {t('key.characters.valuesLabel') || '价值观'}
                                                 </label>
                                                 <Input
                                                     value={formData.personality?.values || ''}
@@ -950,12 +949,12 @@ function CharactersPageContent() {
                                     {/* 核心特质 */}
                                     <div>
                                         <h3 className="font-semibold text-lg mb-3 text-green-900" suppressHydrationWarning>
-                                            {getText('key.characters.coreTraitsLabel', '核心特质')}
+                                            {t('key.characters.coreTraitsLabel') || '核心特质'}
                                         </h3>
                                         <div className="space-y-4">
                                             <div>
                                                 <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
-                                                    {getText('key.characters.specialSkillsLabel', '特殊技能')}
+                                                    {t('key.characters.specialSkillsLabel') || '特殊技能'}
                                                 </label>
                                                 <Input
                                                     value={formData.coreTraits?.specialSkills?.join(', ') || ''}
@@ -973,7 +972,7 @@ function CharactersPageContent() {
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
-                                                    {getText('key.characters.obsessionLabel', '执念/目标')}
+                                                    {t('key.characters.obsessionLabel') || '执念/目标'}
                                                 </label>
                                                 <Input
                                                     value={formData.coreTraits?.obsession || ''}
@@ -988,7 +987,7 @@ function CharactersPageContent() {
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium mb-1" suppressHydrationWarning>
-                                                    {getText('key.characters.backstoryLabel', '背景故事')}
+                                                    {t('key.characters.backstoryLabel') || '背景故事'}
                                                 </label>
                                                 <textarea
                                                     className="w-full border rounded px-3 py-2 min-h-[100px]"
@@ -1013,7 +1012,7 @@ function CharactersPageContent() {
                                                 variant="outline"
                                                 className="flex-1"
                                             >
-                                                <span suppressHydrationWarning>{getText('key.characters.cancel', '取消编辑')}</span>
+                                                <span suppressHydrationWarning>{t('key.characters.cancel') || '取消编辑'}</span>
                                             </Button>
                                         )}
                                         <Button
@@ -1023,7 +1022,7 @@ function CharactersPageContent() {
                                         >
                                             <Save className="w-4 h-4 mr-2" />
                                             <span suppressHydrationWarning>
-                                                {editingId && editingId !== 'new' ? getText('key.characters.updateCharacter', '更新角色') : getText('key.characters.addCharacter', '添加角色')}
+                                                {editingId && editingId !== 'new' ? t('key.characters.updateCharacter') || '更新角色' : t('key.characters.addCharacter') || '添加角色'}
                                             </span>
                                         </Button>
                                     </div>
@@ -1034,10 +1033,10 @@ function CharactersPageContent() {
                                 <div className="text-center text-slate-500">
                                     <Users className="w-20 h-20 mx-auto mb-4 text-slate-300" />
                                     <p className="text-lg font-medium" suppressHydrationWarning>
-                                        {getText('key.characters.selectHint', '请从左侧选择一个角色进行编辑')}
+                                        {t('key.characters.selectHint') || '请从左侧选择一个角色进行编辑'}
                                     </p>
                                     <p className="text-sm mt-2" suppressHydrationWarning>
-                                        {getText('key.characters.addHint', '或点击「新增」按钮创建新角色')}
+                                        {t('key.characters.addHint') || '或点击「新增」按钮创建新角色'}
                                     </p>
                                 </div>
                             </Card>
@@ -1052,13 +1051,13 @@ function CharactersPageContent() {
                         className="border-slate-300 hover:bg-slate-100"
                         onClick={() => router.push('/setup')}
                     >
-                        <span suppressHydrationWarning>{getText('key.common.backToSetup', '← 返回设置')}</span>
+                        <span suppressHydrationWarning>{t('key.common.backToSetup') || '← 返回设置'}</span>
                     </Button>
                     <Button
                         className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
                         onClick={() => router.push('/setup/summary')}
                     >
-                        <span suppressHydrationWarning>{getText('key.characters.nextStep', '下一步:查看汇总 →')}</span>
+                        <span suppressHydrationWarning>{t('key.characters.nextStep') || '下一步:查看汇总 →'}</span>
                     </Button>
                 </div>
             </div>

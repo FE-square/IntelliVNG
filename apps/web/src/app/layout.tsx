@@ -45,7 +45,7 @@ export default function RootLayout({
                 }}
             />
             <body className={inter.className}>
-                <I18nProvider>
+                <I18nProvider locale={locale} messages={i18nMessages}>
                     <Providers>
                         {children}
                         <FloatingToolbar />

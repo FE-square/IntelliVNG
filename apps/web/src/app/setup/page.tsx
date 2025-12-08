@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@vng/ui';
 import { Users, Globe, Image, FileText, Palette, FolderOpen } from 'lucide-react';
-import { I18N, t } from '@/i18n/client';
+import { useI18N } from '@/components/I18nProvider';
 import { useRouterWithParams } from '@/hooks/useRouterWithParams';
 
 /**
@@ -11,7 +11,7 @@ import { useRouterWithParams } from '@/hooks/useRouterWithParams';
  */
 function SetupPageContent() {
     const router = useRouterWithParams();
-
+    const { t, I18N } = useI18N();
     return (
         <main className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 p-8">
             <div className="max-w-4xl mx-auto">

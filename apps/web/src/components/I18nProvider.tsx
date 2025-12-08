@@ -1,21 +1,74 @@
+'use client';
+
 /**
- * I18n Provider - 在SSR时注入多语言配置到window对象
+ * I18n Provider - 通过 Context 提供多语言配置
  */
-import { headers } from 'next/headers';
-import { loadLocaleMessagesSync, SUPPORTED_LOCALES, DEFAULT_LOCALE, type Locale } from '@/i18n';
+import { createContext, useCallback, useContext, useMemo } from 'react';
+import type { Locale } from '@/i18n';
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  // 从middleware设置的header中获取locale
-  const headersList = headers();
-  const localeHeader = headersList.get('x-locale');
-  const locale: Locale = (localeHeader && SUPPORTED_LOCALES.includes(localeHeader as Locale))
-    ? (localeHeader as Locale)
-    : DEFAULT_LOCALE;
-  
-  const messages = loadLocaleMessagesSync(locale);
+export interface I18nContextValue {
+  /**
+   * 当前语言环境
+   */
+  locale: Locale;
+  /**
+   * 翻译消息对象
+   */
+  messages: Record<string, string>;
+  /** 多语言key 与 多语言翻译 映射 */
+  I18N: Record<string, string>;
+  /**
+   * 获取翻译文本
+   * @param key 翻译key
+   * @param params 参数对象，用于替换占位符 {title: 'xxx'} 会替换 {title}
+   */
+  t: (key: string, params?: Record<string, string | number>) => string;
+  getText: (key: string, defaultText?: string) => string;
+}
 
-  // 将I18N数据注入到window对象
-  // 使用立即执行函数确保在页面加载时立即执行
+const I18nContext = createContext<I18nContextValue | null>(null);
+
+export interface I18nProviderProps {
+  children: React.ReactNode;
+  locale: Locale;
+  messages: Record<string, string>;
+}
+
+export function I18nProvider({ children, locale, messages }: I18nProviderProps) {
+  // 创建 t 函数
+  const t = useMemo(() => {
+    return (key: string, params?: Record<string, string | number>): string => {
+      let text = messages[key];
+      
+      // 如果没有找到翻译
+      if (!text) {
+        return key;
+      }
+
+      // 替换占位符
+      if (params) {
+        Object.entries(params).forEach(([paramKey, value]) => {
+          text = text.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(value));
+        });
+      }
+
+      return text;
+    };
+  }, [messages]);
+
+  const getText = useCallback((key: string, defaultText: string = '') => t(key) || defaultText, [t]);
+  const value = useMemo<I18nContextValue>(
+    () => ({
+      locale,
+      messages,
+      I18N: messages,
+      t,
+      getText,
+    }),
+    [locale, messages, t]
+  );
+
+  // 同时将 I18N 数据注入到 window 对象，保持向后兼容
   const i18nScript = `
     (function() {
       window.__APP_INITIAL_STATE__ = window.__APP_INITIAL_STATE__ || {};
@@ -25,7 +78,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   `;
 
   return (
-    <>
+    <I18nContext.Provider value={value}>
       <script
         dangerouslySetInnerHTML={{
           __html: i18nScript,
@@ -33,7 +86,19 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
         suppressHydrationWarning
       />
       {children}
-    </>
+    </I18nContext.Provider>
   );
+}
+
+/**
+ * 获取 I18N Context 的 hook
+ * @throws 如果不在 I18nProvider 内部使用会抛出错误
+ */
+export function useI18N(): I18nContextValue {
+  const context = useContext(I18nContext);
+  if (!context) {
+    throw new Error('useI18N must be used within I18nProvider');
+  }
+  return context;
 }
 

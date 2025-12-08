@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, useT
 import { Plus, Trash2, Edit, Calendar, Users, Image as ImageIcon, FileCode, ArrowLeft, Upload, Settings, Download, Play, CheckSquare, Square } from 'lucide-react';
 import { getAllProjects, deleteProject, ProjectMetadata, saveProject, getProject } from '@/lib/projectStorage';
 import { importProjectFromJson, openFileDialog, exportProjectAsJson } from '@/lib/projectExport';
-import { I18N, t } from '@/i18n/client';
+import { useI18N } from '@/components/I18nProvider';
 import { ProjectSettingsEditor } from '@/components/ProjectSettingsEditor';
 
 // 定义多语言key映射
@@ -70,6 +70,7 @@ const i18nMap = {
  * 项目列表页 - 显示所有已保存的项目
  */
 export default function DashboardPage() {
+    const { t, I18N } = useI18N();
     const router = useRouter();
     const toast = useToast();
     const { confirm, DialogComponent } = useConfirmDialog();

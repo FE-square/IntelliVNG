@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, useToast } from '@vng/ui';
 import { Sparkles, FolderOpen, Zap, Settings, Users, Map, BookOpen, Globe2, Loader2, BrainCircuit } from 'lucide-react';
 import type { Character, Scene, ThemeSetting, WorldSetting } from '@vng/core';
-import { t } from '@/i18n/client';
+import { useI18N } from '@/components/I18nProvider';
 
 type ProgressStage =
     | 'init'
@@ -89,7 +89,7 @@ export default function Home() {
     const progressListRef = useRef<HTMLDivElement | null>(null);
     const agentsSectionVisibleRef = useRef(false);
     const [lastLocale, setLastLocale] = useState('zh-CN');
-    // const [mounted, setMounted] = useState(false);
+    const { t } = useI18N();
 
     useEffect(() => {
         // setMounted(true);

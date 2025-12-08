@@ -7,9 +7,8 @@ import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
 import type { ThemeSetting } from '@vng/core';
 import { useFormAutocomplete } from '@/hooks/useFormAutocomplete';
-import { I18N, t } from '@/i18n/client';
+import { useI18N } from '@/components/I18nProvider';
 import { useRouterWithParams } from '@/hooks/useRouterWithParams';
-import { useI18n } from '@/hooks/useI18n';
 
 // 预设主题选项
 const THEME_OPTIONS = [
@@ -44,7 +43,7 @@ function ThemeSetupPageContent() {
     const toast = useToast();
     const { themeSetting, setThemeSetting, worldSetting, characters } = useSetupStore();
     const { isLoading: isAutocompleting, autocomplete } = useFormAutocomplete<ThemeSetting>('theme');
-    const { getText } = useI18n();
+    const { t, getText } = useI18N();
     
     const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
     const [selectedStyles, setSelectedStyles] = useState<string[]>([]);

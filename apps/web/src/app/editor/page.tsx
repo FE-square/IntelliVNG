@@ -10,7 +10,7 @@ import { GameProject } from '@vng/core';
 import { FlowEditor } from '@vng/editor';
 import { saveProject, saveDraft, clearDraft } from '@/lib/projectStorage';
 import { exportProjectAsJson, exportProjectAsPlayableHtml, exportProjectAsPlayableHtmlWithImages } from '@/lib/projectExport';
-import { I18N, t } from '@/i18n/client';
+import { useI18N } from '@/components/I18nProvider';
 
 // 定义多语言key映射
 const i18nMap = {
@@ -151,6 +151,7 @@ const MOCK_PROJECT: GameProject = {
 };
 
 function EditorPageContent() {
+    const { t, I18N } = useI18N();
     const searchParams = useSearchParams();
     const toast = useToast();
     // 支持两种参数名：projectId 和 project

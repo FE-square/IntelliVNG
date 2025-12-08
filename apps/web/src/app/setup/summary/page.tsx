@@ -5,16 +5,15 @@ import { ArrowLeft, Wand2, Users, Globe, Image, AlertCircle, Palette } from 'luc
 import { useSetupStore } from '@/stores/setupStore';
 import { useState, Suspense } from 'react';
 import { saveProject } from '@/lib/projectStorage';
-import { t } from '@/i18n/client';
+import { useI18N } from '@/components/I18nProvider';
 import { useRouterWithParams } from '@/hooks/useRouterWithParams';
-import { useI18n } from '@/hooks/useI18n';
 
 function SummaryPageContent() {
     const router = useRouterWithParams();
     const toast = useToast();
     const { characters, worldSetting, scenes, themeSetting } = useSetupStore();
     const [isGenerating, setIsGenerating] = useState(false);
-    const { getText } = useI18n();
+    const { t, getText } = useI18N();
 
     const handleGenerate = async () => {
         // 验证必要信息

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, CardContent, CardHeader, CardTitle, useToast } from '@vng/ui';
 import { Wand2, Loader2, Image as ImageIcon, Users, MapPin, ArrowRight, SkipForward, CheckCircle2, Sparkles, Database } from 'lucide-react';
 import { GameProject } from '@vng/core';
+import { useI18N } from '@/components/I18nProvider';
 
 // Mock 数据 - 用于无数据时的展示调试
 const MOCK_PROJECT_DATA: Partial<GameProject> = {
@@ -67,6 +68,7 @@ const MOCK_PROJECT_DATA: Partial<GameProject> = {
  * 在AI生成剧本后，给用户机会一键生成所有视觉素材（立绘、头像、背景图）
  */
 function GenerateAssetsPageContent() {
+    const { t, I18N } = useI18N();
     const router = useRouter();
     const searchParams = useSearchParams();
     const toast = useToast();
