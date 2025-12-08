@@ -12,9 +12,10 @@ interface ProjectSettingsEditorProps {
     onSave: (project: GameProject) => void;
     onClose: () => void;
     onGenerateImage?: (characterId: string, prompt: string, refImageUrl?: string, type?: 'sprite' | 'avatar' | 'background') => Promise<string>;
+    i18n?: Record<string, string>;
 }
 
-export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImage }: ProjectSettingsEditorProps) {
+export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImage, i18n = {} }: ProjectSettingsEditorProps) {
     const toast = useToast();
     const [editingProject, setEditingProject] = useState<GameProject>(project);
     const [activeTab, setActiveTab] = useState<'basic' | 'characters' | 'world' | 'scenes' | 'theme'>('basic');
@@ -98,18 +99,18 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
     // 基本信息编辑
     const renderBasicTab = () => (
         <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-slate-800 border-b pb-2">📝 基本信息</h3>
+            <h3 className="text-lg font-semibold text-slate-800 border-b pb-2">{i18n.basicInfo || '📝 基本信息'}</h3>
             
             {/* 封面图 */}
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">🖼️ 项目封面</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.coverImage || '🖼️ 项目封面'}</label>
                 <div className="flex gap-3">
                     <input
                         type="text"
                         className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         value={editingProject.coverImage || ''}
                         onChange={(e) => setEditingProject({ ...editingProject, coverImage: e.target.value })}
-                        placeholder="输入封面图URL或使用AI生成"
+                        placeholder={i18n.coverPlaceholder || '输入封面图URL或使用AI生成'}
                     />
                     {onGenerateImage && (
                         <Button
@@ -117,14 +118,14 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             variant="outline"
                             onClick={async () => {
                                 if (!editingProject.title) {
-                                    toast.warning('请先填写项目名称');
+                                    toast.warning(i18n.fillNameFirst || '请先填写项目名称');
                                     return;
                                 }
                                 try {
                                     const prompt = `${editingProject.title}, ${editingProject.description || ''}, 视觉小说封面, 横版, 高质量, 精美文字排版, 动漫风格`;
                                     const imageUrl = await onGenerateImage('cover', prompt, undefined, 'background');
                                     setEditingProject({ ...editingProject, coverImage: imageUrl });
-                                    toast.success('封面生成成功 ✨');
+                                    toast.success(i18n.generateSuccess || '封面生成成功 ✨');
                                 } catch (error) {
                                     // 错误已在onGenerateImage中处理
                                 }
@@ -132,7 +133,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             className="gap-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
                         >
                             <Wand2 className="w-3 h-3" />
-                            AI生成封面
+                            {i18n.generate || 'AI生成封面'}
                         </Button>
                     )}
                 </div>
@@ -149,7 +150,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
             </div>
             
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">项目名称</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.projectName || '项目名称'}</label>
                 <input
                     type="text"
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -159,19 +160,19 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
             </div>
             
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">项目描述</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.projectDesc || '项目描述'}</label>
                 <textarea
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     rows={3}
                     value={editingProject.description || ''}
                     onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
-                    placeholder="简要描述你的视觉小说..."
+                    placeholder={i18n.descPlaceholder || '简要描述你的视觉小说...'}
                 />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">作者</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.author || '作者'}</label>
                     <input
                         type="text"
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -184,7 +185,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                 </div>
                 
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">版本</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.version || '版本'}</label>
                     <input
                         type="text"
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -199,7 +200,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">类型</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.genre || '类型'}</label>
                     <select
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         value={editingProject.meta?.genre || 'mystery'}
@@ -219,7 +220,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                 </div>
                 
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">美术风格</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.artStyle || '美术风格'}</label>
                     <select
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         value={editingProject.meta?.artStyle || 'anime'}
@@ -228,11 +229,11 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             meta: { ...editingProject.meta, artStyle: e.target.value as any } 
                         })}
                     >
-                        <option value="anime">动漫</option>
-                        <option value="realistic">写实</option>
-                        <option value="pixel">像素</option>
-                        <option value="watercolor">水彩</option>
-                        <option value="other">其他</option>
+                        <option value="anime">{i18n.anime || '动漫'}</option>
+                        <option value="realistic">{i18n.realistic || '写实'}</option>
+                        <option value="pixel">{i18n.pixel || '像素'}</option>
+                        <option value="watercolor">{i18n.watercolor || '水彩'}</option>
+                        <option value="other">{i18n.other || '其他'}</option>
                     </select>
                 </div>
             </div>
@@ -249,7 +250,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
         return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-800">👥 角色列表 ({editingProject.characters?.length || 0})</h3>
+                <h3 className="text-lg font-semibold text-slate-800">{i18n.characterList || '👥 角色列表'} ({editingProject.characters?.length || 0})</h3>
                 <div className="flex gap-2">
                     {/* ✅ 一键补全缺失素材按钮 - 始终显示，没有缺失时禁用 */}
                     {onGenerateImage && (
@@ -258,11 +259,11 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             variant="outline"
                             disabled={!hasMissingAssets}
                             onClick={async () => {
-                                if (!confirm(`检测到 ${missingAvatars.length} 个角色缺少头像，${missingSprites.length} 个角色缺少立绘。\n\n是否一键生成所有缺失的素材？`)) {
+                                if (!confirm(`${i18n.missingAssetConfirm || '检测到'} ${missingAvatars.length} ${i18n.missingAvatar || '个角色缺少头像'}，${missingSprites.length} ${i18n.missingSprite || '个角色缺少立绘'}。\n\n${i18n.generateAllAssets || '是否一键生成所有缺失的素材？'}`)) {
                                     return;
                                 }
                                 
-                                toast.info('开始生成缺失素材...', '请稍候');
+                                toast.info(i18n.startGenerating || '开始生成缺失素材...', i18n.pleaseWait || '请稍候');
                                 let successCount = 0;
                                 let errorCount = 0;
                                 
@@ -322,9 +323,9 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                 }
                                 
                                 if (errorCount === 0) {
-                                    toast.success('素材生成完成', `成功生成 ${successCount} 个素材`);
+                                    toast.success(i18n.generationComplete || '素材生成完成', (i18n.successCount || '成功生成 {count} 个素材').replace('{count}', String(successCount)));
                                 } else {
-                                    toast.warning('部分素材生成失败', `成功 ${successCount} 个，失败 ${errorCount} 个`);
+                                    toast.warning(i18n.partialFailure || '部分素材生成失败', (i18n.successFailCount || '成功 {success} 个，失败 {error} 个').replace('{success}', String(successCount)).replace('{error}', String(errorCount)));
                                 }
                             }}
                             className="gap-1 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 hover:from-green-100 hover:to-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -332,8 +333,8 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             <Wand2 className="w-3 h-3 text-green-600" />
                             <span className="text-green-700">
                                 {hasMissingAssets 
-                                    ? `一键补全素材 (${missingAvatars.length + missingSprites.length})` 
-                                    : '所有角色已有素材'}
+                                    ? `${i18n.completeAllAssets || '一键补全素材'} (${missingAvatars.length + missingSprites.length})` 
+                                    : i18n.allAssetsComplete || '所有角色已有素材'}
                             </span>
                         </Button>
                     )}
@@ -349,7 +350,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                         setShowCharacterForm(true);
                     }}>
                         <Plus className="w-4 h-4 mr-1" />
-                        添加角色
+                        {i18n.addCharacter || '添加角色'}
                     </Button>
                 </div>
             </div>
@@ -358,7 +359,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                 <Card className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-indigo-200">
                     <div className="space-y-4">
                         <div className="flex items-center justify-between mb-4">
-                            <h4 className="font-semibold text-lg">{editingCharacter?.displayName || '新增角色'}</h4>
+                            <h4 className="font-semibold text-lg">{editingCharacter?.displayName || (i18n.newCharacter || '新增角色')}</h4>
                             <div className="flex gap-2">
                                 <Button
                                     size="sm"
@@ -388,7 +389,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         <Sparkles className="w-3 h-3 text-amber-600" />
                                     )}
                                     <span className="text-amber-700">
-                                        {isCharacterAutocompleting ? 'AI补全中...' : 'AI帮我填'}
+                                        {isCharacterAutocompleting ? (i18n.aiCompleting || 'AI补全中...') : (i18n.aiHelp || 'AI帮我填')}
                                     </span>
                                 </Button>
                                 <Button size="sm" variant="outline" onClick={() => setShowCharacterForm(false)}>
@@ -399,65 +400,65 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium mb-2">角色名称 *</label>
+                                <label className="block text-sm font-medium mb-2">{i18n.characterNameRequired || '角色名称 *'}</label>
                                 <input
                                     type="text"
                                     className="w-full px-3 py-2 border rounded-lg"
                                     value={editingCharacter?.displayName || ''}
                                     onChange={(e) => setEditingCharacter({ ...editingCharacter!, displayName: e.target.value, name: e.target.value })}
-                                    placeholder="例如: 李明"
+                                    placeholder={i18n.characterNamePlaceholder || '例如: 李明'}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-2">性别</label>
+                                <label className="block text-sm font-medium mb-2">{i18n.gender || '性别'}</label>
                                 <select
                                     className="w-full px-3 py-2 border rounded-lg"
                                     value={editingCharacter?.gender || 'male'}
                                     onChange={(e) => setEditingCharacter({ ...editingCharacter!, gender: e.target.value as any })}
                                 >
-                                    <option value="male">男</option>
-                                    <option value="female">女</option>
-                                    <option value="other">其他</option>
+                                    <option value="male">{i18n.male || '男'}</option>
+                                    <option value="female">{i18n.female || '女'}</option>
+                                    <option value="other">{i18n.other || '其他'}</option>
                                 </select>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium mb-2">年龄</label>
+                                <label className="block text-sm font-medium mb-2">{i18n.age || '年龄'}</label>
                                 <input
                                     type="text"
                                     className="w-full px-3 py-2 border rounded-lg"
                                     value={editingCharacter?.age || ''}
                                     onChange={(e) => setEditingCharacter({ ...editingCharacter!, age: e.target.value })}
-                                    placeholder="例如: 25"
+                                    placeholder={i18n.agePlaceholder || '例如: 25'}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-2">身份</label>
+                                <label className="block text-sm font-medium mb-2">{i18n.identity || '身份'}</label>
                                 <input
                                     type="text"
                                     className="w-full px-3 py-2 border rounded-lg"
                                     value={editingCharacter?.identity || ''}
                                     onChange={(e) => setEditingCharacter({ ...editingCharacter!, identity: e.target.value })}
-                                    placeholder="例如: 学生、侦探"
+                                    placeholder={i18n.identityPlaceholder || '例如: 学生、侦探'}
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-2">角色描述 *</label>
+                            <label className="block text-sm font-medium mb-2">{i18n.characterDescRequired || '角色描述 *'}</label>
                             <textarea
                                 className="w-full px-3 py-2 border rounded-lg"
                                 rows={3}
                                 value={editingCharacter?.description || ''}
                                 onChange={(e) => setEditingCharacter({ ...editingCharacter!, description: e.target.value })}
-                                placeholder="描述角色的外貌、性格等..."
+                                placeholder={i18n.characterDescPlaceholder || '描述角色的外貌、性格等...'}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-2">性格特征</label>
+                            <label className="block text-sm font-medium mb-2">{i18n.personality || '性格特征'}</label>
                             <input
                                 type="text"
                                 className="w-full px-3 py-2 border rounded-lg"
@@ -469,13 +470,13 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         traits: e.target.value.split(',').map(t => t.trim()).filter(Boolean)
                                     }
                                 })}
-                                placeholder="例如: 开朗, 善良, 勇敢 (用逗号分隔)"
+                                placeholder={i18n.personalityPlaceholder || '例如: 开朗, 善良, 勇敢 (用逗号分隔)'}
                             />
                         </div>
 
                         {/* 头像管理 */}
                         <div className="border-t pt-4">
-                            <label className="block text-sm font-medium mb-2">👤 角色头像</label>
+                            <label className="block text-sm font-medium mb-2">{i18n.avatar || '👤 角色头像'}</label>
                             <div className="flex gap-2">
                                 {onGenerateImage && (
                                     <Button
@@ -483,7 +484,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         variant="outline"
                                         onClick={async () => {
                                             if (!editingCharacter?.displayName || !editingCharacter?.description) {
-                                                toast.warning('请先填写角色名称和描述');
+                                                toast.warning(i18n.fillNameDescFirst || '请先填写角色名称和描述');
                                                 return;
                                             }
                                             try {
@@ -499,7 +500,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         className="flex-1 gap-1 bg-white border-2 border-blue-200 text-slate-700 hover:border-blue-400 hover:bg-blue-50"
                                     >
                                         <Wand2 className="w-3 h-3" />
-                                        AI生成
+                                        {i18n.generate || 'AI生成'}
                                     </Button>
                                 )}
                                 <Button
@@ -512,25 +513,25 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                     }}
                                     className="flex-1 gap-1 bg-white border-2 border-green-200 text-slate-700 hover:border-green-400 hover:bg-green-50"
                                 >
-                                    🔗 URL添加
+                                    {i18n.urlAdd || '🔗 URL添加'}
                                 </Button>
                             </div>
                             
                             {/* URL输入框 */}
                             {showAvatarUrlInput && (
                                 <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                                    <label className="block text-xs font-medium text-slate-700 mb-2">输入头像图URL</label>
+                                    <label className="block text-xs font-medium text-slate-700 mb-2">{i18n.enterAvatarUrl || '输入头像图URL'}</label>
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
                                             value={avatarUrlValue}
                                             onChange={(e) => setAvatarUrlValue(e.target.value)}
-                                            placeholder="https://example.com/avatar.png"
+                                            placeholder={i18n.urlPlaceholder || 'https://example.com/avatar.png'}
                                             className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && avatarUrlValue.trim()) {
                                                     setEditingCharacter({ ...editingCharacter!, avatarUrl: avatarUrlValue.trim() });
-                                                    toast.success('头像添加成功');
+                                                    toast.success(i18n.avatarAdded || '头像添加成功');
                                                     setShowAvatarUrlInput(false);
                                                     setAvatarUrlValue('');
                                                 }
@@ -540,17 +541,17 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                             size="sm"
                                             onClick={() => {
                                                 if (!avatarUrlValue.trim()) {
-                                                    toast.warning('请输入URL');
+                                                    toast.warning(i18n.enterUrl || '请输入URL');
                                                     return;
                                                 }
                                                 setEditingCharacter({ ...editingCharacter!, avatarUrl: avatarUrlValue.trim() });
-                                                toast.success('头像添加成功');
+                                                toast.success(i18n.avatarAdded || '头像添加成功');
                                                 setShowAvatarUrlInput(false);
                                                 setAvatarUrlValue('');
                                             }}
                                             className="bg-green-500 text-white hover:bg-green-600"
                                         >
-                                            确定
+                                            {i18n.confirm || '确定'}
                                         </Button>
                                         <Button
                                             size="sm"
@@ -560,7 +561,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                                 setAvatarUrlValue('');
                                             }}
                                         >
-                                            取消
+                                            {i18n.cancel || '取消'}
                                         </Button>
                                     </div>
                                 </div>
@@ -576,14 +577,14 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                         {/* 立绘管理 */}
                         <div className="border-t pt-4">
                             <div className="flex items-center justify-between mb-2">
-                                <label className="block text-sm font-medium">💼 角色立绘 ({editingCharacter?.sprites?.length || 0})</label>
+                                <label className="block text-sm font-medium">{i18n.sprites || '💼 角色立绘'} ({editingCharacter?.sprites?.length || 0})</label>
                                 <div className="flex gap-2">
                                     {onGenerateImage && (
                                         <Button
                                             size="sm"
                                             onClick={async () => {
                                                 if (!editingCharacter?.displayName || !editingCharacter?.description) {
-                                                    toast.warning('请先填写角色名称和描述');
+                                                    toast.warning(i18n.fillNameDescFirst || '请先填写角色名称和描述');
                                                     return;
                                                 }
                                                 try {
@@ -607,7 +608,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                             className="gap-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white"
                                         >
                                             <Wand2 className="w-3 h-3" />
-                                            AI生成立绘
+                                            {i18n.generateSprite || 'AI生成立绘'}
                                         </Button>
                                     )}
                                     <Button
@@ -620,7 +621,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         }}
                                         className="gap-1 bg-white border-2 border-orange-200 text-slate-700 hover:border-orange-400 hover:bg-orange-50"
                                     >
-                                        🔗 URL添加
+                                        {i18n.urlAdd || '🔗 URL添加'}
                                     </Button>
                                 </div>
                             </div>
@@ -628,13 +629,13 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             {/* URL输入框 */}
                             {showSpriteUrlInput && (
                                 <div className="mb-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                                    <label className="block text-xs font-medium text-slate-700 mb-2">输入立绘图URL</label>
+                                    <label className="block text-xs font-medium text-slate-700 mb-2">{i18n.enterSpriteUrl || '输入立绘图URL'}</label>
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
                                             value={spriteUrlValue}
                                             onChange={(e) => setSpriteUrlValue(e.target.value)}
-                                            placeholder="https://example.com/sprite.png"
+                                            placeholder={i18n.urlPlaceholder || 'https://example.com/sprite.png'}
                                             className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && spriteUrlValue.trim()) {
@@ -648,7 +649,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                                         sprites: [...(editingCharacter!.sprites || []), newSprite],
                                                         defaultSpriteId: editingCharacter!.defaultSpriteId || newSprite.id
                                                     });
-                                                    toast.success('立绘添加成功');
+                                                    toast.success(i18n.spriteAdded || '立绘添加成功');
                                                     setShowSpriteUrlInput(false);
                                                     setSpriteUrlValue('');
                                                 }
@@ -658,7 +659,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                             size="sm"
                                             onClick={() => {
                                                 if (!spriteUrlValue.trim()) {
-                                                    toast.warning('请输入URL');
+                                                    toast.warning(i18n.enterUrl || '请输入URL');
                                                     return;
                                                 }
                                                 const newSprite = {
@@ -671,13 +672,13 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                                     sprites: [...(editingCharacter!.sprites || []), newSprite],
                                                     defaultSpriteId: editingCharacter!.defaultSpriteId || newSprite.id
                                                 });
-                                                toast.success('立绘添加成功');
+                                                toast.success(i18n.spriteAdded || '立绘添加成功');
                                                 setShowSpriteUrlInput(false);
                                                 setSpriteUrlValue('');
                                             }}
                                             className="bg-orange-500 text-white hover:bg-orange-600"
                                         >
-                                            确定
+                                            {i18n.confirm || '确定'}
                                         </Button>
                                         <Button
                                             size="sm"
@@ -687,7 +688,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                                 setSpriteUrlValue('');
                                             }}
                                         >
-                                            取消
+                                            {i18n.cancel || '取消'}
                                         </Button>
                                     </div>
                                 </div>
@@ -723,7 +724,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             <Button
                                 onClick={() => {
                                     if (!editingCharacter?.displayName || !editingCharacter?.description) {
-                                        toast.warning('请填写角色名称和描述');
+                                        toast.warning(i18n.fillNameDescFirst || '请填写角色名称和描述');
                                         return;
                                     }
                                     
@@ -739,12 +740,12 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                     setEditingProject({ ...editingProject, characters: updatedCharacters });
                                     setShowCharacterForm(false);
                                     setEditingCharacter(null);
-                                    toast.success('角色已保存');
+                                    toast.success(i18n.characterSaved || '角色已保存');
                                 }}
                                 className="flex-1"
                             >
                                 <Save className="w-4 h-4 mr-1" />
-                                保存角色
+                                {i18n.saveCharacter || '保存角色'}
                             </Button>
                             <Button
                                 variant="outline"
@@ -753,7 +754,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                     setEditingCharacter(null);
                                 }}
                             >
-                                取消
+                                {i18n.cancel || '取消'}
                             </Button>
                         </div>
                     </div>
@@ -893,7 +894,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
     const renderWorldTab = () => (
         <div className="space-y-6">
             <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="text-lg font-semibold text-slate-800">🌍 世界观设定</h3>
+                <h3 className="text-lg font-semibold text-slate-800">{i18n.worldTitle || '🌍 世界观设定'}</h3>
                 <Button
                     variant="outline"
                     onClick={async () => {
@@ -921,98 +922,98 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                         <Sparkles className="w-4 h-4 text-amber-600" />
                     )}
                     <span className="text-amber-700">
-                        {isWorldAutocompleting ? 'AI补全中...' : 'AI帮我填'}
+                        {isWorldAutocompleting ? (i18n.aiCompleting || 'AI补全中...') : (i18n.aiHelp || 'AI帮我填')}
                     </span>
                 </Button>
             </div>
             
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">世界观名称</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.worldName || '世界观名称'}</label>
                 <input
                     type="text"
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     value={worldForm.name}
                     onChange={(e) => setWorldForm({ ...worldForm, name: e.target.value })}
-                    placeholder="例如: 赛博朋克都市、中世纪魔法王国..."
+                    placeholder={i18n.worldNamePlaceholder || '例如: 赛博朋克都市、中世纪魔法王国...'}
                 />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">时代背景</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.era || '时代背景'}</label>
                     <input
                         type="text"
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                         value={worldForm.era}
                         onChange={(e) => setWorldForm({ ...worldForm, era: e.target.value })}
-                        placeholder="例如: 未来、现代、中世纪..."
+                        placeholder={i18n.eraPlaceholder || '例如: 未来、现代、中世纪...'}
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">地域设定</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.location || '地域设定'}</label>
                     <input
                         type="text"
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                         value={worldForm.location}
                         onChange={(e) => setWorldForm({ ...worldForm, location: e.target.value })}
-                        placeholder="例如: 东京、魔法学院..."
+                        placeholder={i18n.locationPlaceholder || '例如: 东京、魔法学院...'}
                     />
                 </div>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">核心规则</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.coreRules || '核心规则'}</label>
                 <textarea
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     rows={4}
                     value={worldForm.rules}
                     onChange={(e) => setWorldForm({ ...worldForm, rules: e.target.value })}
-                    placeholder="这个世界的特殊规则或设定,如魔法体系、科技水平等..."
+                    placeholder={i18n.coreRulesPlaceholder || '这个世界的特殊规则或设定,如魔法体系、科技水平等...'}
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">社会结构</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.socialStructure || '社会结构'}</label>
                 <textarea
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     rows={3}
                     value={worldForm.socialStructure}
                     onChange={(e) => setWorldForm({ ...worldForm, socialStructure: e.target.value })}
-                    placeholder="例如: 王权统治、贵族阶级、公会体系等..."
+                    placeholder={i18n.socialStructurePlaceholder || '例如: 王权统治、贵族阶级、公会体系等...'}
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">历史背景</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.history || '历史背景'}</label>
                 <textarea
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     rows={4}
                     value={worldForm.history}
                     onChange={(e) => setWorldForm({ ...worldForm, history: e.target.value })}
-                    placeholder="描述关键历史事件、王朝更迭等..."
+                    placeholder={i18n.historyPlaceholder || '描述关键历史事件、王朝更迭等...'}
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">补充说明</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{i18n.supplement || '补充说明'}</label>
                 <textarea
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     rows={3}
                     value={worldForm.description}
                     onChange={(e) => setWorldForm({ ...worldForm, description: e.target.value })}
-                    placeholder="补充任何你希望加入的世界观细节..."
+                    placeholder={i18n.supplementPlaceholder || '补充任何你希望加入的世界观细节...'}
                 />
             </div>
 
             <Button
                 onClick={() => {
                     // 保存世界观到项目元数据
-                    toast.success('世界观设定已保存');
+                    toast.success(i18n.worldSaved || '世界观设定已保存');
                 }}
                 className="w-full"
             >
                 <Save className="w-4 h-4 mr-2" />
-                保存世界观
+                {i18n.saveWorld || '保存世界观'}
             </Button>
         </div>
     );
@@ -1025,7 +1026,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
         return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-800">🎬 场景背景 ({editingProject.backgrounds?.length || 0})</h3>
+                <h3 className="text-lg font-semibold text-slate-800">{i18n.scenesTitle || '🎬 场景背景'} ({editingProject.backgrounds?.length || 0})</h3>
                 <div className="flex gap-2">
                     {/* ✅ 一键补全缺失背景图 - 始终显示，没有缺失时禁用 */}
                     {onGenerateImage && (
@@ -1034,11 +1035,11 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             variant="outline"
                             disabled={missingBackgrounds.length === 0}
                             onClick={async () => {
-                                if (!confirm(`检测到 ${missingBackgrounds.length} 个场景缺少背景图。\n\n是否一键生成所有缺失的背景图？`)) {
+                                if (!confirm((i18n.missingBackgroundConfirm || '检测到 {count} 个场景缺少背景图。\n\n是否一键生成所有缺失的背景图？').replace('{count}', String(missingBackgrounds.length)))) {
                                     return;
                                 }
                                 
-                                toast.info('开始生成背景图...', '请稍候');
+                                toast.info(i18n.startGeneratingBg || '开始生成背景图...', i18n.pleaseWait || '请稍候');
                                 let successCount = 0;
                                 let errorCount = 0;
                                 
@@ -1061,9 +1062,9 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                 }
                                 
                                 if (errorCount === 0) {
-                                    toast.success('背景图生成完成', `成功生成 ${successCount} 张`);
+                                    toast.success(i18n.bgGenerationComplete || '背景图生成完成', (i18n.bgSuccessCount || '成功生成 {count} 张').replace('{count}', String(successCount)));
                                 } else {
-                                    toast.warning('部分背景图生成失败', `成功 ${successCount} 张，失败 ${errorCount} 张`);
+                                    toast.warning(i18n.bgPartialFailure || '部分背景图生成失败', (i18n.bgSuccessFailCount || '成功 {success} 张，失败 {error} 张').replace('{success}', String(successCount)).replace('{error}', String(errorCount)));
                                 }
                             }}
                             className="gap-1 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 hover:from-green-100 hover:to-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1071,8 +1072,8 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             <Wand2 className="w-3 h-3 text-green-600" />
                             <span className="text-green-700">
                                 {missingBackgrounds.length > 0 
-                                    ? `一键补全背景图 (${missingBackgrounds.length})` 
-                                    : '所有场景已有背景图'}
+                                    ? `${i18n.completeAllBg || '一键补全背景图'} (${missingBackgrounds.length})` 
+                                    : i18n.allBgComplete || '所有场景已有背景图'}
                             </span>
                         </Button>
                     )}
@@ -1086,7 +1087,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                         setShowSceneForm(true);
                     }}>
                         <Plus className="w-4 h-4 mr-1" />
-                        添加场景
+                        {i18n.addScene || '添加场景'}
                     </Button>
                 </div>
             </div>
@@ -1095,7 +1096,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                 <Card className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200">
                     <div className="space-y-4">
                         <div className="flex items-center justify-between mb-4">
-                            <h4 className="font-semibold text-lg">{editingScene?.name || '新增场景'}</h4>
+                            <h4 className="font-semibold text-lg">{editingScene?.name || (i18n.newScene || '新增场景')}</h4>
                             <div className="flex gap-2">
                                 <Button
                                     size="sm"
@@ -1123,7 +1124,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         <Sparkles className="w-3 h-3 text-amber-600" />
                                     )}
                                     <span className="text-amber-700">
-                                        {isSceneAutocompleting ? 'AI补全中...' : 'AI帮我填'}
+                                        {isSceneAutocompleting ? (i18n.aiCompleting || 'AI补全中...') : (i18n.aiHelp || 'AI帮我填')}
                                     </span>
                                 </Button>
                                 <Button size="sm" variant="outline" onClick={() => setShowSceneForm(false)}>
@@ -1133,29 +1134,29 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-2">场景名称 *</label>
+                            <label className="block text-sm font-medium mb-2">{i18n.sceneNameRequired || '场景名称 *'}</label>
                             <input
                                 type="text"
                                 className="w-full px-3 py-2 border rounded-lg"
                                 value={editingScene?.name || ''}
                                 onChange={(e) => setEditingScene({ ...editingScene!, name: e.target.value })}
-                                placeholder="例如: 学校教室、咖啡店、城堡大厅"
+                                placeholder={i18n.sceneNamePlaceholder || '例如: 学校教室、咖啡店、城堡大厅'}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-2">场景描述</label>
+                            <label className="block text-sm font-medium mb-2">{i18n.sceneDesc || '场景描述'}</label>
                             <textarea
                                 className="w-full px-3 py-2 border rounded-lg"
                                 rows={3}
                                 value={editingScene?.description || ''}
                                 onChange={(e) => setEditingScene({ ...editingScene!, description: e.target.value })}
-                                placeholder="描述这个场景的特点、氛围..."
+                                placeholder={i18n.sceneDescPlaceholder || '描述这个场景的特点、氛围...'}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-2">背景图片</label>
+                            <label className="block text-sm font-medium mb-2">{i18n.backgroundImage || '背景图片'}</label>
                             <div className="flex gap-2">
                                 {onGenerateImage && (
                                     <Button
@@ -1163,7 +1164,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         variant="outline"
                                         onClick={async () => {
                                             if (!editingScene?.name) {
-                                                toast.warning('请先填写场景名称');
+                                                toast.warning(i18n.fillSceneNameFirst || '请先填写场景名称');
                                                 return;
                                             }
                                             try {
@@ -1178,7 +1179,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         className="flex-1 gap-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
                                     >
                                         <Wand2 className="w-3 h-3" />
-                                        AI生成
+                                        {i18n.generate || 'AI生成'}
                                     </Button>
                                 )}
                                 <Button
@@ -1190,25 +1191,25 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                     }}
                                     className="flex-1 gap-1 bg-white border-2 border-cyan-200 text-slate-700 hover:border-cyan-400 hover:bg-cyan-50"
                                 >
-                                    🔗 URL添加
+                                    {i18n.urlAdd || '🔗 URL添加'}
                                 </Button>
                             </div>
                             
                             {/* URL输入框 */}
                             {showBackgroundUrlInput && (
                                 <div className="mt-3 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
-                                    <label className="block text-xs font-medium text-slate-700 mb-2">输入背景图URL</label>
+                                    <label className="block text-xs font-medium text-slate-700 mb-2">{i18n.enterBackgroundUrl || '输入背景图URL'}</label>
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
                                             value={backgroundUrlValue}
                                             onChange={(e) => setBackgroundUrlValue(e.target.value)}
-                                            placeholder="https://example.com/background.png"
+                                            placeholder={i18n.urlPlaceholder || 'https://example.com/background.png'}
                                             className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && backgroundUrlValue.trim()) {
                                                     setEditingScene({ ...editingScene!, imageUrl: backgroundUrlValue.trim() });
-                                                    toast.success('背景添加成功');
+                                                    toast.success(i18n.backgroundAdded || '背景添加成功');
                                                     setShowBackgroundUrlInput(false);
                                                     setBackgroundUrlValue('');
                                                 }
@@ -1218,17 +1219,17 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                             size="sm"
                                             onClick={() => {
                                                 if (!backgroundUrlValue.trim()) {
-                                                    toast.warning('请输入URL');
+                                                    toast.warning(i18n.enterUrl || '请输入URL');
                                                     return;
                                                 }
                                                 setEditingScene({ ...editingScene!, imageUrl: backgroundUrlValue.trim() });
-                                                toast.success('背景添加成功');
+                                                toast.success(i18n.backgroundAdded || '背景添加成功');
                                                 setShowBackgroundUrlInput(false);
                                                 setBackgroundUrlValue('');
                                             }}
                                             className="bg-cyan-500 text-white hover:bg-cyan-600"
                                         >
-                                            确定
+                                            {i18n.confirm || '确定'}
                                         </Button>
                                         <Button
                                             size="sm"
@@ -1238,7 +1239,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                                 setBackgroundUrlValue('');
                                             }}
                                         >
-                                            取消
+                                            {i18n.cancel || '取消'}
                                         </Button>
                                     </div>
                                 </div>
@@ -1253,7 +1254,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                             <Button
                                 onClick={() => {
                                     if (!editingScene?.name) {
-                                        toast.warning('请填写场景名称');
+                                        toast.warning(i18n.fillSceneName || '请填写场景名称');
                                         return;
                                     }
                                     
@@ -1269,12 +1270,12 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                     setEditingProject({ ...editingProject, backgrounds: updatedBackgrounds });
                                     setShowSceneForm(false);
                                     setEditingScene(null);
-                                    toast.success('场景已保存');
+                                    toast.success(i18n.sceneSaved || '场景已保存');
                                 }}
                                 className="flex-1"
                             >
                                 <Save className="w-4 h-4 mr-1" />
-                                保存场景
+                                {i18n.saveScene || '保存场景'}
                             </Button>
                             <Button
                                 variant="outline"
@@ -1283,7 +1284,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                     setEditingScene(null);
                                 }}
                             >
-                                取消
+                                {i18n.cancel || '取消'}
                             </Button>
                         </div>
                     </div>
@@ -1301,7 +1302,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                 <img src={bg.imageUrl} alt={bg.name} className="w-32 h-20 object-cover rounded border-2 border-slate-200" />
                             ) : (
                                 <div className="w-32 h-20 bg-slate-100 rounded flex items-center justify-center border-2 border-dashed border-slate-300">
-                                    <span className="text-slate-400 text-xs">无背景图</span>
+                                    <span className="text-slate-400 text-xs">{i18n.noBackground || '无背景图'}</span>
                                 </div>
                             )}
                             <div className="flex-1">
@@ -1309,11 +1310,11 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                     <h4 className="font-semibold text-lg">{bg.name}</h4>
                                     {missingImage && (
                                         <span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded">
-                                            ⚠️ 缺背景图
+                                            ⚠️ {i18n.missingBackground || '缺背景图'}
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-sm text-slate-600">{bg.description || '无描述'}</p>
+                                <p className="text-sm text-slate-600">{bg.description || (i18n.noDescription || '无描述')}</p>
                             </div>
                             <div className="flex gap-2">
                                 {/* ✅ 快速生成背景图 */}
@@ -1322,7 +1323,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         size="sm" 
                                         variant="outline"
                                         onClick={async () => {
-                                            toast.info(`正在为 ${bg.name} 生成背景图...`);
+                                            toast.info((i18n.generatingFor || '正在为 {name} 生成背景图...').replace('{name}', bg.name));
                                             try {
                                                 const prompt = `${bg.name}, ${bg.description || ''}, 场景背景图, 横屏1920x1080, 动漫风格, 高质量, 无人物`;
                                                 // 显式指定 type='background'
@@ -1333,7 +1334,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                                     b.id === bg.id ? { ...b, imageUrl } : b
                                                 );
                                                 setEditingProject({ ...editingProject, backgrounds: updatedBgs });
-                                                toast.success('背景图生成完成');
+                                                toast.success(i18n.bgGenerationSuccess || '背景图生成完成');
                                             } catch (error) {
                                                 // 错误已在onGenerateImage中处理
                                             }
@@ -1341,7 +1342,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         className="gap-1 text-green-600 hover:bg-green-50"
                                     >
                                         <Wand2 className="w-3 h-3" />
-                                        生成
+                                        {i18n.generate || '生成'}
                                     </Button>
                                 )}
                                 <Button size="sm" variant="outline" onClick={() => {
@@ -1355,7 +1356,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                                         ...editingProject,
                                         backgrounds: editingProject.backgrounds?.filter(b => b.id !== bg.id)
                                     });
-                                    toast.success('场景已删除');
+                                    toast.success(i18n.sceneDeleted || '场景已删除');
                                 }}>
                                     <Trash2 className="w-3 h-3" />
                                 </Button>
@@ -1372,7 +1373,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
     const renderThemeTab = () => (
         <div className="space-y-6">
             <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="text-lg font-semibold text-slate-800">🎨 主题风格</h3>
+                <h3 className="text-lg font-semibold text-slate-800">{i18n.themeTitle || '🎨 主题风格'}</h3>
                 <Button
                     variant="outline"
                     onClick={async () => {
@@ -1406,14 +1407,14 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                         <Sparkles className="w-4 h-4 text-amber-600" />
                     )}
                     <span className="text-amber-700">
-                        {isThemeAutocompleting ? 'AI推荐中...' : 'AI帮我选'}
+                        {isThemeAutocompleting ? (i18n.aiRecommending || 'AI推荐中...') : (i18n.aiRecommend || 'AI帮我选')}
                     </span>
                 </Button>
             </div>
             
             {/* 核心主题 */}
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-3">核心主题 (可多选)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-3">{i18n.coreThemes || '核心主题 (可多选)'}</label>
                 <div className="flex flex-wrap gap-2">
                     {THEME_OPTIONS.map(theme => (
                         <button
@@ -1439,7 +1440,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                 {/* 已选主题 */}
                 {selectedThemes.length > 0 && (
                     <div className="mt-3 p-3 bg-purple-50 rounded-lg">
-                        <div className="text-xs text-purple-700 mb-2">已选择 {selectedThemes.length} 个主题:</div>
+                        <div className="text-xs text-purple-700 mb-2">{(i18n.selectedThemes || '已选择 {count} 个主题:').replace('{count}', String(selectedThemes.length))}</div>
                         <div className="flex flex-wrap gap-2">
                             {selectedThemes.map(theme => (
                                 <span key={theme} className="px-3 py-1 bg-purple-500 text-white rounded-full text-sm flex items-center gap-1">
@@ -1456,7 +1457,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
 
             {/* 故事风格 */}
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-3">故事风格 (可多选)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-3">{i18n.storyStyles || '故事风格 (可多选)'}</label>
                 <div className="flex flex-wrap gap-2">
                     {STYLE_OPTIONS.map(style => (
                         <button
@@ -1482,7 +1483,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                 {/* 已选风格 */}
                 {selectedStyles.length > 0 && (
                     <div className="mt-3 p-3 bg-indigo-50 rounded-lg">
-                        <div className="text-xs text-indigo-700 mb-2">已选择 {selectedStyles.length} 个风格:</div>
+                        <div className="text-xs text-indigo-700 mb-2">{(i18n.selectedStyles || '已选择 {count} 个风格:').replace('{count}', String(selectedStyles.length))}</div>
                         <div className="flex flex-wrap gap-2">
                             {selectedStyles.map(style => (
                                 <span key={style} className="px-3 py-1 bg-indigo-500 text-white rounded-full text-sm flex items-center gap-1">
@@ -1500,15 +1501,15 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
             <Button
                 onClick={() => {
                     if (selectedThemes.length === 0 || selectedStyles.length === 0) {
-                        toast.warning('请至少选择一个主题和一个风格');
+                        toast.warning(i18n.selectThemeAndStyle || '请至少选择一个主题和一个风格');
                         return;
                     }
-                    toast.success('主题风格已保存');
+                    toast.success(i18n.themeSaved || '主题风格已保存');
                 }}
                 className="w-full"
             >
                 <Save className="w-4 h-4 mr-2" />
-                保存主题风格
+                {i18n.saveTheme || '保存主题风格'}
             </Button>
         </div>
     );
@@ -1522,7 +1523,7 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                         <div>
                             <h2 className="text-2xl font-bold flex items-center gap-2">
                                 <Settings className="w-6 h-6" />
-                                编辑项目设定
+                                {i18n.title || '编辑项目设定'}
                             </h2>
                             <p className="text-white/80 text-sm mt-1">{editingProject.title}</p>
                         </div>
@@ -1534,11 +1535,11 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                     {/* 标签切换 */}
                     <div className="flex gap-2 mt-4">
                         {[
-                            { key: 'basic', label: '📝 基本信息', icon: Settings },
-                            { key: 'world', label: '🌍 世界观', icon: Globe },
-                            { key: 'theme', label: '🎨 主题', icon: Palette },
-                            { key: 'scenes', label: '🎬 场景', icon: Image },
-                            { key: 'characters', label: '👥 角色', icon: Users },
+                            { key: 'basic', label: i18n.basicInfo || '📝 基本信息', icon: Settings },
+                            { key: 'world', label: i18n.world || '🌍 世界观', icon: Globe },
+                            { key: 'theme', label: i18n.theme || '🎨 主题', icon: Palette },
+                            { key: 'scenes', label: i18n.scenes || '🎬 场景', icon: Image },
+                            { key: 'characters', label: i18n.characters || '👥 角色', icon: Users },
                         ].map(tab => (
                             <button
                                 key={tab.key}
@@ -1567,13 +1568,13 @@ export function ProjectSettingsEditor({ project, onSave, onClose, onGenerateImag
                 {/* 底部按钮 */}
                 <div className="bg-slate-50 p-4 border-t flex gap-3 justify-end">
                     <Button variant="outline" onClick={onClose}>
-                        取消
+                        {i18n.cancel || '取消'}
                     </Button>
                     <Button
                         onClick={() => onSave(editingProject)}
                         className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                     >
-                        保存设定
+                        {i18n.save || '保存设定'}
                     </Button>
                 </div>
             </div>

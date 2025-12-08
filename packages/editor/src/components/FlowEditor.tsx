@@ -31,9 +31,76 @@ interface FlowEditorProps {
     onUpdate?: (project: GameProject) => void;
     onSelectNode?: (nodeId: string | null) => void;
     onGenerateImage?: (characterId: string, prompt: string, refImageUrl?: string, type?: 'sprite' | 'avatar' | 'background') => Promise<string>;
+    i18n?: {
+        undo?: string;
+        redo?: string;
+        addNode?: string;
+        startNode?: string;
+        sceneNode?: string;
+        branchNode?: string;
+        endingNode?: string;
+        zoomIn?: string;
+        zoomOut?: string;
+        fitView?: string;
+        logicCheck?: string;
+        logicCheckResult?: string;
+        noIssues?: string;
+        completeAssets?: string;
+        generating?: string;
+        assetsComplete?: string;
+        nodeEditTitle?: string;
+        nodeEditStoryInfo?: string;
+        nodeEditNodeTitle?: string;
+        nodeEditDialogues?: string;
+        nodeEditAddDialogue?: string;
+        nodeEditSave?: string;
+        nodeEditScene?: string;
+        nodeEditNoScene?: string;
+        nodeEditHasBackground?: string;
+        nodeEditBackgroundLinked?: string;
+        nodeEditNarration?: string;
+        nodeEditNarrationPlaceholder?: string;
+        nodeEditAudioAssets?: string;
+        nodeEditBgm?: string;
+        nodeEditBgmPlaceholder?: string;
+        nodeEditSelectFromLibrary?: string;
+        nodeEditEmotionalWarm?: string;
+        nodeEditRomanticPiano?: string;
+        nodeEditSuspenseTense?: string;
+        nodeEditMysteriousAtmosphere?: string;
+        nodeEditVolume?: string;
+        nodeEditLoop?: string;
+        nodeEditChoices?: string;
+        nodeEditChoicesCount?: string;
+        nodeEditChoicesDesc?: string;
+        nodeEditAddChoice?: string;
+        nodeEditNoChoices?: string;
+        nodeEditChoice?: string;
+        nodeEditChoiceText?: string;
+        nodeEditChoiceTextPlaceholder?: string;
+        nodeEditTargetNode?: string;
+        nodeEditSelectTargetNode?: string;
+        nodeEditCreateNewNode?: string;
+        nodeEditCreateSceneNode?: string;
+        nodeEditCreateBranchNode?: string;
+        nodeEditCreateEndingNode?: string;
+        nodeEditExistingNodes?: string;
+        nodeEditSceneType?: string;
+        nodeEditBranchType?: string;
+        nodeEditEndingType?: string;
+        nodeEditWillJumpTo?: string;
+        nodeEditSceneLabel?: string;
+        nodeEditCondition?: string;
+        nodeEditConditionOptional?: string;
+        nodeEditConditionPlaceholder?: string;
+        nodeEditConditionDesc?: string;
+        nodeEditMoveUp?: string;
+        nodeEditMoveDown?: string;
+        nodeEditDelete?: string;
+    };
 }
 
-export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }: FlowEditorProps) {
+export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i18n }: FlowEditorProps) {
     const { zoomIn, zoomOut, fitView, getViewport } = useReactFlow();
     const { confirm, DialogComponent } = useConfirmDialog();
     const toast = useToast();
@@ -597,7 +664,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                                 title="撤销 (Ctrl+Z)"
                             >
                                 <Undo className="w-4 h-4" />
-                                <span className="text-xs">撤销</span>
+                                <span className="text-xs">{i18n?.undo || '撤销'}</span>
                             </Button>
                             <Button
                                 size="sm"
@@ -608,7 +675,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                                 title="重做 (Ctrl+Y)"
                             >
                                 <Redo className="w-4 h-4" />
-                                <span className="text-xs">重做</span>
+                                <span className="text-xs">{i18n?.redo || '重做'}</span>
                             </Button>
                         </div>
                         
@@ -620,7 +687,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                                 className="w-full gap-2"
                             >
                                 <Plus className="w-4 h-4" />
-                                新增节点
+                                {i18n?.addNode || '新增节点'}
                             </Button>
                             
                             {showAddNodeMenu && (
@@ -630,28 +697,28 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                                         className="w-full px-4 py-2 text-left hover:bg-green-50 flex items-center gap-2 border-b border-gray-100"
                                     >
                                         <span className="text-lg">🟢</span>
-                                        <span className="text-sm font-medium">开始节点</span>
+                                        <span className="text-sm font-medium">{i18n?.startNode || '开始节点'}</span>
                                     </button>
                                     <button
                                         onClick={() => handleAddNode('scene')}
                                         className="w-full px-4 py-2 text-left hover:bg-indigo-50 flex items-center gap-2 border-b border-gray-100"
                                     >
                                         <span className="text-lg">📖</span>
-                                        <span className="text-sm font-medium">场景节点</span>
+                                        <span className="text-sm font-medium">{i18n?.sceneNode || '场景节点'}</span>
                                     </button>
                                     <button
                                         onClick={() => handleAddNode('branch')}
                                         className="w-full px-4 py-2 text-left hover:bg-amber-50 flex items-center gap-2 border-b border-gray-100"
                                     >
                                         <span className="text-lg">🔀</span>
-                                        <span className="text-sm font-medium">分支节点</span>
+                                        <span className="text-sm font-medium">{i18n?.branchNode || '分支节点'}</span>
                                     </button>
                                     <button
                                         onClick={() => handleAddNode('ending')}
                                         className="w-full px-4 py-2 text-left hover:bg-red-50 flex items-center gap-2"
                                     >
                                         <span className="text-lg">🏁</span>
-                                        <span className="text-sm font-medium">结局节点</span>
+                                        <span className="text-sm font-medium">{i18n?.endingNode || '结局节点'}</span>
                                     </button>
                                 </div>
                             )}
@@ -666,7 +733,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                                 title="放大"
                             >
                                 <ZoomIn className="w-4 h-4" />
-                                放大
+                                {i18n?.zoomIn || '放大'}
                             </Button>
                             <Button
                                 size="sm"
@@ -676,7 +743,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                                 title="缩小"
                             >
                                 <ZoomOut className="w-4 h-4" />
-                                缩小
+                                {i18n?.zoomOut || '缩小'}
                             </Button>
                             <Button
                                 size="sm"
@@ -686,7 +753,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                                 title="适应屏幕"
                             >
                                 <Maximize2 className="w-4 h-4" />
-                                适应屏幕
+                                {i18n?.fitView || '适应屏幕'}
                             </Button>
                         </div>
                         
@@ -699,17 +766,17 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                                 title="逻辑检查"
                             >
                                 <AlertCircle className="w-4 h-4" />
-                                逻辑检查
+                                {i18n?.logicCheck || '逻辑检查'}
                             </Button>
                             
                             {showIssues && (
                                 <div className="absolute left-full top-0 ml-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 p-3 z-50">
                                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-1">
                                         <AlertCircle className="w-4 h-4 text-amber-600" />
-                                        逻辑检查结果
+                                        {i18n?.logicCheckResult || '逻辑检查结果'}
                                     </h4>
                                     {checkIssues().length === 0 ? (
-                                        <p className="text-xs text-green-600">✔ 没有发现问题</p>
+                                        <p className="text-xs text-green-600">{i18n?.noIssues || '✔ 没有发现问题'}</p>
                                     ) : (
                                         <ul className="text-xs text-amber-700 space-y-1">
                                             {checkIssues().map((issue, idx) => (
@@ -748,7 +815,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                                     title="自动补全对话角色缺失的头像（游戏播放必需）"
                                 >
                                     <Wand2 className="w-4 h-4" />
-                                    {isGeneratingAssets ? '生成中...' : missingAvatars > 0 ? `补全头像 (${missingAvatars})` : '素材完整'}
+                                    {isGeneratingAssets ? (i18n?.generating || '生成中...') : missingAvatars > 0 ? `${i18n?.completeAssets || '补全头像'} (${missingAvatars})` : (i18n?.assetsComplete || '素材完整')}
                                 </Button>
                             );
                         })()}
@@ -767,6 +834,57 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage }:
                     onDelete={handleDeleteNode}
                     onCreateNodeFromChoice={handleCreateNodeFromChoice}
                     allNodes={storyNodes}
+                    i18n={{
+                        title: i18n?.nodeEditTitle || '编辑情节节点',
+                        storyInfo: i18n?.nodeEditStoryInfo || '🎬 情节信息',
+                        nodeTitle: i18n?.nodeEditNodeTitle || '情节标题',
+                        dialogues: i18n?.nodeEditDialogues || '角色对话',
+                        addDialogue: i18n?.nodeEditAddDialogue || '添加对话',
+                        save: i18n?.nodeEditSave || '保存修改',
+                        scene: i18n?.nodeEditScene || '🏞️ 所在场景',
+                        noScene: i18n?.nodeEditNoScene || '未指定场景',
+                        hasBackground: i18n?.nodeEditHasBackground || ' ✓ 有背景图',
+                        backgroundLinked: i18n?.nodeEditBackgroundLinked || '✓ 场景背景图已关联',
+                        narration: i18n?.nodeEditNarration || '旁白/背景交代',
+                        narrationPlaceholder: i18n?.nodeEditNarrationPlaceholder || '例：夜幕降临，雨声止息，旧巷深处传来脚步声...',
+                        audioAssets: i18n?.nodeEditAudioAssets || '🎵 音频配乐',
+                        bgm: i18n?.nodeEditBgm || '🎼 背景音乐 (BGM)',
+                        bgmPlaceholder: i18n?.nodeEditBgmPlaceholder || '输入音乐URL (支持 mp3, ogg, wav)',
+                        selectFromLibrary: i18n?.nodeEditSelectFromLibrary || '从预设音乐库选择',
+                        emotionalWarm: i18n?.nodeEditEmotionalWarm || '情感/温馨',
+                        romanticPiano: i18n?.nodeEditRomanticPiano || '浪漫钢琴',
+                        suspenseTense: i18n?.nodeEditSuspenseTense || '悬疑/紧张',
+                        mysteriousAtmosphere: i18n?.nodeEditMysteriousAtmosphere || '神秘氛围',
+                        volume: i18n?.nodeEditVolume || '🔊 音量',
+                        loop: i18n?.nodeEditLoop || '循环播放',
+                        choices: i18n?.nodeEditChoices || '🔀 选项与分支',
+                        choicesCount: i18n?.nodeEditChoicesCount || '{count} 个选项',
+                        choicesDesc: i18n?.nodeEditChoicesDesc || '为该节点添加分支选项，每个选项可以跳转到不同的后续节点',
+                        addChoice: i18n?.nodeEditAddChoice || '添加选项',
+                        noChoices: i18n?.nodeEditNoChoices || '还没有分支选项，点击上方按钮添加',
+                        choice: i18n?.nodeEditChoice || '选项',
+                        choiceText: i18n?.nodeEditChoiceText || '选项文本',
+                        choiceTextPlaceholder: i18n?.nodeEditChoiceTextPlaceholder || '例：跟随她、报警、转身离开',
+                        targetNode: i18n?.nodeEditTargetNode || '跳转到节点',
+                        selectTargetNode: i18n?.nodeEditSelectTargetNode || '选择目标节点',
+                        createNewNode: i18n?.nodeEditCreateNewNode || '➕ 创建新节点',
+                        createSceneNode: i18n?.nodeEditCreateSceneNode || '🆕 创建普通节点',
+                        createBranchNode: i18n?.nodeEditCreateBranchNode || '🔀 创建分支节点',
+                        createEndingNode: i18n?.nodeEditCreateEndingNode || '🏁 创建结局节点',
+                        existingNodes: i18n?.nodeEditExistingNodes || '📋 选择现有节点',
+                        sceneType: i18n?.nodeEditSceneType || '场景',
+                        branchType: i18n?.nodeEditBranchType || '分支',
+                        endingType: i18n?.nodeEditEndingType || '结局',
+                        willJumpTo: i18n?.nodeEditWillJumpTo || '将跳转到:',
+                        sceneLabel: i18n?.nodeEditSceneLabel || '场景:',
+                        condition: i18n?.nodeEditCondition || '触发条件',
+                        conditionOptional: i18n?.nodeEditConditionOptional || '(选填)',
+                        conditionPlaceholder: i18n?.nodeEditConditionPlaceholder || '例：拥有道具:钥匙、好感度>50',
+                        conditionDesc: i18n?.nodeEditConditionDesc || '设置该选项的显示条件，例如要求特定道具或属性值',
+                        moveUp: i18n?.nodeEditMoveUp || '上移',
+                        moveDown: i18n?.nodeEditMoveDown || '下移',
+                        delete: i18n?.nodeEditDelete || '删除',
+                    }}
                 />
             )}
             

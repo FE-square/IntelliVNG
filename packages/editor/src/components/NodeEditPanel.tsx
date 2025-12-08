@@ -17,9 +17,10 @@ interface NodeEditPanelProps {
     onAddNodeAfter?: (nodeId: string) => void;
     onCreateNodeFromChoice?: (type: 'scene' | 'branch' | 'ending') => Promise<string>;
     allNodes?: StoryNode[];
+    i18n?: Record<string, string>;
 }
 
-export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, onGenerateImage, allNodes, onCreateNodeFromChoice }: NodeEditPanelProps) {
+export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, onGenerateImage, allNodes, onCreateNodeFromChoice, i18n = {} }: NodeEditPanelProps) {
     const [editedNode, setEditedNode] = useState<StoryNode>({
         ...node,
         dialogues: node.dialogues || [],
@@ -180,7 +181,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
     return (
         <div className="absolute top-0 right-0 h-full w-96 bg-white shadow-2xl border-l z-10 overflow-y-auto">
             <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-20">
-                <h3 className="font-semibold text-lg">编辑情节节点</h3>
+                <h3 className="font-semibold text-lg">{i18n.title || '编辑情节节点'}</h3>
                 <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
                     <X className="w-5 h-5" />
                 </button>
@@ -189,11 +190,11 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
             <div className="p-4 space-y-6">
                 {/* 情节基本信息 */}
                 <div className="space-y-4">
-                    <h4 className="font-medium text-gray-900 border-b pb-2">🎬 情节信息</h4>
+                    <h4 className="font-medium text-gray-900 border-b pb-2">{i18n.storyInfo || '🎬 情节信息'}</h4>
                     
                     <div>
                         <label className="block text-sm font-medium mb-1">
-                            情节标题 <span className="text-red-500">*</span>
+                            {i18n.nodeTitle || '情节标题'} <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
@@ -205,17 +206,17 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-medium mb-1">🏞️ 所在场景</label>
+                        <label className="block text-sm font-medium mb-1">{i18n.scene || '🏞️ 所在场景'}</label>
                         <select
                             className="w-full border rounded px-3 py-2 bg-white"
                             value={editedNode.sceneName || ''}
                             onChange={(e) => handleSceneChange(e.target.value)}
                         >
-                            <option value="">未指定场景</option>
+                            <option value="">{i18n.noScene || '未指定场景'}</option>
                             {scenes.map(scene => (
                                 <option key={scene.id} value={scene.name}>
                                     {scene.name} - {scene.type}
-                                    {scene.imageUrl ? ' ✓ 有背景图' : ''}
+                                    {scene.imageUrl ? (i18n.hasBackground || ' ✓ 有背景图') : ''}
                                 </option>
                             ))}
                         </select>
@@ -228,7 +229,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                     className="w-full aspect-video object-cover"
                                 />
                                 <div className="bg-teal-50 px-2 py-1 text-xs text-teal-800">
-                                    ✓ 场景背景图已关联
+                                    {i18n.backgroundLinked || '✓ 场景背景图已关联'}
                                 </div>
                             </div>
                         )}
@@ -237,22 +238,22 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
 
                 {/* 旁白区 */}
                 <div className="space-y-2">
-                    <h4 className="font-medium text-gray-900 border-b pb-2">旁白/背景交代</h4>
+                    <h4 className="font-medium text-gray-900 border-b pb-2">{i18n.narration || '旁白/背景交代'}</h4>
                     <textarea
                         className="w-full border rounded px-3 py-2 min-h-[80px] italic text-center"
                         value={editedNode.narration || ''}
                         onChange={(e) => setEditedNode({ ...editedNode, narration: e.target.value })}
-                        placeholder="例：夜幕降临，雨声止息，旧巷深处传来脚步声..."
+                        placeholder={i18n.narrationPlaceholder || '例：夜幕降临，雨声止息，旧巷深处传来脚步声...'}
                     />
                 </div>
 
                 {/* 角色对话区 */}
                 <div className="space-y-3">
                     <div className="flex items-center justify-between border-b pb-2">
-                        <h4 className="font-medium text-gray-900">角色对话</h4>
+                        <h4 className="font-medium text-gray-900">{i18n.dialogues || '角色对话'}</h4>
                         <Button size="sm" onClick={handleAddDialogue} className="gap-1">
                             <Plus className="w-4 h-4" />
-                            添加对话
+                            {i18n.addDialogue || '添加对话'}
                         </Button>
                     </div>
                     
@@ -396,7 +397,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                     >
                         <div className="flex items-center gap-2">
                             <Music className="w-5 h-5 text-blue-600" />
-                            <span className="font-medium text-blue-900">🎵 音频配乐</span>
+                            <span className="font-medium text-blue-900">{i18n.audioAssets || '🎵 音频配乐'}</span>
                         </div>
                         {showAudioAssets ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                     </button>
@@ -404,11 +405,11 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                     {showAudioAssets && (
                         <div className="space-y-4 bg-blue-50/50 p-4 rounded-lg">
                             <div>
-                                <label className="block text-sm font-medium mb-2">🎼 背景音乐 (BGM)</label>
+                                <label className="block text-sm font-medium mb-2">{i18n.bgm || '🎼 背景音乐 (BGM)'}</label>
                                 <input
                                     type="text"
                                     className="w-full border rounded px-3 py-2 text-sm"
-                                    placeholder="输入音乐URL (支持 mp3, ogg, wav)"
+                                    placeholder={i18n.bgmPlaceholder || '输入音乐URL (支持 mp3, ogg, wav)'}
                                     value={editedNode.audioAssets?.bgmUrl || ''}
                                     onChange={(e) => {
                                         setEditedNode({
@@ -440,17 +441,17 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                         }
                                     }}
                                 >
-                                    <option value="">从预设音乐库选择</option>
-                                    <optgroup label="情感/温馨">
-                                        <option value="https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3">浪漫钢琴</option>
+                                    <option value="">{i18n.selectFromLibrary || '从预设音乐库选择'}</option>
+                                    <optgroup label={i18n.emotionalWarm || '情感/温馨'}>
+                                        <option value="https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3">{i18n.romanticPiano || '浪漫钢琴'}</option>
                                     </optgroup>
-                                    <optgroup label="悬疑/紧张">
-                                        <option value="https://cdn.pixabay.com/audio/2022/03/15/audio_a2c792e3ff.mp3">神秘氛围</option>
+                                    <optgroup label={i18n.suspenseTense || '悬疑/紧张'}>
+                                        <option value="https://cdn.pixabay.com/audio/2022/03/15/audio_a2c792e3ff.mp3">{i18n.mysteriousAtmosphere || '神秘氛围'}</option>
                                     </optgroup>
                                 </select>
                                 
                                 <div className="flex items-center gap-3 mt-2">
-                                    <label className="text-sm text-gray-600 w-16">🔊 音量</label>
+                                    <label className="text-sm text-gray-600 w-16">{i18n.volume || '🔊 音量'}</label>
                                     <input
                                         type="range"
                                         min="0"
@@ -491,7 +492,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                         }}
                                         className="rounded"
                                     />
-                                    <span className="text-gray-700">循环播放</span>
+                                    <span className="text-gray-700">{i18n.loop || '循环播放'}</span>
                                 </label>
                                 
                                 {editedNode.audioAssets?.bgmUrl && (
@@ -515,10 +516,10 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                         >
                             <div className="flex items-center gap-2">
                                 <GitBranch className="w-5 h-5 text-amber-600" />
-                                <span className="font-medium text-amber-900">🔀 选项与分支</span>
+                                <span className="font-medium text-amber-900">{i18n.choices || '🔀 选项与分支'}</span>
                                 {editedNode.choices && editedNode.choices.length > 0 && (
                                     <span className="text-xs px-2 py-0.5 bg-amber-200 text-amber-800 rounded-full">
-                                        {editedNode.choices.length} 个选项
+                                        {(i18n.choicesCount || '{count} 个选项').replace('{count}', String(editedNode.choices.length))}
                                     </span>
                                 )}
                             </div>
@@ -529,17 +530,17 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                             <div className="space-y-4 bg-amber-50/50 p-4 rounded-lg">
                                 <div className="flex items-center justify-between mb-3">
                                     <p className="text-sm text-gray-600">
-                                        为该节点添加分支选项，每个选项可以跳转到不同的后续节点
+                                        {i18n.choicesDesc || '为该节点添加分支选项，每个选项可以跳转到不同的后续节点'}
                                     </p>
                                     <Button size="sm" onClick={handleAddChoice} className="gap-1 bg-amber-600 hover:bg-amber-700">
                                         <Plus className="w-4 h-4" />
-                                        添加选项
+                                        {i18n.addChoice || '添加选项'}
                                     </Button>
                                 </div>
 
                                 {editedNode.choices && editedNode.choices.length === 0 && (
                                     <div className="text-center py-8 text-gray-500 text-sm">
-                                        还没有分支选项，点击上方按钮添加
+                                        {i18n.noChoices || '还没有分支选项，点击上方按钮添加'}
                                     </div>
                                 )}
 
@@ -554,7 +555,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2">
                                                             <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs font-medium">
-                                                                选项 {index + 1}
+                                                                {i18n.choice || '选项'} {index + 1}
                                                             </span>
                                                         </div>
                                                         <div className="flex items-center gap-1">
@@ -562,7 +563,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                                                 onClick={() => handleMoveChoice(index, 'up')}
                                                                 disabled={index === 0}
                                                                 className="p-1 hover:bg-gray-100 rounded disabled:opacity-30"
-                                                                title="上移"
+                                                                title={i18n.moveUp || '上移'}
                                                             >
                                                                 <ArrowUp className="w-3 h-3" />
                                                             </button>
@@ -570,14 +571,14 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                                                 onClick={() => handleMoveChoice(index, 'down')}
                                                                 disabled={index === (editedNode.choices?.length || 0) - 1}
                                                                 className="p-1 hover:bg-gray-100 rounded disabled:opacity-30"
-                                                                title="下移"
+                                                                title={i18n.moveDown || '下移'}
                                                             >
                                                                 <ArrowDown className="w-3 h-3" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDeleteChoice(index)}
                                                                 className="p-1 hover:bg-red-50 rounded text-red-600"
-                                                                title="删除"
+                                                                title={i18n.delete || '删除'}
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
@@ -587,12 +588,12 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                                     {/* 选项文本 */}
                                                     <div>
                                                         <label className="block text-sm font-medium mb-1">
-                                                            选项文本 <span className="text-red-500">*</span>
+                                                            {i18n.choiceText || '选项文本'} <span className="text-red-500">*</span>
                                                         </label>
                                                         <input
                                                             type="text"
                                                             className="w-full border rounded px-3 py-2 text-sm"
-                                                            placeholder="例：跟随她、报警、转身离开"
+                                                            placeholder={i18n.choiceTextPlaceholder || '例：跟随她、报警、转身离开'}
                                                             value={choice.text}
                                                             onChange={(e) => handleUpdateChoice(index, 'text', e.target.value)}
                                                         />
@@ -601,28 +602,28 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                                     {/* 目标节点 */}
                                                     <div>
                                                         <label className="block text-sm font-medium mb-1">
-                                                            跳转到节点 <span className="text-red-500">*</span>
+                                                            {i18n.targetNode || '跳转到节点'} <span className="text-red-500">*</span>
                                                         </label>
                                                         <select
                                                             className="w-full border rounded px-3 py-2 text-sm bg-white"
                                                             value={choice.targetNodeId}
                                                             onChange={(e) => handleUpdateChoice(index, 'targetNodeId', e.target.value)}
                                                         >
-                                                            <option value="">选择目标节点</option>
+                                                            <option value="">{i18n.selectTargetNode || '选择目标节点'}</option>
                                                             
                                                             {/* 创建新节点选项 */}
-                                                            <optgroup label="➕ 创建新节点">
-                                                                <option value="__CREATE_scene">🆕 创建普通节点</option>
-                                                                <option value="__CREATE_branch">🔀 创建分支节点</option>
-                                                                <option value="__CREATE_ending">🏁 创建结局节点</option>
+                                                            <optgroup label={i18n.createNewNode || '➕ 创建新节点'}>
+                                                                <option value="__CREATE_scene">{i18n.createSceneNode || '🆕 创建普通节点'}</option>
+                                                                <option value="__CREATE_branch">{i18n.createBranchNode || '🔀 创建分支节点'}</option>
+                                                                <option value="__CREATE_ending">{i18n.createEndingNode || '🏁 创建结局节点'}</option>
                                                             </optgroup>
                                                             
                                                             {/* 现有节点 */}
                                                             {allNodes && allNodes.length > 1 && (
-                                                                <optgroup label="📋 选择现有节点">
+                                                                <optgroup label={i18n.existingNodes || '📋 选择现有节点'}>
                                                                     {allNodes.filter(n => n.id !== editedNode.id).map(n => (
                                                                         <option key={n.id} value={n.id}>
-                                                                            {n.title} ({n.type === 'scene' ? '场景' : n.type === 'branch' ? '分支' : '结局'})
+                                                                            {n.title} ({n.type === 'scene' ? (i18n.sceneType || '场景') : n.type === 'branch' ? (i18n.branchType || '分支') : (i18n.endingType || '结局')})
                                                                         </option>
                                                                     ))}
                                                                 </optgroup>
@@ -633,12 +634,12 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                                                 <div className="flex items-center gap-2">
                                                                     <span className="text-blue-600">✓</span>
                                                                     <span className="text-blue-900">
-                                                                        将跳转到: <strong>{targetNode.title}</strong>
+                                                                        {i18n.willJumpTo || '将跳转到:'} <strong>{targetNode.title}</strong>
                                                                     </span>
                                                                 </div>
                                                                 {targetNode.sceneName && (
                                                                     <div className="text-blue-700 ml-5 mt-1">
-                                                                        场景: {targetNode.sceneName}
+                                                                        {i18n.sceneLabel || '场景:'} {targetNode.sceneName}
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -648,17 +649,17 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                                     {/* 触发条件 (高级) */}
                                                     <div>
                                                         <label className="block text-sm font-medium mb-1">
-                                                            触发条件 <span className="text-gray-400 text-xs">(选填)</span>
+                                                            {i18n.condition || '触发条件'} <span className="text-gray-400 text-xs">{i18n.conditionOptional || '(选填)'}</span>
                                                         </label>
                                                         <input
                                                             type="text"
                                                             className="w-full border rounded px-3 py-2 text-sm"
-                                                            placeholder="例：拥有道具:钥匙、好感度>50"
+                                                            placeholder={i18n.conditionPlaceholder || '例：拥有道具:钥匙、好感度>50'}
                                                             value={choice.condition || ''}
                                                             onChange={(e) => handleUpdateChoice(index, 'condition', e.target.value)}
                                                         />
                                                         <p className="text-xs text-gray-500 mt-1">
-                                                            设置该选项的显示条件，例如要求特定道具或属性值
+                                                            {i18n.conditionDesc || '设置该选项的显示条件，例如要求特定道具或属性值'}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -675,7 +676,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                 <div className="sticky bottom-0 bg-white pt-4 border-t">
                     <Button onClick={handleSave} className="w-full gap-2">
                         <Save className="w-4 h-4" />
-                        保存修改
+                        {i18n.save || '保存修改'}
                     </Button>
                 </div>
             </div>

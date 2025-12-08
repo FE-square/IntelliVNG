@@ -49,6 +49,21 @@ const i18nMap = {
   settingsSaveSuccess: 'key.dashboard.settings.saveSuccess',
   settingsSaveDescription: 'key.dashboard.settings.saveDescription',
   settingsSaveFailed: 'key.dashboard.settings.saveFailed',
+  batchManagement: 'key.dashboard.batch.management',
+  cancelSelection: 'key.dashboard.batch.cancelSelection',
+  selectAll: 'key.dashboard.batch.selectAll',
+  deselectAll: 'key.dashboard.batch.deselectAll',
+  selectedCount: 'key.dashboard.batch.selectedCount',
+  deleteSelected: 'key.dashboard.batch.deleteSelected',
+  batchDeleteTitle: 'key.dashboard.batch.deleteTitle',
+  batchDeleteMessage: 'key.dashboard.batch.deleteMessage',
+  batchDeleteConfirm: 'key.dashboard.batch.deleteConfirm',
+  batchDeleteCancel: 'key.dashboard.batch.deleteCancel',
+  batchDeleteSuccess: 'key.dashboard.batch.deleteSuccess',
+  batchDeleteFailed: 'key.dashboard.batch.deleteFailed',
+  generating: 'key.dashboard.generating',
+  generateSuccess: 'key.dashboard.generateSuccess',
+  generateFailed: 'key.dashboard.generateFailed',
 };
 
 /**
@@ -64,6 +79,27 @@ export default function DashboardPage() {
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
     const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [currentLocale, setCurrentLocale] = useState('');
+    const [i18nReady, setI18nReady] = useState(false);
+    
+    // 监听URL变化，获取locale参数
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const locale = params.get('locale') || 'zh-CN';
+            setCurrentLocale(locale);
+            
+            // 调试：打印I18N对象
+            console.log('[Dashboard] Current locale:', locale);
+            console.log('[Dashboard] I18N sample:', I18N[i18nMap.title], I18N[i18nMap.importProject]);
+            console.log('[Dashboard] window.__APP_INITIAL_STATE__.I18N:', window.__APP_INITIAL_STATE__?.I18N);
+            
+            // 等待一小段时间确保I18N已加载，然后标记为ready
+            setTimeout(() => {
+                setI18nReady(true);
+            }, 50);
+        }
+    }, []);
     
     useEffect(() => {
         loadProjects();
@@ -111,10 +147,10 @@ export default function DashboardPage() {
         if (selectedCount === 0) return;
         
         const confirmed = await confirm({
-            title: '批量删除项目',
-            message: `确定要删除选中的 ${selectedCount} 个项目吗？此操作无法撤销。`,
-            confirmText: '确认删除',
-            cancelText: '取消',
+            title: t(i18nMap.batchDeleteTitle),
+            message: t(i18nMap.batchDeleteMessage, { count: selectedCount.toString() }),
+            confirmText: t(i18nMap.batchDeleteConfirm),
+            cancelText: t(i18nMap.batchDeleteCancel),
             variant: 'danger',
         });
         
@@ -126,12 +162,15 @@ export default function DashboardPage() {
             }
             
             if (successCount > 0) {
-                toast.success('删除成功', `已删除 ${successCount} 个项目`);
+                toast.success(
+                    t(i18nMap.batchDeleteSuccess),
+                    t(i18nMap.selectedCount, { selected: successCount.toString(), total: selectedCount.toString() })
+                );
                 setSelectedProjects(new Set());
                 setIsSelectionMode(false);
                 loadProjects();
             } else {
-                toast.error('删除失败', '请重试');
+                toast.error(t(i18nMap.batchDeleteFailed), t(i18nMap.deleteRetry));
             }
         }
     };
@@ -215,8 +254,19 @@ export default function DashboardPage() {
         }
     };
 
+    // 如果I18N未准备好，显示loading
+    if (!i18nReady) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8">
+        <div key={currentLocale} className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8">
             <div className="max-w-7xl mx-auto">
                 {/* 标题栏 */}
                 <div className="flex items-center justify-between mb-8">
@@ -240,12 +290,12 @@ export default function DashboardPage() {
                                 {isSelectionMode ? (
                                     <>
                                         <Square className="w-4 h-4 mr-2" />
-                                        取消选择
+                                        <span suppressHydrationWarning>{I18N[i18nMap.cancelSelection] || '取消选择'}</span>
                                     </>
                                 ) : (
                                     <>
                                         <CheckSquare className="w-4 h-4 mr-2" />
-                                        批量管理
+                                        <span suppressHydrationWarning>{I18N[i18nMap.batchManagement] || '批量管理'}</span>
                                     </>
                                 )}
                             </Button>
@@ -287,17 +337,17 @@ export default function DashboardPage() {
                                 {selectedProjects.size === projects.length ? (
                                     <>
                                         <Square className="w-4 h-4 mr-2" />
-                                        取消全选
+                                        <span suppressHydrationWarning>{I18N[i18nMap.deselectAll] || '取消全选'}</span>
                                     </>
                                 ) : (
                                     <>
                                         <CheckSquare className="w-4 h-4 mr-2" />
-                                        全选
+                                        <span suppressHydrationWarning>{I18N[i18nMap.selectAll] || '全选'}</span>
                                     </>
                                 )}
                             </Button>
-                            <span className="text-sm text-slate-600">
-                                已选择 <span className="font-semibold text-indigo-600">{selectedProjects.size}</span> / {projects.length} 个项目
+                            <span className="text-sm text-slate-600" suppressHydrationWarning>
+                                {t(i18nMap.selectedCount, { selected: selectedProjects.size.toString(), total: projects.length.toString() })}
                             </span>
                         </div>
                         <Button
@@ -308,7 +358,7 @@ export default function DashboardPage() {
                             disabled={selectedProjects.size === 0}
                         >
                             <Trash2 className="w-4 h-4 mr-2" />
-                            删除选中项目
+                            <span suppressHydrationWarning>{I18N[i18nMap.deleteSelected] || '删除选中项目'}</span>
                         </Button>
                     </div>
                 )}
@@ -532,6 +582,136 @@ export default function DashboardPage() {
                         setShowSettingsDialog(false);
                         setEditingProject(null);
                     }}
+                    i18n={{
+                        title: I18N['key.projectSettings.title'] || '编辑项目设定',
+                        basicInfo: I18N['key.projectSettings.basicInfo'] || '📝 基本信息',
+                        characters: I18N['key.projectSettings.characters'] || '👥 角色',
+                        world: I18N['key.projectSettings.world'] || '🌍 世界观',
+                        scenes: I18N['key.projectSettings.scenes'] || '🏞️ 场景',
+                        theme: I18N['key.projectSettings.theme'] || '🎨 主题风格',
+                        save: I18N['key.projectSettings.save'] || '保存设定',
+                        cancel: I18N['key.projectSettings.cancel'] || '取消',
+                        coverImage: I18N['key.projectSettings.coverImage'] || '🖼️ 项目封面',
+                        coverPlaceholder: I18N['key.projectSettings.coverPlaceholder'] || '输入封面图URL或使用AI生成',
+                        projectName: I18N['key.projectSettings.projectName'] || '项目名称',
+                        projectDesc: I18N['key.projectSettings.projectDesc'] || '项目描述',
+                        descPlaceholder: I18N['key.projectSettings.descPlaceholder'] || '简要描述你的视觉小说...',
+                        author: I18N['key.projectSettings.author'] || '作者',
+                        version: I18N['key.projectSettings.version'] || '版本',
+                        genre: I18N['key.projectSettings.genre'] || '故事类型',
+                        artStyle: I18N['key.projectSettings.artStyle'] || '美术风格',
+                        anime: I18N['key.projectSettings.anime'] || '动漫',
+                        realistic: I18N['key.projectSettings.realistic'] || '写实',
+                        pixel: I18N['key.projectSettings.pixel'] || '像素',
+                        watercolor: I18N['key.projectSettings.watercolor'] || '水彩',
+                        other: I18N['key.projectSettings.other'] || '其他',
+                        fillNameFirst: I18N['key.projectSettings.fillNameFirst'] || '请先填写项目名称',
+                        generating: I18N['key.projectSettings.generating'] || '生成中...',
+                        generateSuccess: I18N['key.projectSettings.generateSuccess'] || '生成成功',
+                        generateFailed: I18N['key.projectSettings.generateFailed'] || '生成失败',
+                        generate: I18N['key.projectSettings.generate'] || '生成',
+                        characterList: I18N['key.projectSettings.characterList'] || '👥 角色列表',
+                        addCharacter: I18N['key.projectSettings.addCharacter'] || '添加角色',
+                        newCharacter: I18N['key.projectSettings.newCharacter'] || '新增角色',
+                        characterNameRequired: I18N['key.projectSettings.characterNameRequired'] || '角色名称 *',
+                        characterNamePlaceholder: I18N['key.projectSettings.characterNamePlaceholder'] || '例如: 李明',
+                        gender: I18N['key.projectSettings.gender'] || '性别',
+                        male: I18N['key.projectSettings.male'] || '男',
+                        female: I18N['key.projectSettings.female'] || '女',
+                        age: I18N['key.projectSettings.age'] || '年龄',
+                        agePlaceholder: I18N['key.projectSettings.agePlaceholder'] || '例如: 25',
+                        identity: I18N['key.projectSettings.identity'] || '身份',
+                        identityPlaceholder: I18N['key.projectSettings.identityPlaceholder'] || '例如: 学生、侦探',
+                        characterDescRequired: I18N['key.projectSettings.characterDescRequired'] || '角色描述 *',
+                        characterDescPlaceholder: I18N['key.projectSettings.characterDescPlaceholder'] || '描述角色的外貌、性格等...',
+                        personality: I18N['key.projectSettings.personality'] || '性格特征',
+                        personalityPlaceholder: I18N['key.projectSettings.personalityPlaceholder'] || '例如: 开朗, 善良, 勇敢 (用逗号分隔)',
+                        avatar: I18N['key.projectSettings.avatar'] || '👤 角色头像',
+                        sprites: I18N['key.projectSettings.sprites'] || '💼 角色立绘',
+                        aiHelp: I18N['key.projectSettings.aiHelp'] || 'AI帮我填',
+                        aiCompleting: I18N['key.projectSettings.aiCompleting'] || 'AI补全中...',
+                        urlAdd: I18N['key.projectSettings.urlAdd'] || '🔗 URL添加',
+                        enterAvatarUrl: I18N['key.projectSettings.enterAvatarUrl'] || '输入头像图URL',
+                        enterSpriteUrl: I18N['key.projectSettings.enterSpriteUrl'] || '输入立绘图URL',
+                        urlPlaceholder: I18N['key.projectSettings.urlPlaceholder'] || 'https://example.com/image.png',
+                        confirm: I18N['key.projectSettings.confirm'] || '确定',
+                        avatarAdded: I18N['key.projectSettings.avatarAdded'] || '头像添加成功',
+                        spriteAdded: I18N['key.projectSettings.spriteAdded'] || '立绘添加成功',
+                        enterUrl: I18N['key.projectSettings.enterUrl'] || '请输入URL',
+                        fillNameDescFirst: I18N['key.projectSettings.fillNameDescFirst'] || '请先填写角色名称和描述',
+                        generateSprite: I18N['key.projectSettings.generateSprite'] || 'AI生成立绘',
+                        saveCharacter: I18N['key.projectSettings.saveCharacter'] || '保存角色',
+                        characterSaved: I18N['key.projectSettings.characterSaved'] || '角色已保存',
+                        missingAssetConfirm: I18N['key.projectSettings.missingAssetConfirm'] || '检测到',
+                        missingAvatar: I18N['key.projectSettings.missingAvatar'] || '个角色缺少头像',
+                        missingSprite: I18N['key.projectSettings.missingSprite'] || '个角色缺少立绘',
+                        generateAllAssets: I18N['key.projectSettings.generateAllAssets'] || '是否一键生成所有缺失的素材？',
+                        startGenerating: I18N['key.projectSettings.startGenerating'] || '开始生成缺失素材...',
+                        pleaseWait: I18N['key.projectSettings.pleaseWait'] || '请稍候',
+                        generationComplete: I18N['key.projectSettings.generationComplete'] || '素材生成完成',
+                        partialFailure: I18N['key.projectSettings.partialFailure'] || '部分素材生成失败',
+                        successCount: I18N['key.projectSettings.successCount'] || '成功生成 {count} 个素材',
+                        successFailCount: I18N['key.projectSettings.successFailCount'] || '成功 {success} 个，失败 {error} 个',
+                        completeAllAssets: I18N['key.projectSettings.completeAllAssets'] || '一键补全素材',
+                        allAssetsComplete: I18N['key.projectSettings.allAssetsComplete'] || '所有角色已有素材',
+                        worldTitle: I18N['key.projectSettings.worldTitle'] || '🌍 世界观设定',
+                        worldName: I18N['key.projectSettings.worldName'] || '世界观名称',
+                        worldNamePlaceholder: I18N['key.projectSettings.worldNamePlaceholder'] || '例如: 赛博朋克都市、中世纪魔法王国...',
+                        era: I18N['key.projectSettings.era'] || '时代背景',
+                        eraPlaceholder: I18N['key.projectSettings.eraPlaceholder'] || '例如: 未来、现代、中世纪...',
+                        location: I18N['key.projectSettings.location'] || '地域设定',
+                        locationPlaceholder: I18N['key.projectSettings.locationPlaceholder'] || '例如: 东京、魔法学院...',
+                        coreRules: I18N['key.projectSettings.coreRules'] || '核心规则',
+                        coreRulesPlaceholder: I18N['key.projectSettings.coreRulesPlaceholder'] || '这个世界的特殊规则或设定,如魔法体系、科技水平等...',
+                        socialStructure: I18N['key.projectSettings.socialStructure'] || '社会结构',
+                        socialStructurePlaceholder: I18N['key.projectSettings.socialStructurePlaceholder'] || '例如: 王权统治、贵族阶级、公会体系等...',
+                        history: I18N['key.projectSettings.history'] || '历史背景',
+                        historyPlaceholder: I18N['key.projectSettings.historyPlaceholder'] || '描述关键历史事件、王朝更迭等...',
+                        supplement: I18N['key.projectSettings.supplement'] || '补充说明',
+                        supplementPlaceholder: I18N['key.projectSettings.supplementPlaceholder'] || '补充任何你希望加入的世界观细节...',
+                        saveWorld: I18N['key.projectSettings.saveWorld'] || '保存世界观',
+                        worldSaved: I18N['key.projectSettings.worldSaved'] || '世界观设定已保存',
+                        scenesTitle: I18N['key.projectSettings.scenesTitle'] || '🎬 场景背景',
+                        addScene: I18N['key.projectSettings.addScene'] || '添加场景',
+                        newScene: I18N['key.projectSettings.newScene'] || '新增场景',
+                        sceneNameRequired: I18N['key.projectSettings.sceneNameRequired'] || '场景名称 *',
+                        sceneNamePlaceholder: I18N['key.projectSettings.sceneNamePlaceholder'] || '例如: 学校教室、咖啡店、城堡大厅',
+                        sceneDesc: I18N['key.projectSettings.sceneDesc'] || '场景描述',
+                        sceneDescPlaceholder: I18N['key.projectSettings.sceneDescPlaceholder'] || '描述这个场景的特点、氛围...',
+                        backgroundImage: I18N['key.projectSettings.backgroundImage'] || '背景图片',
+                        enterBackgroundUrl: I18N['key.projectSettings.enterBackgroundUrl'] || '输入背景图URL',
+                        backgroundAdded: I18N['key.projectSettings.backgroundAdded'] || '背景添加成功',
+                        fillSceneNameFirst: I18N['key.projectSettings.fillSceneNameFirst'] || '请先填写场景名称',
+                        saveScene: I18N['key.projectSettings.saveScene'] || '保存场景',
+                        sceneSaved: I18N['key.projectSettings.sceneSaved'] || '场景已保存',
+                        sceneDeleted: I18N['key.projectSettings.sceneDeleted'] || '场景已删除',
+                        missingBackground: I18N['key.projectSettings.missingBackground'] || '缺背景图',
+                        noBackground: I18N['key.projectSettings.noBackground'] || '无背景图',
+                        noDescription: I18N['key.projectSettings.noDescription'] || '无描述',
+                        missingBackgroundConfirm: I18N['key.projectSettings.missingBackgroundConfirm'] || '检测到 {count} 个场景缺少背景图。\n\n是否一键生成所有缺失的背景图？',
+                        startGeneratingBg: I18N['key.projectSettings.startGeneratingBg'] || '开始生成背景图...',
+                        bgGenerationComplete: I18N['key.projectSettings.bgGenerationComplete'] || '背景图生成完成',
+                        bgPartialFailure: I18N['key.projectSettings.bgPartialFailure'] || '部分背景图生成失败',
+                        bgSuccessCount: I18N['key.projectSettings.bgSuccessCount'] || '成功生成 {count} 张',
+                        bgSuccessFailCount: I18N['key.projectSettings.bgSuccessFailCount'] || '成功 {success} 张，失败 {error} 张',
+                        completeAllBg: I18N['key.projectSettings.completeAllBg'] || '一键补全背景图',
+                        allBgComplete: I18N['key.projectSettings.allBgComplete'] || '所有场景已有背景图',
+                        generatingFor: I18N['key.projectSettings.generatingFor'] || '正在为 {name} 生成背景图...',
+                        bgGenerationSuccess: I18N['key.projectSettings.bgGenerationSuccess'] || '背景图生成完成',
+                        edit: I18N['key.projectSettings.edit'] || '编辑',
+                        deleteScene: I18N['key.projectSettings.deleteScene'] || '删除场景',
+                        fillSceneName: I18N['key.projectSettings.fillSceneName'] || '请填写场景名称',
+                        themeTitle: I18N['key.projectSettings.themeTitle'] || '🎨 主题风格',
+                        aiRecommending: I18N['key.projectSettings.aiRecommending'] || 'AI推荐中...',
+                        aiRecommend: I18N['key.projectSettings.aiRecommend'] || 'AI帮我选',
+                        coreThemes: I18N['key.projectSettings.coreThemes'] || '核心主题 (可多选)',
+                        storyStyles: I18N['key.projectSettings.storyStyles'] || '故事风格 (可多选)',
+                        selectedThemes: I18N['key.projectSettings.selectedThemes'] || '已选择 {count} 个主题:',
+                        selectedStyles: I18N['key.projectSettings.selectedStyles'] || '已选择 {count} 个风格:',
+                        saveTheme: I18N['key.projectSettings.saveTheme'] || '保存主题风格',
+                        themeSaved: I18N['key.projectSettings.themeSaved'] || '主题风格已保存',
+                        selectThemeAndStyle: I18N['key.projectSettings.selectThemeAndStyle'] || '请至少选择一个主题和一个风格',
+                    }}
                     onGenerateImage={async (characterId: string, prompt: string, refImageUrl?: string, explicitType?: 'sprite' | 'avatar' | 'background') => {
                         try {
                             // ✅ 优先使用显式传入的 type，否则根据 characterId 和 prompt 推断
@@ -546,7 +726,10 @@ export default function DashboardPage() {
                                 }
                             }
                             
-                            toast.info('生成中', `正在生成${type === 'sprite' ? '角色立绘' : type === 'avatar' ? '角色头像' : '场景背景'},请稍候...`);
+                            toast.info(
+                                t(i18nMap.generating),
+                                t(i18nMap.generating) + `${type === 'sprite' ? t(i18nMap.characters) : type === 'avatar' ? t(i18nMap.characters) : t(i18nMap.scenes)}`
+                            );
                             
                             const response = await fetch('/api/generate-image', {
                                 method: 'POST',
@@ -578,11 +761,14 @@ export default function DashboardPage() {
                                 throw new Error('未返回图片URL');
                             }
                             
-                            toast.success('生成成功', `${type === 'sprite' ? '角色立绘' : type === 'avatar' ? '角色头像' : '场景背景'}已生成 ✨`);
+                            toast.success(
+                                t(i18nMap.generateSuccess),
+                                `${type === 'sprite' ? t(i18nMap.characters) : type === 'avatar' ? t(i18nMap.characters) : t(i18nMap.scenes)} ✨`
+                            );
                             return data.imageUrl;
                         } catch (error) {
                             console.error('[Dashboard] 图片生成失败:', error);
-                            toast.error('生成失败', error instanceof Error ? error.message : '请重试');
+                            toast.error(t(i18nMap.generateFailed), error instanceof Error ? error.message : t(i18nMap.deleteRetry));
                             throw error;
                         }
                     }}

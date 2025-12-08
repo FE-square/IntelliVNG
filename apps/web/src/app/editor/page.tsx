@@ -10,7 +10,57 @@ import { GameProject } from '@vng/core';
 import { FlowEditor } from '@vng/editor';
 import { saveProject, saveDraft, clearDraft } from '@/lib/projectStorage';
 import { exportProjectAsJson, exportProjectAsPlayableHtml, exportProjectAsPlayableHtmlWithImages } from '@/lib/projectExport';
-import { t } from '@/i18n/client';
+import { I18N, t } from '@/i18n/client';
+
+// 定义多语言key映射
+const i18nMap = {
+    loading: 'key.editor.loading',
+    pleaseWait: 'key.editor.pleaseWait',
+    projectLoadFailed: 'key.editor.projectLoadFailed',
+    cannotLoadProject: 'key.editor.cannotLoadProject',
+    backToHome: 'key.editor.backToHome',
+    save: 'key.editor.save',
+    saving: 'key.editor.saving',
+    lastSaved: 'key.editor.lastSaved',
+    scriptEditor: 'key.editor.scriptEditor',
+    previewGame: 'key.editor.previewGame',
+    demoDataNote: 'key.editor.demoDataNote',
+    exportMenu: 'key.editor.exportMenu',
+    exportJson: 'key.editor.exportJson',
+    exportJsonDesc: 'key.editor.exportJsonDesc',
+    exportHtml: 'key.editor.exportHtml',
+    exportHtmlDesc: 'key.editor.exportHtmlDesc',
+    exportHtmlWithImages: 'key.editor.exportHtmlWithImages',
+    exportHtmlWithImagesDesc: 'key.editor.exportHtmlWithImagesDesc',
+    previewFromStart: 'key.editor.previewFromStart',
+    previewFromStartDesc: 'key.editor.previewFromStartDesc',
+    previewFromCurrent: 'key.editor.previewFromCurrent',
+    previewFromCurrentDesc: 'key.editor.previewFromCurrentDesc',
+    selectNodeFirst: 'key.editor.selectNodeFirst',
+    selectNodeWarning: 'key.editor.selectNodeWarning',
+    characters: 'key.editor.characters',
+    scenes: 'key.editor.scenes',
+    storyNodes: 'key.editor.storyNodes',
+    noCharacters: 'key.editor.noCharacters',
+    noScenes: 'key.editor.noScenes',
+    noStoryNodes: 'key.editor.noStoryNodes',
+    noDescription: 'key.editor.noDescription',
+    node: 'key.editor.node',
+    start: 'key.editor.start',
+    ending: 'key.editor.ending',
+    notSet: 'key.editor.notSet',
+    previewModeFromStart: 'key.editor.previewModeFromStart',
+    previewModeFromCurrent: 'key.editor.previewModeFromCurrent',
+    exportSuccess: 'key.editor.exportSuccess',
+    exportJsonSuccess: 'key.editor.exportJsonSuccess',
+    exportHtmlSuccess: 'key.editor.exportHtmlSuccess',
+    exportHtmlWithImagesSuccess: 'key.editor.exportHtmlWithImagesSuccess',
+    exportFailed: 'key.editor.exportFailed',
+    exportRetry: 'key.editor.exportRetry',
+    packaging: 'key.editor.packaging',
+    generatingHtml: 'key.editor.generatingHtml',
+    preparingExport: 'key.editor.preparingExport',
+};
 
 // Mock Project for testing (fallback)
 const MOCK_PROJECT: GameProject = {
@@ -148,6 +198,24 @@ function EditorPageContent() {
         total: 100,
         message: ''
     });
+    const [currentLocale, setCurrentLocale] = useState('');
+    const [i18nReady, setI18nReady] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
+    
+    // 监听locale变化
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const locale = params.get('locale') || 'zh-CN';
+            setCurrentLocale(locale);
+            
+            // 等待一小段时间确保I18N已加载
+            setTimeout(() => {
+                setI18nReady(true);
+                setInitialLoading(false);
+            }, 50);
+        }
+    }, []);
 
     useEffect(() => {
         const loadProject = async () => {
@@ -509,17 +577,13 @@ function EditorPageContent() {
         return result.imageUrl;
     };
 
-    if (loading) {
+    if (initialLoading || !i18nReady || loading) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
                 <div className="flex flex-col items-center gap-6 p-8 bg-white rounded-3xl shadow-2xl border-2 border-slate-200">
                     <div className="relative">
                         <div className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-pink-500 animate-pulse" />
                         <Loader2 className="absolute inset-0 m-auto h-10 w-10 animate-spin text-white" />
-                    </div>
-                    <div className="text-center">
-                        <p className="text-lg font-semibold text-slate-800 mb-1">加载项目中...</p>
-                        <p className="text-sm text-slate-500">请稍候</p>
                     </div>
                 </div>
             </div>
@@ -534,14 +598,14 @@ function EditorPageContent() {
                         <AlertCircle className="h-8 w-8 text-red-500" />
                     </div>
                     <div className="text-center">
-                        <p className="text-xl font-bold text-slate-800 mb-2">项目加载失败</p>
-                        <p className="text-sm text-slate-500 mb-4">无法加载指定的项目数据</p>
+                        <p className="text-xl font-bold text-slate-800 mb-2" suppressHydrationWarning>{I18N[i18nMap.projectLoadFailed] || '项目加载失败'}</p>
+                        <p className="text-sm text-slate-500 mb-4" suppressHydrationWarning>{I18N[i18nMap.cannotLoadProject] || '无法加载指定的项目数据'}</p>
                         <a 
                             href="/" 
                             className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg transition-all shadow-lg"
                         >
                             <Home className="w-4 h-4" />
-                            返回首页
+                            <span suppressHydrationWarning>{I18N[i18nMap.backToHome] || '返回首页'}</span>
                         </a>
                     </div>
                 </div>
@@ -550,7 +614,7 @@ function EditorPageContent() {
     }
 
     return (
-        <div className="flex h-screen w-full flex-col bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+        <div key={currentLocale} className="flex h-screen w-full flex-col bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
             {/* Header - 现代化工具栏 */}
             <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-md">
                 <div className="flex items-center gap-4">
@@ -570,7 +634,7 @@ function EditorPageContent() {
                 {error && (
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-sm border border-amber-200">
                         <AlertCircle className="h-4 w-4" />
-                        <span>使用演示数据 (项目未找到)</span>
+                        <span suppressHydrationWarning>{I18N[i18nMap.demoDataNote] || '使用演示数据 (项目未找到)'}</span>
                     </div>
                 )}
                 
@@ -579,7 +643,7 @@ function EditorPageContent() {
                     {projectId && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 text-slate-600 text-xs">
                             <Clock className="w-3 h-3" />
-                            <span>最后保存: {formatLastSaveTime()}</span>
+                            <span suppressHydrationWarning>{I18N[i18nMap.lastSaved] || '最后保存'}: {formatLastSaveTime()}</span>
                         </div>
                     )}
                     
@@ -592,7 +656,7 @@ function EditorPageContent() {
                             className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
                         >
                             <Save className="w-4 h-4 mr-1" />
-                            {isSaving ? '保存中...' : '保存'}
+                            <span suppressHydrationWarning>{isSaving ? (I18N[i18nMap.saving] || '保存中...') : (I18N[i18nMap.save] || '保存')}</span>
                         </Button>
                     )}
                     
@@ -601,7 +665,7 @@ function EditorPageContent() {
                         onClick={() => setActiveTab('editor')}
                         className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
                     >
-                        📝 脚本编辑器
+                        <span suppressHydrationWarning>📝 {I18N[i18nMap.scriptEditor] || '脚本编辑器'}</span>
                     </Button>
                     
                     {/* ✅ 预览游戏下拉菜单 */}
@@ -615,7 +679,7 @@ function EditorPageContent() {
                             }}
                             className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
                         >
-                            ▶️ 预览游戏 ▼
+                            <span suppressHydrationWarning>▶️ {I18N[i18nMap.previewGame] || '预览游戏'} ▼</span>
                         </Button>
                         
                         {/* 下拉菜单 */}
@@ -634,14 +698,14 @@ function EditorPageContent() {
                                         🏁
                                     </div>
                                     <div>
-                                        <div className="font-semibold text-slate-800">从头预览</div>
-                                        <div className="text-xs text-slate-500">从开始节点的开头开始</div>
+                                        <div className="font-semibold text-slate-800" suppressHydrationWarning>{I18N[i18nMap.previewFromStart] || '从头预览'}</div>
+                                        <div className="text-xs text-slate-500" suppressHydrationWarning>{I18N[i18nMap.previewFromStartDesc] || '从开始节点的开头开始'}</div>
                                     </div>
                                 </button>
                                 <button
                                     onClick={() => {
                                         if (!selectedNodeId) {
-                                            toast.warning('请先在编辑器中选中一个节点');
+                                            toast.warning(I18N[i18nMap.selectNodeWarning] || '请先在编辑器中选中一个节点');
                                             setShowPreviewMenu(false);
                                             return;
                                         }
@@ -657,9 +721,9 @@ function EditorPageContent() {
                                         ▶️
                                     </div>
                                     <div>
-                                        <div className="font-semibold text-slate-800">从当前节点预览</div>
-                                        <div className="text-xs text-slate-500">
-                                            {selectedNodeId ? `从节点 ${selectedNodeId} 的开头开始` : '请先选择节点'}
+                                        <div className="font-semibold text-slate-800" suppressHydrationWarning>{I18N[i18nMap.previewFromCurrent] || '从当前节点预览'}</div>
+                                        <div className="text-xs text-slate-500" suppressHydrationWarning>
+                                            {selectedNodeId ? `${I18N[i18nMap.previewFromCurrentDesc]?.replace('{nodeId}', selectedNodeId) || `从节点 ${selectedNodeId} 的开头开始`}` : (I18N[i18nMap.selectNodeFirst] || '请先选择节点')}
                                         </div>
                                     </div>
                                 </button>
@@ -672,45 +736,45 @@ function EditorPageContent() {
                             variant="outline"
                             className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
                         >
-                            📦 导出 ▼
+                            <span suppressHydrationWarning>📦 {I18N[i18nMap.exportMenu] || '导出'} ▼</span>
                         </Button>
                         <div className="absolute top-full right-0 mt-1 hidden group-hover:block bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[200px]">
                             <button
                                 onClick={() => {
                                     if (project) {
                                         exportProjectAsJson(project);
-                                        toast.success('导出成功', '项目 JSON 文件已下载');
+                                        toast.success(I18N[i18nMap.exportSuccess] || '导出成功', I18N[i18nMap.exportJsonSuccess] || '项目 JSON 文件已下载');
                                     }
                                 }}
                                 className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 flex items-center gap-3"
                             >
                                 <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-xl">📄</div>
                                 <div>
-                                    <div className="font-semibold text-slate-800">导出 JSON</div>
-                                    <div className="text-xs text-slate-500">项目源文件，用于备份或导入</div>
+                                    <div className="font-semibold text-slate-800" suppressHydrationWarning>{I18N[i18nMap.exportJson] || '导出 JSON'}</div>
+                                    <div className="text-xs text-slate-500" suppressHydrationWarning>{I18N[i18nMap.exportJsonDesc] || '项目源文件，用于备份或导入'}</div>
                                     </div>
                             </button>
                             <button
                                 onClick={() => {
                                     if (project) {
-                                        toast.info('正在打包', '正在生成独立可玩 HTML 文件...');
+                                        toast.info(I18N[i18nMap.packaging] || '正在打包', I18N[i18nMap.generatingHtml] || '正在生成独立可玩 HTML 文件...');
                                         exportProjectAsPlayableHtml(project)
-                                            .then(() => toast.success('导出成功', '独立游戏文件已下载'))
-                                            .catch(() => toast.error('导出失败', '请重试'));
+                                            .then(() => toast.success(I18N[i18nMap.exportSuccess] || '导出成功', I18N[i18nMap.exportHtmlSuccess] || '独立游戏文件已下载'))
+                                            .catch(() => toast.error(I18N[i18nMap.exportFailed] || '导出失败', I18N[i18nMap.exportRetry] || '请重试'));
                                     }
                                 }}
                                 className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 flex items-center gap-3"
                             >
                                 <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-xl">🎮</div>
                                 <div>
-                                    <div className="font-semibold text-slate-800">导出 HTML 游戏</div>
-                                    <div className="text-xs text-slate-500">单文件播放器，图片需联网加载</div>
+                                    <div className="font-semibold text-slate-800" suppressHydrationWarning>{I18N[i18nMap.exportHtml] || '导出 HTML 游戏'}</div>
+                                    <div className="text-xs text-slate-500" suppressHydrationWarning>{I18N[i18nMap.exportHtmlDesc] || '单文件播放器，图片需联网加载'}</div>
                                 </div>
                             </button>
                             <button
                                 onClick={async () => {
                                     if (project) {
-                                        setExportProgress({ show: true, current: 0, total: 100, message: '准备导出...' });
+                                        setExportProgress({ show: true, current: 0, total: 100, message: I18N[i18nMap.preparingExport] || '准备导出...' });
                                         try {
                                             await exportProjectAsPlayableHtmlWithImages(
                                                 project,
@@ -718,9 +782,9 @@ function EditorPageContent() {
                                                     setExportProgress({ show: true, current, total, message });
                                                 }
                                             );
-                                            toast.success('导出成功', '完全离线的游戏文件已下载');
+                                            toast.success(I18N[i18nMap.exportSuccess] || '导出成功', I18N[i18nMap.exportHtmlWithImagesSuccess] || '完全离线的游戏文件已下载');
                                         } catch (error) {
-                                            toast.error('导出失败', '请重试');
+                                            toast.error(I18N[i18nMap.exportFailed] || '导出失败', I18N[i18nMap.exportRetry] || '请重试');
                                         } finally {
                                             setTimeout(() => setExportProgress({ show: false, current: 0, total: 100, message: '' }), 1000);
                                         }
@@ -730,8 +794,8 @@ function EditorPageContent() {
                             >
                                 <div className="w-8 h-8 rounded bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-sm">📦</div>
                                 <div>
-                                    <div className="font-semibold text-slate-800">导出 HTML 游戏 (含图片)</div>
-                                    <div className="text-xs text-slate-500">内嵌所有资源，完全离线可玩</div>
+                                    <div className="font-semibold text-slate-800" suppressHydrationWarning>{I18N[i18nMap.exportHtmlWithImages] || '导出 HTML 游戏 (含图片)'}</div>
+                                    <div className="text-xs text-slate-500" suppressHydrationWarning>{I18N[i18nMap.exportHtmlWithImagesDesc] || '内嵌所有资源，完全离线可玩'}</div>
                                 </div>
                             </button>
                         </div>
@@ -755,7 +819,7 @@ function EditorPageContent() {
                         >
                             <div className="w-2 h-2 rounded-full bg-indigo-500" />
                             <strong className="text-slate-700">{project.characters?.length || 0}</strong>
-                            <span className="text-slate-500">角色</span>
+                            <span className="text-slate-500" suppressHydrationWarning>{I18N[i18nMap.characters] || '角色'}</span>
                             <span className="text-slate-400 text-xs">▼</span>
                         </span>
                         {showCharactersDropdown && (
@@ -783,14 +847,14 @@ function EditorPageContent() {
                                                     <div className="text-xs text-slate-500 line-clamp-1">
                                                         {char.description || 
                                                          (typeof char.personality === 'string' ? char.personality : 
-                                                          char.personality?.traits?.join('、') || '暂无描述')}
+                                                          char.personality?.traits?.join('、') || (I18N[i18nMap.noDescription] || '暂无描述'))}
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="px-4 py-6 text-center text-slate-400 text-sm">暂无角色</div>
+                                    <div className="px-4 py-6 text-center text-slate-400 text-sm" suppressHydrationWarning>{I18N[i18nMap.noCharacters] || '暂无角色'}</div>
                                 )}
                             </div>
                         )}
@@ -809,7 +873,7 @@ function EditorPageContent() {
                         >
                             <div className="w-2 h-2 rounded-full bg-purple-500" />
                             <strong className="text-slate-700">{project.backgrounds?.length || 0}</strong>
-                            <span className="text-slate-500">场景</span>
+                            <span className="text-slate-500" suppressHydrationWarning>{I18N[i18nMap.scenes] || '场景'}</span>
                             <span className="text-slate-400 text-xs">▼</span>
                         </span>
                         {showScenesDropdown && (
@@ -838,13 +902,13 @@ function EditorPageContent() {
                                                 )}
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-semibold text-slate-800">{bg.name}</div>
-                                                    <div className="text-xs text-slate-500 line-clamp-1">{bg.description || '暂无描述'}</div>
+                                                    <div className="text-xs text-slate-500 line-clamp-1">{bg.description || (I18N[i18nMap.noDescription] || '暂无描述')}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="px-4 py-6 text-center text-slate-400 text-sm">暂无场景</div>
+                                    <div className="px-4 py-6 text-center text-slate-400 text-sm" suppressHydrationWarning>{I18N[i18nMap.noScenes] || '暂无场景'}</div>
                                 )}
                             </div>
                         )}
@@ -863,7 +927,7 @@ function EditorPageContent() {
                         >
                             <div className="w-2 h-2 rounded-full bg-pink-500" />
                             <strong className="text-slate-700">{project.script?.length || 0}</strong>
-                            <span className="text-slate-500">故事情节</span>
+                            <span className="text-slate-500" suppressHydrationWarning>{I18N[i18nMap.storyNodes] || '故事情节'}</span>
                             <span className="text-slate-400 text-xs">▼</span>
                         </span>
                         {showNodesDropdown && (
@@ -884,18 +948,18 @@ function EditorPageContent() {
                                                     {idx + 1}
                                                 </div>
                                                 <div className="flex-1">
-                                                    <div className="font-semibold text-slate-800">{node.title || `节点 ${node.id}`}</div>
+                                                    <div className="font-semibold text-slate-800">{node.title || `${I18N[i18nMap.node] || '节点'} ${node.id}`}</div>
                                                     <div className="text-xs text-slate-500">
                                                         {node.sceneName && <span className="text-purple-600">📍 {node.sceneName}</span>}
-                                                        {node.isStart && <span className="ml-2 text-green-600">🟢 开头</span>}
-                                                        {node.isEnding && <span className="ml-2 text-red-600">🔴 结尾</span>}
+                                                        {node.isStart && <span className="ml-2 text-green-600" suppressHydrationWarning>🟢 {I18N[i18nMap.start] || '开头'}</span>}
+                                                        {node.isEnding && <span className="ml-2 text-red-600" suppressHydrationWarning>🔴 {I18N[i18nMap.ending] || '结尾'}</span>}
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="px-4 py-6 text-center text-slate-400 text-sm">暂无故事情节</div>
+                                    <div className="px-4 py-6 text-center text-slate-400 text-sm" suppressHydrationWarning>{I18N[i18nMap.noStoryNodes] || '暂无故事情节'}</div>
                                 )}
                             </div>
                         )}
@@ -960,6 +1024,73 @@ function EditorPageContent() {
                             }}
                             onSelectNode={setSelectedNodeId}  // ✅ 传递选中节点回调
                             onGenerateImage={handleGenerateImageForEditor}  // ✅ 传递AI生成立绘回调
+                            i18n={{
+                                undo: I18N['key.flowEditor.undo'] || '撤销',
+                                redo: I18N['key.flowEditor.redo'] || '重做',
+                                addNode: I18N['key.flowEditor.addNode'] || '新增节点',
+                                startNode: I18N['key.flowEditor.startNode'] || '开始节点',
+                                sceneNode: I18N['key.flowEditor.sceneNode'] || '场景节点',
+                                branchNode: I18N['key.flowEditor.branchNode'] || '分支节点',
+                                endingNode: I18N['key.flowEditor.endingNode'] || '结局节点',
+                                zoomIn: I18N['key.flowEditor.zoomIn'] || '放大',
+                                zoomOut: I18N['key.flowEditor.zoomOut'] || '缩小',
+                                fitView: I18N['key.flowEditor.fitView'] || '适应屏幕',
+                                logicCheck: I18N['key.flowEditor.logicCheck'] || '逻辑检查',
+                                logicCheckResult: I18N['key.flowEditor.logicCheckResult'] || '逻辑检查结果',
+                                noIssues: I18N['key.flowEditor.noIssues'] || '✔ 没有发现问题',
+                                completeAssets: I18N['key.flowEditor.completeAssets'] || '补全头像',
+                                generating: I18N['key.flowEditor.generating'] || '生成中...',
+                                assetsComplete: I18N['key.flowEditor.assetsComplete'] || '素材完整',
+                                nodeEditTitle: I18N['key.nodeEdit.title'] || '编辑情节节点',
+                                nodeEditStoryInfo: I18N['key.nodeEdit.storyInfo'] || '🎬 情节信息',
+                                nodeEditNodeTitle: I18N['key.nodeEdit.nodeTitle'] || '情节标题',
+                                nodeEditDialogues: I18N['key.nodeEdit.dialogues'] || '角色对话',
+                                nodeEditAddDialogue: I18N['key.nodeEdit.addDialogue'] || '添加对话',
+                                nodeEditSave: I18N['key.nodeEdit.save'] || '保存修改',
+                                nodeEditScene: I18N['key.nodeEdit.scene'] || '🏞️ 所在场景',
+                                nodeEditNoScene: I18N['key.nodeEdit.noScene'] || '未指定场景',
+                                nodeEditHasBackground: I18N['key.nodeEdit.hasBackground'] || ' ✓ 有背景图',
+                                nodeEditBackgroundLinked: I18N['key.nodeEdit.backgroundLinked'] || '✓ 场景背景图已关联',
+                                nodeEditNarration: I18N['key.nodeEdit.narration'] || '旁白/背景交代',
+                                nodeEditNarrationPlaceholder: I18N['key.nodeEdit.narrationPlaceholder'] || '例：夜幕降临，雨声止息，旧巷深处传来脚步声...',
+                                nodeEditAudioAssets: I18N['key.nodeEdit.audioAssets'] || '🎵 音频配乐',
+                                nodeEditBgm: I18N['key.nodeEdit.bgm'] || '🎼 背景音乐 (BGM)',
+                                nodeEditBgmPlaceholder: I18N['key.nodeEdit.bgmPlaceholder'] || '输入音乐URL (支持 mp3, ogg, wav)',
+                                nodeEditSelectFromLibrary: I18N['key.nodeEdit.selectFromLibrary'] || '从预设音乐库选择',
+                                nodeEditEmotionalWarm: I18N['key.nodeEdit.emotionalWarm'] || '情感/温馨',
+                                nodeEditRomanticPiano: I18N['key.nodeEdit.romanticPiano'] || '浪漫钢琴',
+                                nodeEditSuspenseTense: I18N['key.nodeEdit.suspenseTense'] || '悬疑/紧张',
+                                nodeEditMysteriousAtmosphere: I18N['key.nodeEdit.mysteriousAtmosphere'] || '神秘氛围',
+                                nodeEditVolume: I18N['key.nodeEdit.volume'] || '🔊 音量',
+                                nodeEditLoop: I18N['key.nodeEdit.loop'] || '循环播放',
+                                nodeEditChoices: I18N['key.nodeEdit.choices'] || '🔀 选项与分支',
+                                nodeEditChoicesCount: I18N['key.nodeEdit.choicesCount'] || '{count} 个选项',
+                                nodeEditChoicesDesc: I18N['key.nodeEdit.choicesDesc'] || '为该节点添加分支选项，每个选项可以跳转到不同的后续节点',
+                                nodeEditAddChoice: I18N['key.nodeEdit.addChoice'] || '添加选项',
+                                nodeEditNoChoices: I18N['key.nodeEdit.noChoices'] || '还没有分支选项，点击上方按钮添加',
+                                nodeEditChoice: I18N['key.nodeEdit.choice'] || '选项',
+                                nodeEditChoiceText: I18N['key.nodeEdit.choiceText'] || '选项文本',
+                                nodeEditChoiceTextPlaceholder: I18N['key.nodeEdit.choiceTextPlaceholder'] || '例：跟随她、报警、转身离开',
+                                nodeEditTargetNode: I18N['key.nodeEdit.targetNode'] || '跳转到节点',
+                                nodeEditSelectTargetNode: I18N['key.nodeEdit.selectTargetNode'] || '选择目标节点',
+                                nodeEditCreateNewNode: I18N['key.nodeEdit.createNewNode'] || '➕ 创建新节点',
+                                nodeEditCreateSceneNode: I18N['key.nodeEdit.createSceneNode'] || '🆕 创建普通节点',
+                                nodeEditCreateBranchNode: I18N['key.nodeEdit.createBranchNode'] || '🔀 创建分支节点',
+                                nodeEditCreateEndingNode: I18N['key.nodeEdit.createEndingNode'] || '🏁 创建结局节点',
+                                nodeEditExistingNodes: I18N['key.nodeEdit.existingNodes'] || '📋 选择现有节点',
+                                nodeEditSceneType: I18N['key.nodeEdit.sceneType'] || '场景',
+                                nodeEditBranchType: I18N['key.nodeEdit.branchType'] || '分支',
+                                nodeEditEndingType: I18N['key.nodeEdit.endingType'] || '结局',
+                                nodeEditWillJumpTo: I18N['key.nodeEdit.willJumpTo'] || '将跳转到:',
+                                nodeEditSceneLabel: I18N['key.nodeEdit.sceneLabel'] || '场景:',
+                                nodeEditCondition: I18N['key.nodeEdit.condition'] || '触发条件',
+                                nodeEditConditionOptional: I18N['key.nodeEdit.conditionOptional'] || '(选填)',
+                                nodeEditConditionPlaceholder: I18N['key.nodeEdit.conditionPlaceholder'] || '例：拥有道具:钥匙、好感度>50',
+                                nodeEditConditionDesc: I18N['key.nodeEdit.conditionDesc'] || '设置该选项的显示条件，例如要求特定道具或属性值',
+                                nodeEditMoveUp: I18N['key.nodeEdit.moveUp'] || '上移',
+                                nodeEditMoveDown: I18N['key.nodeEdit.moveDown'] || '下移',
+                                nodeEditDelete: I18N['key.nodeEdit.delete'] || '删除',
+                            }}
                         />
                     </ReactFlowProvider>
                 ) : (
@@ -973,10 +1104,10 @@ function EditorPageContent() {
                                         <div className={`w-2 h-2 rounded-full ${
                                             previewMode === 'from-start' ? 'bg-blue-500' : 'bg-green-500'
                                         } animate-pulse`} />
-                                        <span className="text-sm text-slate-300">
+                                        <span className="text-sm text-slate-300" suppressHydrationWarning>
                                             {previewMode === 'from-start' 
-                                                ? '🏁 从开始节点的开头预览' 
-                                                : `▶️ 从节点 ${selectedNodeId} 的开头预览`}
+                                                ? (I18N[i18nMap.previewModeFromStart] || '🏁 从开始节点的开头预览') 
+                                                : (I18N[i18nMap.previewModeFromCurrent]?.replace('{nodeId}', selectedNodeId || '') || `▶️ 从节点 ${selectedNodeId} 的开头预览`)}
                                         </span>
                                     </div>
                                     <div className="flex gap-2">

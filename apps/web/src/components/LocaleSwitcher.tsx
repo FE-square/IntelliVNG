@@ -72,10 +72,11 @@ export function LocaleSwitcher({ onClose }: LocaleSwitcherProps) {
   return (
     <div
       ref={menuRef}
+      key={currentLocale}
       className="absolute bottom-full right-0 mb-2 w-44 md:w-48 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden"
     >
       <div className="px-3 md:px-4 py-2 bg-indigo-50 border-b border-indigo-100">
-        <p className="text-xs font-semibold text-indigo-700">
+        <p className="text-xs font-semibold text-indigo-700" suppressHydrationWarning>
           {I18N[i18nMap.switchLanguage] || '切换语言'}
         </p>
       </div>
