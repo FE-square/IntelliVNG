@@ -9,6 +9,8 @@
  * - analyze_story_paths: 路径多样性分析
  * - analyze_dialogue_quality: 对话质量分析
  * - analyze_branch_distribution: 分支分布分析（检测伪非线性）
+ * - check_constraints_compliance: 约束合规检查
+ * - score_nonlinearity: 非线性综合评分
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -34,6 +36,34 @@ import {
   analyzeBranchDistribution,
   AnalyzeBranchDistributionInputSchema,
 } from "./tools/analyze-branch-distribution.js";
+import {
+  checkConstraints,
+  CheckConstraintsInputSchema,
+} from "./tools/check-constraints.js";
+import {
+  scoreNonLinearity,
+  ScoreNonLinearityInputSchema,
+} from "./tools/score-nonlinearity.js";
+
+// 统一响应封装
+const ok = (data: unknown) => ({
+  content: [
+    {
+      type: "text" as const,
+      text: JSON.stringify({ ok: true, data }, null, 2),
+    },
+  ],
+});
+
+const err = (message: string) => ({
+  content: [
+    {
+      type: "text" as const,
+      text: JSON.stringify({ ok: false, error: message }, null, 2),
+    },
+  ],
+  isError: true,
+});
 
 // 定义 MCP 工具
 const TOOLS: Tool[] = [
@@ -226,6 +256,110 @@ const TOOLS: Tool[] = [
       required: ["nodes"],
     },
   },
+  {
+    name: "check_constraints_compliance",
+    description: `校验生成故事是否满足规模/结局/深度/分支数等约束。
+
+分析内容：
+- 节点数、结局数
+- 最长路径深度
+- 单节点最大分支数
+- 违规项列表与合规评分`,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        nodes: {
+          type: "array",
+          description: "故事节点列表",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              isStart: { type: "boolean" },
+              isEnding: { type: "boolean" },
+              nextNodeId: { type: "string" },
+              choices: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    targetNodeId: { type: "string" },
+                  },
+                },
+              },
+            },
+            required: ["id"],
+          },
+        },
+        constraints: {
+          type: "object",
+          description: "约束配置（可选）",
+          properties: {
+            targetNodeCount: { type: "number" },
+            targetEndingCount: { type: "number" },
+            maxDepth: { type: "number" },
+            maxBranching: { type: "number" },
+          },
+        },
+      },
+      required: ["nodes"],
+    },
+  },
+  {
+    name: "score_nonlinearity",
+    description: `生成单一的非线性综合评分，便于前端展示。
+
+综合来源：
+- 路径非线性评分（路径数、长度差异、分支点）
+- 分支分布评分（早期分支占比、分支类型）
+- 路径多样性评分`,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        nodes: {
+          type: "array",
+          description: "故事节点列表（需包含 functionTag 与 branchType 信息时更准确）",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              type: { type: "string", enum: ["scene", "branch", "ending"] },
+              isStart: { type: "boolean" },
+              isEnding: { type: "boolean" },
+              functionTag: {
+                type: "string",
+                enum: [
+                  "setup",
+                  "rising",
+                  "conflict",
+                  "twist",
+                  "climax",
+                  "falling",
+                  "resolution",
+                ],
+              },
+              nextNodeId: { type: "string" },
+              choices: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    targetNodeId: { type: "string" },
+                    branchType: {
+                      type: "string",
+                      enum: ["route", "relationship", "information", "ending"],
+                    },
+                  },
+                },
+              },
+            },
+            required: ["id"],
+          },
+        },
+      },
+      required: ["nodes"],
+    },
+  },
 ];
 
 // 创建 Server 实例
@@ -255,53 +389,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "validate_story_structure": {
         const input = ValidateStructureInputSchema.parse(args);
         const result = validateStructure(input);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        return ok(result);
       }
 
       case "analyze_story_paths": {
         const input = AnalyzePathsInputSchema.parse(args);
         const result = analyzePaths(input);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        return ok(result);
       }
 
       case "analyze_dialogue_quality": {
         const input = AnalyzeDialogueInputSchema.parse(args);
         const result = analyzeDialogue(input);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        return ok(result);
       }
 
       case "analyze_branch_distribution": {
         const input = AnalyzeBranchDistributionInputSchema.parse(args);
         const result = analyzeBranchDistribution(input);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        return ok(result);
+      }
+
+      case "check_constraints_compliance": {
+        const input = CheckConstraintsInputSchema.parse(args);
+        const result = checkConstraints(input);
+        return ok(result);
+      }
+
+      case "score_nonlinearity": {
+        const input = ScoreNonLinearityInputSchema.parse(args);
+        const result = scoreNonLinearity(input);
+        return ok(result);
       }
 
       default:
@@ -309,15 +427,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error: ${errorMessage}`,
-        },
-      ],
-      isError: true,
-    };
+    return err(errorMessage);
   }
 });
 
