@@ -329,14 +329,35 @@ packages/mcp-server/
 
 ## 设计理念
 
-### 1. 神经符号架构 (Neuro-Symbolic Architecture) —— 突破 LLM 的概率局限
+### 1. 神经符号架构 (Neuro-Symbolic Architecture) —— 概率vs规则
 
-我们没有选择仅依赖 Prompt Engineering，而是采用了**神经符号 AI** 架构：
+在生成复杂的非线性游戏脚本时，我们面临一个核心矛盾：**LLM 强大的创造力（概率性）与游戏逻辑严谨性（确定性）之间的冲突**。纯粹依赖 Prompt Engineering 很难保证生成的剧情图在图论意义上是连通且合法的。
 
-- **右脑 (Neuro/LLM)**：负责创意生成、对话撰写、情感渲染（由 Story Planner / Node Writer 承担）。
-- **左脑 (Symbolic/MCP)**：负责逻辑校验、约束检查、图论分析（由本 MCP Server 承担）。
+因此，我们采用了**神经符号 AI (Neuro-Symbolic AI)** 的设计思想，将其工程化落地：
 
-本 MCP Server 充当了系统的 **Grounding Layer (锚定层)**。当右脑产生幻觉（如生成死胡同、分支不平衡）时，左脑通过确定性的图算法进行拦截和纠正。这种架构解决了纯 LLM 生成游戏脚本时常见的“逻辑坍塌”问题。
+#### **为什么需要这种架构？**
+
+- **Neuro (神经层 / 右脑)**：
+  - **载体**：Story Planner, Node Writer Agents (基于 LLM)。
+  - **擅长**：发散思维、创意生成、情感渲染、角色扮演。
+  - **短板**：容易产生幻觉，难以维持长链路的逻辑一致性（例如：写着写着忘记了分支数量，或者生成了无法到达的死胡同节点）。
+
+- **Symbolic (符号层 / 左脑)**：
+  - **载体**：**本 MCP Server** (基于确定性算法)。
+  - **擅长**：图论分析 (BFS/DFS)、数值约束校验、状态机逻辑。
+  - **作用**：提供绝对可信的“逻辑锚点 (Grounding)”。
+
+#### **它是如何工作的？**
+
+本 MCP Server 不仅仅是一个工具箱，而是作为系统的 **Symbolic Grounding Layer (符号锚定层)** 介入创作流：
+
+1.  **生成 (Generate)**：右脑 (LLM) 产出初步的剧情图草稿。
+2.  **符号化 (Symbolize)**：系统将草稿解析为结构化的图数据 (JSON)。
+3.  **校验 (Validate)**：左脑 (MCP) 运行 `validate_story_structure` 和 `check_constraints_compliance` 等确定性算法，进行“质检”。
+4.  **反馈 (Feedback)**：如果发现逻辑漏洞（如“节点孤立”或“分支失衡”），MCP 会返回精确的错误描述，而非模糊的建议。
+5.  **修正 (Refine)**：右脑接收到这些确定的符号反馈，进行针对性的自我修正。
+
+这种架构让 IntelliVNG 既拥有 LLM 的灵动，又具备传统游戏引擎的严谨，解决了 AI 生成游戏内容“由其不可控而导致不可玩”的业界难题。
 
 ### 2. 认知无障碍 (Cognitive Accessibility) —— 社会价值的体现
 
@@ -350,7 +371,6 @@ packages/mcp-server/
 所有工具底层均内置 `i18n` 支持（`zh-CN` / `en-US`），通过输入参数自动切换。
 
 - 这不仅仅是简单的翻译，而是让 AI Agent 在不同语言环境下都能获得准确的母语反馈。
-- 国际化展示了项目具备服务全球开发者的潜力。
 
 ### 4. 自修正闭环 (Self-Correction Loop) —— 极致的 AI 逻辑跟随
 
