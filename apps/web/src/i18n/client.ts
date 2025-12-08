@@ -21,6 +21,7 @@ declare global {
 export function getI18N(): Record<string, string> {
   // SSR 环境：从模块变量读取
   if (typeof window === 'undefined') {
+    return {};
   }
   
   // 客户端环境：从 window.__APP_INITIAL_STATE__ 读取
