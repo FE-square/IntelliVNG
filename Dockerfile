@@ -53,7 +53,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PUBLIC_INTELLI_SERVICES_URL=${PUBLIC_SERVICES_PATH}
 
-RUN turbo run build --filter=!@intellivng/mcp-server
+RUN pnpm turbo run build --filter=!@intellivng/mcp-server
 RUN rm -rf apps/web/.next/cache
 
 ################################################################################
