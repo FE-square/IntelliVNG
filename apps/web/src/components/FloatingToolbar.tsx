@@ -7,7 +7,6 @@ import { I18N } from '@/i18n/client';
 
 const i18nMap = {
   switchLanguage: 'key.toolbar.switchLanguage',
-  documentQa: 'key.toolbar.documentQa',
   docsTitle: 'key.toolbar.docsTitle', //'项目文档',
   docsDesc: 'key.toolbar.docsDesc', //'这里可以找到关于项目的详细说明文档',
   docFlow: 'key.toolbar.docFlow', //'全流程说明文档',
@@ -83,8 +82,8 @@ export function FloatingToolbar() {
         <button
           onClick={() => setShowDocModal(true)}
           className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center group hover:scale-110 active:scale-95"
-          title={I18N[i18nMap.documentQa]}
-          aria-label={I18N[i18nMap.documentQa]}
+          title={I18N[i18nMap.docsTitle]}
+          aria-label={I18N[i18nMap.docsTitle]}
         >
           <FileText className="w-5 h-5 md:w-6 md:h-6 text-emerald-600 group-hover:text-emerald-700" />
         </button>
