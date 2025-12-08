@@ -20,13 +20,14 @@ const i18nMap = {
  */
 export function FloatingToolbar() {
   const [showLocaleMenu, setShowLocaleMenu] = useState(false);
-  const [showDocs, setShowDocs] = useState(false);
+  const [showDocsModal, setShowDocModal] = useState(false);
+  const [isClosingDocModal, setIsClosingDocModal] = useState(false);
 
   // 文档链接配置
   const docLinks = [
     {
       title: I18N[i18nMap.docFlow],
-      url: 'https://fe-square.feishu.cn/wiki/Ki4hwhwOeieN9ykDk71cvGFznle',
+      url: 'https://fe-square.feishu.cn/wiki/Ki4hwhwOeieN9ykDk71cvGFznle#Q0Rudviofo3F7ExisBlcfK1vnTb',
       color: 'bg-blue-50 text-blue-600 hover:bg-blue-100'
     },
     {
@@ -38,9 +39,26 @@ export function FloatingToolbar() {
 
   useEffect(() => {
     window.addEventListener('FloatingToolbar:OpenDocs', (e) => {
-      setShowDocs(true);
+      setShowDocModal(true);
     });
   }, []);
+
+  // 当Modal打开时，确保关闭状态被重置
+  useEffect(() => {
+    if (showDocsModal) {
+      setIsClosingDocModal(false);
+    }
+  }, [showDocsModal]);
+
+  const hideDocsModal = () => {
+    // 触发关闭动画
+    setIsClosingDocModal(true);
+    // 动画完成后隐藏Modal
+    setTimeout(() => {
+      setShowDocModal(false);
+      setIsClosingDocModal(false);
+    }, 300);
+  };
 
   return (
     <>
@@ -63,7 +81,7 @@ export function FloatingToolbar() {
 
         {/* 文档查看按钮 */}
         <button
-          onClick={() => setShowDocs(true)}
+          onClick={() => setShowDocModal(true)}
           className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center group hover:scale-110 active:scale-95"
           title={I18N[i18nMap.documentQa]}
           aria-label={I18N[i18nMap.documentQa]}
@@ -73,16 +91,28 @@ export function FloatingToolbar() {
       </div>
 
       {/* 文档弹窗 */}
-      {showDocs && (
+      {showDocsModal && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
           {/* 背景遮罩 */}
           <div 
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={() => setShowDocs(false)}
+            className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
+              isClosingDocModal ? 'opacity-0' : 'opacity-100'
+            }`}
+            onClick={hideDocsModal}
           />
           
           {/* 弹窗内容 */}
-          <div className="relative bg-white rounded-xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200 overflow-hidden">
+          <div 
+            className={`relative bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-300 ease-in-out ${
+              isClosingDocModal ? 'opacity-0' : 'opacity-100'
+            }`}
+            style={isClosingDocModal ? {
+              transform: 'scale(0.05) translate(50vw, 50vh)',
+              transformOrigin: 'center center',
+            } : {
+              transform: 'scale(1) translate(0, 0)',
+            }}
+          >
             {/* 标题栏 */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -90,7 +120,7 @@ export function FloatingToolbar() {
                 {I18N[i18nMap.docsTitle] || '项目文档'}
               </h3>
               <button
-                onClick={() => setShowDocs(false)}
+                onClick={hideDocsModal}
                 className="p-1 rounded-full hover:bg-gray-200 text-gray-500 transition-colors"
               >
                 <X className="w-5 h-5" />
