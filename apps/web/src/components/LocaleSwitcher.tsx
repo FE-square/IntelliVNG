@@ -27,20 +27,12 @@ export function LocaleSwitcher({ onClose }: LocaleSwitcherProps) {
   const router = useRouter();
   const pathname = usePathname();
   const menuRef = useRef<HTMLDivElement>(null);
-  const [currentLocale, setCurrentLocale] = useState<Locale>(DEFAULT_LOCALE);
 
-  // 从URL获取当前locale
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const localeParam = params.get('locale');
-      const locale = (localeParam && SUPPORTED_LOCALES.includes(localeParam as Locale))
-        ? (localeParam as Locale)
-        : DEFAULT_LOCALE;
-      setCurrentLocale(locale);
-    }
-  }, []);
-
+    // 获取当前locale
+    const currentLocale = typeof window !== 'undefined' 
+    ? (new URLSearchParams(window.location.search).get('locale') || 'zh-CN')
+    : 'zh-CN';
+    
   // 点击外部关闭菜单
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -69,10 +61,11 @@ export function LocaleSwitcher({ onClose }: LocaleSwitcherProps) {
     window.location.href = newUrl;
   };
 
+
+
   return (
     <div
       ref={menuRef}
-      key={currentLocale}
       className="absolute bottom-full right-0 mb-2 w-44 md:w-48 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden"
     >
       <div className="px-3 md:px-4 py-2 bg-indigo-50 border-b border-indigo-100">

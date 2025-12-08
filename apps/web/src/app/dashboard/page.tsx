@@ -80,27 +80,6 @@ export default function DashboardPage() {
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
     const [isSelectionMode, setIsSelectionMode] = useState(false);
-    const [currentLocale, setCurrentLocale] = useState('');
-    const [i18nReady, setI18nReady] = useState(false);
-    
-    // 监听URL变化，获取locale参数
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            const locale = params.get('locale') || 'zh-CN';
-            setCurrentLocale(locale);
-            
-            // 调试：打印I18N对象
-            console.log('[Dashboard] Current locale:', locale);
-            console.log('[Dashboard] I18N sample:', I18N[i18nMap.title], I18N[i18nMap.importProject]);
-            console.log('[Dashboard] window.__APP_INITIAL_STATE__.I18N:', window.__APP_INITIAL_STATE__?.I18N);
-            
-            // 等待一小段时间确保I18N已加载，然后标记为ready
-            setTimeout(() => {
-                setI18nReady(true);
-            }, 50);
-        }
-    }, []);
     
     useEffect(() => {
         loadProjects();
@@ -255,19 +234,8 @@ export default function DashboardPage() {
         }
     };
 
-    // 如果I18N未准备好，显示loading
-    if (!i18nReady) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="inline-block w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div key={currentLocale} className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8">
             <div className="max-w-7xl mx-auto">
                 {/* 标题栏 */}
                 <div className="flex items-center justify-between mb-8">
@@ -480,8 +448,8 @@ export default function DashboardPage() {
                                     {/* 时间信息 + 保存备注 */}
                                     <div className="space-y-2 mb-4">
                                         <div className="flex items-center gap-2 text-xs text-slate-500" suppressHydrationWarning>
-                                            <Calendar className="w-3 h-3" />
-                                            <span>{I18N[i18nMap.updated] || '更新'}: {formatDate(project.updatedAt)}</span>
+                                            {project.updatedAt && <Calendar className="w-3 h-3" />}
+                                            {project.updatedAt && <span>{I18N[i18nMap.updated] || '更新'}: {formatDate(project.updatedAt)}</span>}
                                             {project.autoSaved && (
                                                 <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
                                                     {I18N[i18nMap.autoSaved] || '自动保存'}

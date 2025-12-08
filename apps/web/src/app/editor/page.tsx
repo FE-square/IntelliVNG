@@ -199,24 +199,12 @@ function EditorPageContent() {
         total: 100,
         message: ''
     });
-    const [currentLocale, setCurrentLocale] = useState('');
-    const [i18nReady, setI18nReady] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
     
-    // 监听locale变化
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            const locale = params.get('locale') || 'zh-CN';
-            setCurrentLocale(locale);
-            
-            // 等待一小段时间确保I18N已加载
-            setTimeout(() => {
-                setI18nReady(true);
-                setInitialLoading(false);
-            }, 50);
-        }
-    }, []);
+    // 获取当前locale
+    const currentLocale = typeof window !== 'undefined' 
+    ? (new URLSearchParams(window.location.search).get('locale') || 'zh-CN')
+    : 'zh-CN';
 
     useEffect(() => {
         const loadProject = async () => {
@@ -578,7 +566,7 @@ function EditorPageContent() {
         return result.imageUrl;
     };
 
-    if (initialLoading || !i18nReady || loading) {
+    if (initialLoading || loading) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
                 <div className="flex flex-col items-center gap-6 p-8 bg-white rounded-3xl shadow-2xl border-2 border-slate-200">
@@ -615,7 +603,7 @@ function EditorPageContent() {
     }
 
     return (
-        <div key={currentLocale} className="flex h-screen w-full flex-col bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+        <div className="flex h-screen w-full flex-col bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
             {/* Header - 现代化工具栏 */}
             <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-md">
                 <div className="flex items-center gap-4">
