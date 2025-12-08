@@ -38,16 +38,22 @@ export function FloatingToolbar() {
   // 文档链接配置
   const docLinks = [
     {
-      title: i18nMap.docFlow,
+      title: I18N[i18nMap.docFlow],
       url: 'https://fe-square.feishu.cn/wiki/Ki4hwhwOeieN9ykDk71cvGFznle',
       color: 'bg-blue-50 text-blue-600 hover:bg-blue-100'
     },
     {
-      title: i18nMap.docTech,
+      title: I18N[i18nMap.docTech],
       url: 'https://fe-square.feishu.cn/wiki/OEbVwhnZtiyI8pkhzEQcYPirnxi',
       color: 'bg-purple-50 text-purple-600 hover:bg-purple-100'
     }
   ];
+
+  useEffect(() => {
+    window.addEventListener('FloatingToolbar:OpenDocs', (e) => {
+      setShowDocs(true);
+    });
+  }, []);
 
   return (
     <>
