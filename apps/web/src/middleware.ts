@@ -29,6 +29,14 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // 如果URL中没有locale参数或locale参数无效，重定向到带有效locale参数的URL
+  if (!localeParam || !SUPPORTED_LOCALES.includes(localeParam as Locale)) {
+    const newUrl = new URL(request.url);
+    // 设置或更新locale参数，保留其他查询参数
+    newUrl.searchParams.set('locale', locale);
+    return NextResponse.redirect(newUrl);
+  }
+
   // 将locale添加到请求header中，供服务端组件使用
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-locale', locale);
