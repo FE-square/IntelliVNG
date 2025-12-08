@@ -199,7 +199,6 @@ function EditorPageContent() {
         total: 100,
         message: ''
     });
-    const [initialLoading, setInitialLoading] = useState(true);
     
     // 获取当前locale
     const currentLocale = typeof window !== 'undefined' 
@@ -566,7 +565,7 @@ function EditorPageContent() {
         return result.imageUrl;
     };
 
-    if (initialLoading || loading) {
+    if (loading) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
                 <div className="flex flex-col items-center gap-6 p-8 bg-white rounded-3xl shadow-2xl border-2 border-slate-200">
