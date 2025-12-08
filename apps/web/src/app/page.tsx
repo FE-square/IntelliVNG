@@ -68,7 +68,9 @@ const stageLabels: Record<ProgressStage, string> = {
 export default function Home() {
     const router = useRouter();
     const toast = useToast();
+    const ideaRef = useRef<string>("");
     const [quickPrompt, setQuickPrompt] = useState('');
+    ideaRef.current = quickPrompt;
     const [isQuickGenerating, setIsQuickGenerating] = useState(false);
     const [isAgentGenerating, setIsAgentGenerating] = useState(false);
     const [isDraftGenerating, setIsDraftGenerating] = useState(false);
@@ -382,16 +384,7 @@ export default function Home() {
      * - HTTP错误：自动重试，不向外抛出
      * - result.success === false：显示错误提示，不抛出（由调用方 finally 清理状态）
      */
-    const requestScriptsGeneration = async (draft: DraftData, locale: string, mode = 'fast', time = 1) => {
-        // ========== 重试次数检查 ==========
-        if (time > 3) {
-            // 超过3次重试，重置所有加载状态并抛出错误
-            setIsQuickGenerating(false);
-            setIsAgentGenerating(false);
-            setShowFastScriptLoading(false);
-            throw new Error('智能体服务异常 (generate-by-agents)');
-        }
-
+    const requestScriptsGeneration = async (draft: DraftData, locale: string, mode = 'fast') => {
         // ========== 初始化状态 ==========
         setSessionStatus('running');
         const controller = new AbortController();
@@ -403,27 +396,70 @@ export default function Home() {
             setShowFastScriptLoading(true);
         }
 
-        // ========== 发起剧本生成请求 ==========
-        const response = await fetch('/api/game/generate-by-agents', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                characters: draft.characters,
-                worldSetting: draft.worldSetting,
-                scenes: draft.scenes,
-                themeSetting: draft.themeSetting,
-                locale,
-                mode,
-            }),
-            signal: controller.signal, // 支持手动取消
-        });
+        let response;
+        let lastError;
+        let success = false;
 
-        // ========== HTTP 错误自动重试 ==========
-        if (!response.ok) {
-            const errorPayload = await response.json().catch(() => ({}));
-            console.error('[智能体服务重连中]', errorPayload.error);
-            // 递归重试，time + 1，返回重试的 Promise
-            return requestScriptsGeneration(draft, locale, mode, time + 1);
+        // ========== 循环重试逻辑 ==========
+        // 最多重试 3 次
+        for (let i = 0; i < 3; i++) {
+            try {
+                // 非首次尝试增加延迟
+                if (i > 0) {
+                    console.log(`[Script] 准备第 ${i + 1} 次重试...`);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    // 检查是否已被用户取消
+                    if (controller.signal.aborted) {
+                        throw new DOMException('Aborted', 'AbortError');
+                    }
+                }
+
+                // 发起请求
+                response = await fetch('/api/game/generate-by-agents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        idea: ideaRef.current,
+                        characters: draft.characters,
+                        worldSetting: draft.worldSetting,
+                        scenes: draft.scenes,
+                        themeSetting: draft.themeSetting,
+                        locale,
+                        mode,
+                    }),
+                    signal: controller.signal, // 支持手动取消
+                });
+
+                // 检查响应状态
+                if (response.ok) {
+                    success = true;
+                    break; // 成功则跳出循环
+                }
+
+                // 记录错误并准备重试
+                const errorPayload = await response.json().catch(() => ({}));
+                lastError = new Error(errorPayload.error || `请求失败 (Status: ${response.status})`);
+                console.error('[智能体服务重连中]', lastError.message);
+
+            } catch (error) {
+                // 如果是用户取消，直接抛出，不再重试
+                if (error instanceof DOMException && error.name === 'AbortError') {
+                    throw error;
+                }
+                
+                lastError = error instanceof Error ? error : new Error('网络请求异常');
+                console.warn(`[Script] 第 ${i + 1} 次生成尝试失败:`, lastError);
+            }
+        }
+
+        // ========== 失败处理 ==========
+        if (!success || !response) {
+            // 超过3次重试，重置所有加载状态并抛出错误
+            setIsQuickGenerating(false);
+            setIsAgentGenerating(false);
+            setShowFastScriptLoading(false);
+            throw lastError || new Error('智能体服务异常 (generate-by-agents)');
         }
 
         // ========== 成功响应处理 ==========
@@ -452,7 +488,7 @@ export default function Home() {
             await streamAgentResponse(response);
         }
     };
-
+    const generateModeRef = useRef<'fast' | 'agent'>('fast');
     /**
      * ============================================================
      * 完整创作流程：从创意到剧本（两阶段）
@@ -482,7 +518,7 @@ export default function Home() {
      * - AbortError：用户手动取消，显示取消提示
      * - finally：确保所有状态在任何情况下都会被重置
      */
-    const handleDraftAndScripts = async (mode = 'fast') => {
+    const handleDraftAndScripts = async (mode: 'fast' | 'agent' = 'fast') => {
         // ========== 参数校验 ==========
         if (!quickPrompt.trim()) {
             toast.warning('请输入故事描述');
@@ -491,11 +527,9 @@ export default function Home() {
 
         // ========== 初始化状态 ==========
         setIsDraftGenerating(true); // 整个流程标记为生成中
-        if (mode === 'fast') {
-            setIsQuickGenerating(true); // 快速模式标记
-        } else {
-            setIsAgentGenerating(true); // 智能体模式标记
-        }
+        generateModeRef.current = mode;
+        setIsQuickGenerating(mode === 'fast');
+        setIsAgentGenerating(mode === 'agent');
         resetAgentFlow(); // 重置智能体流程状态（清空进度事件等）
 
         try {
@@ -509,21 +543,46 @@ export default function Home() {
                 draftSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 500);
 
-            // ========== 阶段1：生成设定草稿 ==========
-            const draftResponse = await fetch('/api/game/idea-to-draft', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    idea: quickPrompt,
-                    locale,
-                }),
-            });
+            // ========== 阶段1：生成设定草稿 (带重试机制) ==========
+            let draftResult;
+            let lastError;
 
-            const draftResult = await draftResponse.json().catch(() => ({}));
-            
-            // 草稿失败立即抛出，不重试（草稿生成通常很快且稳定）
-            if (!draftResponse.ok || !draftResult.success) {
-                throw new Error(draftResult.error || '设定草稿生成失败');
+            // 最多重试 3 次
+            for (let i = 0; i < 3; i++) {
+                try {
+                    // 非首次尝试增加延迟
+                    if (i > 0) {
+                        console.log(`[Draft] 准备第 ${i + 1} 次重试...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+
+                    const draftResponse = await fetch('/api/game/idea-to-draft', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            idea: quickPrompt,
+                            locale,
+                        }),
+                    });
+
+                    const result = await draftResponse.json().catch(() => ({}));
+
+                    if (draftResponse.ok && result.success) {
+                        draftResult = result;
+                        break;
+                    } 
+                    
+                    lastError = new Error(result.error || `请求失败 (Status: ${draftResponse.status})`);
+                } catch (err) {
+                    lastError = err instanceof Error ? err : new Error('网络请求异常');
+                }
+                
+                console.warn(`[Draft] 第 ${i + 1} 次生成尝试失败:`, lastError);
+            }
+
+            // 3次全部失败后抛出
+            if (!draftResult?.success) {
+                throw lastError || new Error('设定草稿生成失败 (已重试3次)');
             }
 
             // 保存草稿数据到状态
@@ -532,7 +591,7 @@ export default function Home() {
             
             // 命中缓存提示
             if (draftResult.cached) {
-                toast.info('命中草稿缓存', '使用历史草稿加速生成流程');
+                console.info('[命中草稿缓存]', '使用历史草稿加速生成流程', quickPrompt, draftResult);
             }
             
             toast.info('设定草稿完成', '智能体系统即将写作剧本...');
@@ -548,7 +607,7 @@ export default function Home() {
                 toast.info('已取消生成');
             } else {
                 // 草稿失败、剧本失败、或其他异常
-                console.error('Agents generate error:', error);
+                console.error('Agents generate error:', quickPrompt, error);
                 toast.error('生成失败', error instanceof Error ? error.message : '请检查网络连接');
                 setSessionStatus('error'); // 标记会话为错误状态
             }
@@ -580,7 +639,7 @@ export default function Home() {
      * 
      * 与 handleDraftAndScripts 的区别：
      * - handleDraftAndScripts: 完整流程（草稿 + 剧本）
-     * - handleRetryAgents: 仅剧本阶段，复用已有草稿
+     * - handleRetryScripts: 仅剧本阶段，复用已有草稿
      * 
      * 状态管理：
      * - 只设置 isAgentGenerating，不设置 isDraftGenerating
@@ -590,9 +649,12 @@ export default function Home() {
      * - 失败后标记 sessionStatus 为 'error'
      * - finally 确保状态被重置
      */
-    const handleRetryAgents = async (mode = 'fast') => {
+    const handleRetryScripts = async (mode: 'fast' | 'agent' = 'fast') => {
         // ========== 前置检查 ==========
-        if (!draftData) return; // 必须有草稿数据才能重试
+        if (!draftData) {
+            handleDraftAndScripts(mode);
+            return; // 必须有草稿数据才能重试
+        }
 
         // ========== 初始化状态 ==========
         resetAgentFlow({ keepDraft: true }); // 保留草稿，重置进度
@@ -633,11 +695,11 @@ export default function Home() {
      */
     const handleProgressRetry = (mode: 'fast' | 'agent') => {
         // ========== 防重复点击 ==========
-        if (!draftData || isAgentGenerating) return;
+        if (!draftData || (mode === 'agent' && isAgentGenerating)) return;
 
         // ========== 清空旧进度并重试 ==========
         setProgressEvents([]); // 清空旧进度事件，准备接收新进度
-        handleRetryAgents(mode);
+        handleRetryScripts(mode);
     };
 
     return (
@@ -679,7 +741,10 @@ export default function Home() {
                                                 className="w-full px-4 py-3 border-2 border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
                                                 rows={3}
                                                 value={quickPrompt}
-                                                onChange={(e) => setQuickPrompt(e.target.value)}
+                                                onChange={(e) => {
+                                                    setQuickPrompt(e.target.value);
+                                                    ideaRef.current = e.target.value;
+                                                }}
                                                 placeholder={mounted ? (t('key.home.autoMode.placeholder') || '') : ''}
                                                 disabled={isDraftGenerating}
                                             />
@@ -973,7 +1038,7 @@ export default function Home() {
                                         <Button variant="outline" onClick={() => resetAgentFlow()} disabled={isAgentGenerating}>
                                             重新输入创意
                                         </Button>
-                                        <Button onClick={() => handleRetryAgents('agent')} disabled={isAgentGenerating}>
+                                        <Button onClick={() => handleRetryScripts(generateModeRef.current)} disabled={isAgentGenerating}>
                                             {isAgentGenerating ? '正在重试...' : '使用当前草稿重试生成'}
                                         </Button>
                                     </div>

@@ -67,7 +67,7 @@ gameRoutes.post(
             }
             // 旧模式：基于创意生成
             else if (idea) {
-                const cacheKey = getCacheKey(idea);
+                const cacheKey = getCacheKey(`idea-script:${userLocale}:${idea}`);
                 console.log(`[GameRoute] Received request for idea: "${idea.slice(0, 50)}..."`);
                 
                 // 检查缓存
@@ -122,6 +122,8 @@ gameRoutes.post(
 // =====================================================
 
 const generateByAgentsSchema = z.object({
+    // 用户输入创意 (quickPrompt)
+    idea: z.string().optional(),
     // 角色 + 世界观 + 场景 + 主题风格
     characters: z.array(z.any()),
     worldSetting: z.any(),
@@ -135,24 +137,112 @@ const generateByAgentsSchema = z.object({
     mode: z.enum(['agent', 'fast']).default('agent'),
 });
 
-// POST /api/game/generate-by-agents - 多智能体剧本生成（SSE 实时进度）
+// POST /api/game/generate-by-agents - 大模型生成 (普通 HTTP) / 多智能体剧本生成（SSE 实时进度）
 gameRoutes.post(
     '/generate-by-agents',
     zValidator('json', generateByAgentsSchema),
     async (c) => {
-        const { characters, worldSetting, scenes, themeSetting, locale, mode } = c.req.valid('json');
+        const { idea, characters, worldSetting, scenes, themeSetting, locale, mode } = c.req.valid('json');
         
         // 获取locale
         const userLocale = getLocaleFromRequest(locale);
         console.log(`[GameRoute] 开始生成剧本: mode=${mode}, locale=${userLocale}, ${characters.length} 角色, ${scenes?.length || 0} 场景`);
+        // ============================================================
+        // 检查缓存（如果有 idea）
+        // ============================================================
+        if (idea && idea.trim()) {
+            const cacheKey = getCacheKey(`idea-script:${userLocale}:${idea}`);
+            const cachedProject = getFromCache<any>(cacheKey);
+            
+            if (cachedProject) {
+                console.log(`[GameRoute] 命中完整项目缓存: idea="${idea.slice(0, 30)}..."`);
+                
+                // Fast 模式：直接返回 JSON
+                if (mode === 'fast') {
+                    return c.json({
+                        success: true,
+                        mode: 'fast',
+                        data: cachedProject,
+                        cached: true, // 标记为缓存数据
+                    });
+                }
+                
+                // Agent 模式：通过 SSE 返回
+                return new Response(
+                    new ReadableStream({
+                        async start(controller) {
+                            const encoder = new TextEncoder();
+                            const sendEvent = (event: string, data: any) => {
+                                const payload = JSON.stringify({ event, ...data });
+                                controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+                            };
+                            
+                            // 发送会话开始事件
+                            sendEvent('session', { 
+                                sessionId: `cached-${Date.now()}`,
+                                status: 'started',
+                                message: '已命中缓存，无需重新生成',
+                            });
+                            
+                            // 模拟短暂进度
+                            sendEvent('progress', {
+                                stage: 'completed',
+                                action: '从缓存加载',
+                                status: 'completed',
+                                progress: 100,
+                                message: '已从缓存加载完整项目数据',
+                                timestamp: Date.now(),
+                            });
+                            
+                            // 发送结果
+                            sendEvent('result', {
+                                success: true,
+                                mode: 'agent',
+                                data: cachedProject,
+                                cached: true,
+                            });
+                            
+                            // 发送结束事件
+                            sendEvent('session', { 
+                                sessionId: `cached-${Date.now()}`,
+                                status: 'ended',
+                                elapsedTime: 0,
+                            });
+                            
+                            controller.close();
+                        }
+                    }),
+                    {
+                        headers: {
+                            'Content-Type': 'text/event-stream',
+                            'Cache-Control': 'no-cache',
+                            'Connection': 'keep-alive',
+                        },
+                    }
+                );
+            } else {
+                console.log(`[GameRoute] 未命中缓存，将生成新项目: idea="${idea.slice(0, 30)}..."`);
+            }
+        }
         
-        // Fast 模式：使用旧的单次 LLM 调用（非 SSE）
+        // ============================================================
+        // 未命中缓存，正常生成流程
+        // ============================================================
+        
+        // Fast 模式：使用单次 LLM 调用（非 SSE）
         if (mode === 'fast') {
             try {
                 const generator = new GameGenerator();
                 const result = await generator.generateFromSetup(characters, worldSetting, scenes, themeSetting, userLocale);
                 
                 saveProject(result);
+                
+                // 如果有 idea，将生成的项目保存到缓存
+                if (idea && idea.trim()) {
+                    const cacheKey = getCacheKey(`idea-script:${userLocale}:${idea}`);
+                    saveToCache(cacheKey, result);
+                    console.log(`[GameRoute] 已将生成的项目保存到缓存: idea="${idea.slice(0, 30)}..."`);
+                }
                 
                 return c.json({
                     success: true,
@@ -210,6 +300,13 @@ gameRoutes.post(
                         
                         // 保存项目
                         saveProject(result);
+                        
+                        // 如果有 idea，将生成的项目保存到缓存
+                        if (idea && idea.trim()) {
+                            const cacheKey = getCacheKey(`idea-script:${userLocale}:${idea}`);
+                            saveToCache(cacheKey, result);
+                            console.log(`[GameRoute] 已将生成的项目保存到缓存 (Agent模式): idea="${idea.slice(0, 30)}..."`);
+                        }
                         
                         // 发送最终结果
                         sendEvent('result', {

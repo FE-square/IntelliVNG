@@ -36,6 +36,7 @@ function getProjectFilePath(projectId: string): string {
 
 /**
  * 从缓存中读取（基于 idea hash）
+ * 临时缓存优化，避免重复生成相同内容
  */
 export function getFromCache<T>(key: string): T | null {
     const filePath = getCacheFilePath(key);
@@ -78,6 +79,7 @@ export function saveToCache<T>(key: string, data: T): void {
 
 /**
  * 保存项目数据（基于 projectId）
+ * 持久化项目数据，支持前端页面导航
  */
 export function saveProject<T extends { id: string }>(project: T): void {
     const filePath = getProjectFilePath(project.id);
