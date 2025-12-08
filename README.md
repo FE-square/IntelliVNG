@@ -13,13 +13,20 @@
 “多 Agent 协作 + 可视化交互编辑 → 从一个模糊想法走到一部可玩的多结局视觉小说游戏”
 
 [多智能体](#-多智能体系统设计) · [技术栈](#-技术栈) · [模块架构](#-目录结构) ｜
-[视频演示](https://www.bilibili.com/video/BV1Xq22BiELB/?share_source=copy_web&vd_source=cb07e0976727f7fcd529213fa84fc1ed) · [流程文档](https://fe-square.feishu.cn/wiki/Ki4hwhwOeieN9ykDk71cvGFznle) · [思路演进](https://fe-square.feishu.cn/wiki/MNvNwtqDUiAhRLkZddzcdxFpnIb)
+[视频演示](https://www.bilibili.com/video/BV1d822B3Ezh/?vd_source=70b54740952d96cccb23b6cdcb6a65ad) · [流程文档](https://fe-square.feishu.cn/wiki/Ki4hwhwOeieN9ykDk71cvGFznle) · [思路演进](https://fe-square.feishu.cn/wiki/MNvNwtqDUiAhRLkZddzcdxFpnIb)
 
 </div>
 
 ---
 
-## ✨ 核心特性
+# ✨ 核心特性
+
+### 🎯 双模式创作流程
+
+提供两种创作模式，满足不同用户需求：
+
+- **自由创作模式**：只需输入一句话创意（如"失忆少女在未来都市的冒险"），AI 自动生成完整的世界观、角色、场景和剧情，适合快速原型或新手体验
+- **专业模式**：支持手动填写详细的世界观设定、角色属性、场景描述等表单，每个字段都可使用"AI 自动补全"辅助创作，给予创作者完全的掌控权
 
 ### 🤖 多智能体协作创作
 
@@ -381,7 +388,7 @@ export const myAnalysisTool = createTool({
 ## 🗺️ Roadmap
 
 **Phase 1 · MVP 完成 ✅**  
-AI Multi-Agent System、基础编辑器、播放器、通用导出链路完成。
+AI Multi-Agent System、可视化剧本编辑器、即时预览、项目管理、导出html游戏、导出与导入JSON全链路、多语言、端到端体验支持完成、自由创作模式与专业模式双轨并行，满足不同层次创作者需求。
 
 **Phase 2 · 体验与鲁棒性（进行中）**
 - [ ] 资产生成一致性调优（图生图）
