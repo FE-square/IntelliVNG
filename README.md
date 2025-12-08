@@ -12,7 +12,8 @@
 
 “多 Agent 协作 + 可视化交互编辑 → 从一个模糊想法走到一部可玩的多结局视觉小说游戏”
 
-[快速开始](#-快速开始) · [多智能体架构](#-多智能体系统设计) · [技术栈](#-技术栈)
+[多智能体](#-多智能体系统设计) · [技术栈](#-技术栈) · [模块架构](#-目录结构) ｜
+[视频演示](https://www.bilibili.com/video/BV1Xq22BiELB/?share_source=copy_web&vd_source=cb07e0976727f7fcd529213fa84fc1ed) · [流程文档](https://fe-square.feishu.cn/wiki/Ki4hwhwOeieN9ykDk71cvGFznle) · [思路演进](https://fe-square.feishu.cn/wiki/MNvNwtqDUiAhRLkZddzcdxFpnIb)
 
 </div>
 
@@ -72,13 +73,13 @@ Director / Writer / Reviewer Agents 串-并行协作
    ↓
 可视化分支编辑 & GamePlayer 试玩
    ↓
-DSL JSON / 单 HTML / 独立 Web 项目导出
+JSON DSL / 单 HTML / 独立 Web 项目导出
 ```
 
 ### ✨ 作品亮点
 
 IntelliVNG Studio 为 **AI+互动游戏挑战赛·AI游戏创作工具赛道** 打造的作品。
-我们瞄准“降低门槛、普惠创作”，提供一个 **0→1 自动生成 + 可视化编辑 + 一键导出** 的视觉小说游戏制作平台。
+我们秉持“降低门槛、普惠创作”初衷，提供一个 **0→1 自动生成 + 可视化编辑 + 一键导出** 的视觉小说游戏制作平台，并深度融合 AI 领域前沿研究成果，创新落地，**不甘于“大模型API集成/包装”** 式
 
 > - **技术创新性 (40%)**：Tree-of-Thoughts + ReAct + Few-shot CoT 的多智能体协作系统、AI 自动补全表单、设定生图、故事线可视化交互编辑
 > - **工具链完成度 (20%)**：输入 → 实时仪表盘 → 故事线编辑器 → 预览播放器 → DSL/单体游戏导出  
@@ -215,23 +216,23 @@ const VNG_TOOLS = {
 
 ---
 
-## 📁 目录结构
+## 📁 目录结构 & 模块划分
 
 ```
 IntelliVNG/
 ├── apps/                           # 应用层
-│   ├── web/                        # 主 Web 应用 (Next.js)
+│   ├── web/                        # 🚩前端 Web 应用 (Next.js SSR)
 │   │   └── src/
 │   │       ├── app/                # 页面路由
-│   │       │   ├── page.tsx        # 首页 - 创意输入
+│   │       │   ├── page.tsx        # 首页-创意输入
 │   │       │   ├── setup/          # 游戏设定向导
 │   │       │   ├── dashboard/      # 生成进度看板
-│   │       │   └── editor/         # 剧本编辑器
+│   │       │   └── editor/         # 可视化剧本编辑器
 │   │       ├── components/         # React 组件
 │   │       ├── stores/             # Zustand 状态
-│   │       └── i18n/               # 国际化资源
+│   │       └── i18n/               # 国际化多语言能力
 │   │
-│   └── intelli-services/           # 后端 AI 服务 (Hono + Mastra)
+│   └── intelli-services/           # 🚩后端 AI 服务 (Hono + Mastra)
 │       └── src/
 │           ├── agents/             # 🤖 多智能体定义
 │           │   ├── storyPlanner.ts # Story Planner Agent
@@ -240,16 +241,16 @@ IntelliVNG/
 │           ├── workflows/           # 🔀 工作流编排
 │           ├── prompts/            # Prompt 模板管理
 │           ├── routes/             # API 路由
-│           └── services/           # 业务服务
+│           └── services/           # 业务逻辑
 │
 ├── packages/                       # 功能包层
 │   ├── core/                       # 核心类型与常量
 │   ├── editor/                     # 剧本编辑器组件
 │   ├── player/                     # 游戏播放器引擎
 │   └── ui/                         # 共享 UI 组件库
+│   └── mcp-server/                         # 🔌 MCP 服务
 │
-├── agents_design.md                # 📚 多智能体系统设计文档
-└── notes/                          # 开发笔记与调研
+└── notes/                          # 开发笔记与调研报告
 ```
 
 ---
