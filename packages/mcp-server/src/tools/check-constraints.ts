@@ -3,6 +3,7 @@
  * 校验故事图是否满足规模/分支/深度等约束
  */
 import { z } from "zod";
+import { t } from "../utils/i18n.js";
 
 export const CheckConstraintsInputSchema = z.object({
   nodes: z
@@ -32,6 +33,7 @@ export const CheckConstraintsInputSchema = z.object({
     })
     .optional()
     .describe("约束配置"),
+  locale: z.enum(["zh-CN", "en-US"]).optional().default("zh-CN").describe("语言环境 (zh-CN/en-US)"),
 });
 
 export const CheckConstraintsOutputSchema = z.object({
@@ -85,6 +87,8 @@ export function checkConstraints(
   input: CheckConstraintsInput
 ): CheckConstraintsOutput {
   const { nodes, constraints } = input;
+  const locale = input.locale || "zh-CN";
+  
   const nodeCount = nodes.length;
   const endingCount = nodes.filter((n) => n.isEnding).length;
   const branchPointCount = nodes.filter((n) => (n.choices?.length || 0) > 1).length;
@@ -101,11 +105,11 @@ export function checkConstraints(
 
   const violations: string[] = [];
 
-  if (!hasStart) violations.push("缺少起始节点 (isStart)");
+  if (!hasStart) violations.push(t("constraint.missingStart", locale));
 
   if (constraints?.targetNodeCount !== undefined && nodeCount !== constraints.targetNodeCount) {
     violations.push(
-      `节点数量不符合：实际 ${nodeCount} / 目标 ${constraints.targetNodeCount}`
+      t("constraint.nodeCount", locale, { actual: nodeCount, target: constraints.targetNodeCount })
     );
   }
 
@@ -114,13 +118,13 @@ export function checkConstraints(
     endingCount !== constraints.targetEndingCount
   ) {
     violations.push(
-      `结局数量不符合：实际 ${endingCount} / 目标 ${constraints.targetEndingCount}`
+      t("constraint.endingCount", locale, { actual: endingCount, target: constraints.targetEndingCount })
     );
   }
 
   if (constraints?.maxDepth !== undefined && maxDepthFound > constraints.maxDepth) {
     violations.push(
-      `路径深度超限：实际 ${maxDepthFound} / 最大 ${constraints.maxDepth}`
+      t("constraint.maxDepth", locale, { actual: maxDepthFound, target: constraints.maxDepth })
     );
   }
 
@@ -129,7 +133,7 @@ export function checkConstraints(
     maxBranchingFound > constraints.maxBranching
   ) {
     violations.push(
-      `单节点分支数超限：实际 ${maxBranchingFound} / 最大 ${constraints.maxBranching}`
+      t("constraint.maxBranching", locale, { actual: maxBranchingFound, target: constraints.maxBranching })
     );
   }
 

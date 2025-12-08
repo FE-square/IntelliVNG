@@ -69,6 +69,7 @@
    - 节点式剧本编辑器，可拖拽节点、修改台词、为选项设置条件变量。
    - 实时 GamePlayer，支持即时试玩、回退、分支路径预览。
 4. **Export**：可导出单 HTML 微站、或仅导出 JSON+资产供外部引擎导入使用；
+5. **MCP Integration**：开放 `mcp-server`，供第三方 Agent（如 Claude/Cursor）直接调用核心分析能力，实现跨平台协作。
 
 ```
 
@@ -92,7 +93,7 @@ IntelliVNG Studio 为 **AI+互动游戏挑战赛·AI游戏创作工具赛道** �
 
 - **技术创新性**：Tree-of-Thoughts + ReAct + Few-shot CoT 的多智能体协作系统、AI 自动补全表单、设定生图、故事线可视化交互编辑
 - **工具链完成度**：输入 → 实时仪表盘 → 故事线编辑器 → 预览播放器 → DSL/单体游戏导出  
-- **AI逻辑跟随**：SSE 可视化工作流 + MCP 工具调用 + Schema 校验  
+- **AI逻辑跟随**：SSE 可视化工作流 + MCP 工具调用 + Schema 校验 + Neuro-Symbolic 神经符号架构
 - **工具链复用**：Mastra 落地多种 Agents 设计范式 + Prompts 集中式管理机制 + Agent Tools
 
 #### 🌍 项目价值与影响力
@@ -101,9 +102,9 @@ IntelliVNG Studio 为 **AI+互动游戏挑战赛·AI游戏创作工具赛道** �
 |------|----------|
 | **🎓 教育场景** | 教师可快速制作互动课件(历史模拟、语言学习、心理健康教育) |
 | **🤝 公益应用** | 低成本生成科普互动故事、文化传承内容 |
-| **♿️ 无障碍设计** | 结构化 JSON 天然适配屏幕阅读器,支持 TTS 语音生成 |
-| **💼 商业模式** | **C 端订阅**:创作者高级功能付费(云端存储、高级模型、素材市场)<br>**B 端合作**:游戏公司剧情原型工具,教育机构互动内容定制<br>**技术输出**:IntelliVNG MCP Server 及 IntelliVNG-CLI 工具链等,以云服务形式收费 |
-| **🌍 国际化** | 界面支持 zh-CN/zh-HK/en-US 多语言切换 |
+| **♿️ 无障碍设计** | 结构化 JSON 天然适配屏幕阅读器,支持 TTS 语音生成; **Cognitive Friendly** 认知友好度检查 |
+| **💼 商业模式** | **C 端订阅**:创作者高级功能付费(云端存储、高级模型、素材市场)<br>**B 端合作**:游戏公司剧情原型工具,教育机构互动内容定制<br>**技术输出**:IntelliVNG MCP Server (SaaS) 及 IntelliVNG-CLI 工具链,以云服务形式收费 |
+| **🌍 国际化** | 界面支持 zh-CN/zh-HK/en-US 多语言切换; **MCP 工具** 也内置多语言支持 |
 | **🌿 开源贡献** | 完全开源 (MIT 协议),Mastra Agents 实践可供社区参考 |
 
 #### 🚀 功能特性
@@ -125,7 +126,7 @@ IntelliVNG Studio 采用 **3 Agent + 1 Orchestrator** 的协同模式，利用 M
 |-------|---------|---------|---------|
 | **Story Planner** | 总编剧 | 设计故事骨架、分支结构 | Tree-of-Thoughts (ToT) |
 | **Node Writer** | 场景写手 | 撰写对话、旁白、选项 | Few-Shot Chain-of-Thought |
-| **Story Reviewer** | 责任编辑 | 质量审核、问题定位 | ReAct (Reasoning + Acting) |
+| **Story Reviewer** | 责任编辑 | 质量审核、问题定位 | ReAct (Reasoning + Acting) + MCP Tools |
 | **Orchestrator** | 项目经理 | 流程调度、状态管理 | Plan-and-Execute 状态机 |
 
 ### 为什么是多智能体？
@@ -196,23 +197,21 @@ INIT → PLANNING → PLAN_VALIDATION → WRITING → REVIEWING
 
 每个阶段都会将阶段信息、提示语、日志及指标通过 Server-Sent Events 推到前端，用户清楚知道系统“正在思考什么”。
 
-#### MCP 工具接口
+#### MCP 工具接口 (Neuro-Symbolic Grounding Layer)
+
+我们不仅在内部使用工具，更将其封装为标准化的 **MCP Server**，充当大模型生成的“锚定层”，强制修正幻觉与逻辑错误：
 
 ```typescript
-const VNG_TOOLS = {
-  "vng_create_project": { /* 初始化 GameProject */ },
-  "vng_add_scene": { /* 添加场景节点 */ },
-  "vng_add_dialogue": { /* 写入角色对话 */ },
-  "vng_generate_background": { /* 调用生图 API */ },
-  "vng_preview_scene": { /* 触发播放器预览 */ },
-  "vng_export_game": { /* 打包导出 */ },
-  "validate-structure": { /* BFS 检查孤立节点 */ },
-  "analyze-paths": { /* DFS 统计分支多样性 */ },
-  "analyze-dialogue-quality": { /* 对话长度分布 */ }
+// IntelliVNG MCP Server (packages/mcp-server)
+const TOOLS = {
+  "validate_story_structure": { /* BFS/DFS 检查孤立节点与死胡同 */ },
+  "analyze_story_paths": { /* 枚举全路径，计算非线性熵 */ },
+  "check_constraints_compliance": { /* 校验节点数、分支深度、结局数是否达标 */ },
+  "score_nonlinearity": { /* 综合评分：路径多样性 + 分支分布 + 认知负载 */ }
 };
 ```
 
-所有工具输入输出都由 Zod Schema 定义，天然兼容 OpenAI Function Calling、Mastra Structured Output，以及我们自研的导出格式。
+所有工具输入输出都由 Zod Schema 定义，支持 `i18n` 多语言反馈，天然兼容 OpenAI Function Calling、Mastra Structured Output。
 
 ### 5. Schema 驱动的数据流
 
@@ -230,7 +229,7 @@ const VNG_TOOLS = {
 | 状态 | Zustand + TanStack Query |
 | 可视化 | React Flow |
 | 后端 | Hono (Edge Ready) Node.js |
-| Agent | Mastra (Agents & Workflow) + MCP 工具 |
+| Agent | Mastra (Agents & Workflow) + MCP Server (Neuro-Symbolic Layer) |
 | LLM | OpenAI GPT-4.1 / Qwen-Plus / 阿里通义百炼兼容 |
 | 媒体生成 | 通义万相 / Fish Audio |
 | 数据契约 | Zod Schema + DSL 导出 |

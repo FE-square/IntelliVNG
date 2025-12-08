@@ -5,6 +5,7 @@
  * 这是视觉小说游戏脚本质量保证的核心工具
  */
 import { z } from "zod";
+import { t } from "../utils/i18n.js";
 
 // 输入 Schema
 export const ValidateStructureInputSchema = z.object({
@@ -18,6 +19,7 @@ export const ValidateStructureInputSchema = z.object({
       targetNodeId: z.string().describe("分支目标节点ID"),
     })).optional().describe("分支选项列表"),
   })).describe("故事节点列表"),
+  locale: z.enum(["zh-CN", "en-US"]).optional().default("zh-CN").describe("语言环境 (zh-CN/en-US)"),
 });
 
 // 输出 Schema
@@ -43,13 +45,14 @@ export function validateStructure(input: ValidateStructureInput): ValidateStruct
   const orphans: string[] = [];
   const deadEnds: string[] = [];
   const invalidLinks: string[] = [];
+  const locale = input.locale || "zh-CN";
 
   // 找到开始节点
   const startNode = nodes.find((n) => n.isStart);
   if (!startNode) {
     return {
       valid: false,
-      error: "没有找到开始节点 (isStart: true)",
+      error: t("structure.error.noStart", locale),
       orphans: [],
       deadEnds: [],
       invalidLinks: [],
@@ -71,7 +74,7 @@ export function validateStructure(input: ValidateStructureInput): ValidateStruct
     // 检查 nextNodeId
     if (current.nextNodeId) {
       if (!nodeIds.has(current.nextNodeId)) {
-        invalidLinks.push(`${currentId} → ${current.nextNodeId} (节点不存在)`);
+        invalidLinks.push(`${currentId} → ${current.nextNodeId} (${t("structure.error.invalidLink", locale)})`);
       } else if (!reachable.has(current.nextNodeId)) {
         reachable.add(current.nextNodeId);
         queue.push(current.nextNodeId);
@@ -81,7 +84,7 @@ export function validateStructure(input: ValidateStructureInput): ValidateStruct
     // 检查 choices
     current.choices?.forEach((choice) => {
       if (!nodeIds.has(choice.targetNodeId)) {
-        invalidLinks.push(`${currentId} → ${choice.targetNodeId} (节点不存在)`);
+        invalidLinks.push(`${currentId} → ${choice.targetNodeId} (${t("structure.error.invalidLink", locale)})`);
       } else if (!reachable.has(choice.targetNodeId)) {
         reachable.add(choice.targetNodeId);
         queue.push(choice.targetNodeId);

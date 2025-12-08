@@ -5,6 +5,7 @@
  * 真正的非线性叙事应该在故事早期就开始分支
  */
 import { z } from "zod";
+import { t } from "../utils/i18n.js";
 
 // 输入 Schema
 export const AnalyzeBranchDistributionInputSchema = z.object({
@@ -22,6 +23,7 @@ export const AnalyzeBranchDistributionInputSchema = z.object({
       branchType: z.enum(["route", "relationship", "information", "ending"]).optional(),
     })).optional(),
   })).describe("故事节点列表"),
+  locale: z.enum(["zh-CN", "en-US"]).optional().default("zh-CN").describe("语言环境 (zh-CN/en-US)"),
 });
 
 // 输出 Schema
@@ -55,9 +57,9 @@ export function analyzeBranchDistribution(
   input: AnalyzeBranchDistributionInput
 ): AnalyzeBranchDistributionOutput {
   const { nodes } = input;
+  const locale = input.locale || "zh-CN";
 
   // 阶段映射
-  const phaseOrder = ["setup", "rising", "conflict", "twist", "climax", "falling", "resolution"];
   const earlyPhases = new Set(["setup", "rising", "conflict"]);
   const latePhases = new Set(["climax", "falling", "resolution"]);
 
@@ -141,23 +143,23 @@ export function analyzeBranchDistribution(
   const suggestions: string[] = [];
   
   if (isPseudoNonLinear) {
-    suggestions.push("⚠️ 检测到伪非线性结构：大部分分支集中在故事末尾。建议在故事早期（setup/rising阶段）添加分支点。");
+    suggestions.push(t("dist.pseudo", locale));
   }
   
   if (branchByPhase.setup === 0 && branchByPhase.rising === 0) {
-    suggestions.push("💡 故事开端缺少分支，玩家在前期可能感到缺乏参与感。考虑在 setup 或 rising 阶段添加选择。");
+    suggestions.push(t("dist.noStartBranch", locale));
   }
   
   if (branchTypeStats.route === 0) {
-    suggestions.push("💡 缺少路线分支(route)，故事可能缺乏真正的路线分歧。考虑添加导向不同故事线的分支。");
+    suggestions.push(t("dist.noRoute", locale));
   }
   
   if (branchTypeStats.ending === totalBranches && totalBranches > 0) {
-    suggestions.push("⚠️ 所有分支都是结局分支，这会让故事显得线性。建议增加影响剧情发展的中途分支。");
+    suggestions.push(t("dist.allEnding", locale));
   }
 
   if (distributionScore >= 80) {
-    suggestions.push("✅ 分支分布良好！故事具有较好的非线性叙事结构。");
+    suggestions.push(t("dist.good", locale));
   }
 
   return {
