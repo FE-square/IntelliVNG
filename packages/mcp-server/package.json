@@ -1,0 +1,36 @@
+{
+  "name": "@intellivng/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP Server for IntelliVNG - Visual Novel Story Analysis Tools",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "intellivng-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint \"src/**/*.ts\""
+  },
+  "keywords": [
+    "mcp",
+    "visual-novel",
+    "story-analysis",
+    "ai-tools",
+    "game-development"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}
