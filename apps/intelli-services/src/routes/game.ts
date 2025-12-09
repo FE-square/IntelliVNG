@@ -266,10 +266,74 @@ gameRoutes.post(
                     const progressEmitter = createProgressEmitter();
                     const sessionId = progressEmitter.getSessionId();
                     
-                    const sendEvent = (event: string, data: any) => {
-                        const payload = JSON.stringify({ event, ...data });
-                        controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+                    // 跟踪流状态，避免在关闭后写入
+                    let isStreamClosed = false;
+                    
+                    /**
+                     * 安全发送 SSE 事件
+                     * 返回 true 表示发送成功，false 表示流已关闭
+                     */
+                    const sendEvent = (event: string, data: any): boolean => {
+                        if (isStreamClosed) {
+                            console.log(`[GameRoute] SSE 流已关闭，跳过事件: ${event}`);
+                            return false;
+                        }
+                        
+                        try {
+                            const payload = JSON.stringify({ event, ...data });
+                            controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+                            return true;
+                        } catch (err) {
+                            const errMsg = err instanceof Error ? err.message : String(err);
+                            // 检测流关闭错误
+                            if (errMsg.includes('Controller is already closed') || 
+                                errMsg.includes('closed') ||
+                                errMsg.includes('CLOSED')) {
+                                isStreamClosed = true;
+                                console.log(`[GameRoute] SSE 流已被客户端关闭 (sessionId: ${sessionId})`);
+                                return false;
+                            }
+                            // 其他错误重新抛出
+                            throw err;
+                        }
                     };
+                    
+                    /**
+                     * 发送心跳（SSE 注释格式，不会触发前端事件处理）
+                     */
+                    const sendHeartbeat = (): boolean => {
+                        if (isStreamClosed) return false;
+                        try {
+                            // SSE 规范：以冒号开头的是注释，客户端会忽略但连接保持活跃
+                            controller.enqueue(encoder.encode(`: heartbeat ${Date.now()}\n\n`));
+                            return true;
+                        } catch (err) {
+                            isStreamClosed = true;
+                            return false;
+                        }
+                    };
+                    
+                    /**
+                     * 安全关闭流
+                     */
+                    const safeCloseStream = () => {
+                        if (!isStreamClosed) {
+                            try {
+                                controller.close();
+                            } catch (err) {
+                                // 忽略关闭时的错误
+                            }
+                            isStreamClosed = true;
+                        }
+                    };
+                    
+                    // ========== 心跳机制：每 25 秒发送一次 ==========
+                    // 保持连接活跃，防止代理/网关超时（通常 30-60 秒）
+                    const heartbeatInterval = setInterval(() => {
+                        if (!sendHeartbeat()) {
+                            clearInterval(heartbeatInterval);
+                        }
+                    }, 25000);
                     
                     // 监听进度事件
                     progressEmitter.on('progress', (progressEvent: ProgressEvent) => {
@@ -298,6 +362,18 @@ gameRoutes.post(
                             userLocale
                         );
                         
+                        // 检查流是否仍然打开
+                        if (isStreamClosed) {
+                            console.log(`[GameRoute] 生成完成但客户端已断开 (sessionId: ${sessionId})`);
+                            // 仍然保存结果，即使客户端断开
+                            saveProject(result);
+                            if (idea && idea.trim()) {
+                                const cacheKey = getCacheKey(`idea-script:${userLocale}:${idea}`);
+                                saveToCache(cacheKey, result);
+                            }
+                            return;
+                        }
+                        
                         // 保存项目
                         saveProject(result);
                         
@@ -317,24 +393,35 @@ gameRoutes.post(
                         
                     } catch (error) {
                         const message = error instanceof Error ? error.message : '未知错误';
-                        console.error('[GameRoute] Agent 模式生成失败:', message);
                         
-                        sendEvent('error', {
-                            success: false,
-                            error: message,
-                        });
+                        // 检查是否是流关闭导致的错误
+                        if (message.includes('Controller is already closed') || isStreamClosed) {
+                            console.log(`[GameRoute] Agent 模式：客户端已断开连接 (sessionId: ${sessionId})`);
+                        } else {
+                            console.error('[GameRoute] Agent 模式生成失败:', message);
+                            
+                            // 尝试发送错误给前端
+                            sendEvent('error', {
+                                success: false,
+                                error: message,
+                            });
+                        }
                     } finally {
-                        // 清理
+                        // 停止心跳
+                        clearInterval(heartbeatInterval);
+                        
+                        // 清理进度发射器
                         removeProgressEmitter(sessionId);
                         
-                        // 发送结束事件
+                        // 尝试发送结束事件（如果流仍然打开）
                         sendEvent('session', { 
                             sessionId, 
                             status: 'ended',
                             elapsedTime: progressEmitter.getElapsedTime(),
                         });
                         
-                        controller.close();
+                        // 安全关闭流
+                        safeCloseStream();
                     }
                 },
             }),

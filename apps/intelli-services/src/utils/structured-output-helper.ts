@@ -121,6 +121,93 @@ function sanitizeControlCharacters(input: string): string {
   return input.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
 }
 
+/**
+ * 预处理 LLM 返回的数据，修复常见的大小写问题
+ * 
+ * LLM 经常返回大写的 enum 值（如 "ENDING"），但 schema 期望小写
+ * 这个函数会递归处理所有已知的 enum 字段
+ */
+function normalizeEnumValues(data: any): any {
+  if (data === null || data === undefined) {
+    return data;
+  }
+
+  // 处理数组
+  if (Array.isArray(data)) {
+    return data.map(item => normalizeEnumValues(item));
+  }
+
+  // 处理对象
+  if (typeof data === 'object') {
+    const result: any = {};
+    
+    for (const [key, value] of Object.entries(data)) {
+      let normalizedValue = value;
+      
+      // 处理特定的 enum 字段
+      if (typeof value === 'string') {
+        const lowerValue = value.toLowerCase();
+        
+        switch (key) {
+          // type 字段: scene | branch | ending
+          case 'type':
+            if (['scene', 'branch', 'ending'].includes(lowerValue)) {
+              normalizedValue = lowerValue;
+            }
+            break;
+            
+          // branchType 字段: route | relationship | information | ending | identity
+          case 'branchType':
+            const branchTypeMap: Record<string, string> = {
+              'route': 'route',
+              'relationship': 'relationship',
+              'information': 'information',
+              'ending': 'ending',
+              // 修复常见的 LLM 错误值
+              'identity': 'information', // identity 映射到 information
+              'choice': 'route',
+              'path': 'route',
+            };
+            normalizedValue = branchTypeMap[lowerValue] || 'route'; // 默认为 route
+            break;
+            
+          // functionTag 字段
+          case 'functionTag':
+            const functionTags = ['setup', 'rising', 'conflict', 'twist', 'climax', 'falling', 'resolution'];
+            if (functionTags.includes(lowerValue)) {
+              normalizedValue = lowerValue;
+            }
+            break;
+            
+          // severity 字段
+          case 'severity':
+            if (['minor', 'major', 'critical'].includes(lowerValue)) {
+              normalizedValue = lowerValue;
+            }
+            break;
+            
+          // regenerateTarget 字段
+          case 'regenerateTarget':
+            if (['none', 'specific_nodes', 'all'].includes(lowerValue)) {
+              normalizedValue = lowerValue;
+            }
+            break;
+        }
+      } else {
+        // 递归处理嵌套对象/数组
+        normalizedValue = normalizeEnumValues(value);
+      }
+      
+      result[key] = normalizedValue;
+    }
+    
+    return result;
+  }
+
+  // 其他类型直接返回
+  return data;
+}
+
 export function extractAndValidateJson<T>(text: string, schema: z.ZodType<T, any, any>): T {
   // 尝试多种 JSON 提取方式
   const jsonPatterns = [
@@ -158,7 +245,9 @@ export function extractAndValidateJson<T>(text: string, schema: z.ZodType<T, any
 
   try {
     const parsed = JSON.parse(jsonStr);
-    return schema.parse(parsed);
+    // 预处理：修复 LLM 返回的大小写问题
+    const normalized = normalizeEnumValues(parsed);
+    return schema.parse(normalized);
   } catch (parseError) {
     // 尝试修复常见的 JSON 问题
     try {
@@ -168,7 +257,9 @@ export function extractAndValidateJson<T>(text: string, schema: z.ZodType<T, any
         .replace(/(\w+):/g, '"$1":');  // 未引用的键名
       
       const parsed = JSON.parse(relaxedJson);
-      return schema.parse(parsed);
+      // 预处理：修复 LLM 返回的大小写问题
+      const normalized = normalizeEnumValues(parsed);
+      return schema.parse(normalized);
     } catch {
       throw new Error(`JSON 解析失败: ${parseError}`);
     }
@@ -293,7 +384,10 @@ export async function generateStructuredOutput<T>(
 
     // 检查返回值是否有效
     if (response.object !== undefined && response.object !== null) {
-      result = response.object as T;
+      // 预处理：修复 LLM 返回的大小写问题（即使是 structuredOutput 也可能有问题）
+      const normalized = normalizeEnumValues(response.object);
+      // 重新验证 schema
+      result = schema.parse(normalized) as T;
       
       // 保存到缓存
       writeToCache(cacheKey, result, { agentName, schemaName, mode: 'structured' });

@@ -295,6 +295,7 @@ export default function Home() {
      * 错误处理：
      * - 无响应体：抛出错误，重置状态
      * - JSON 解析失败：警告日志，跳过该事件，继续接收
+     * - 流异常结束（未收到 result/error）：检测并报错
      * 
      * @param response - fetch 返回的 Response 对象
      */
@@ -311,11 +312,17 @@ export default function Home() {
         const decoder = new TextDecoder('utf-8');
         let buffer = ''; // 缓冲区，存储未完成的数据
         let shouldStop = false; // 终止标志
+        let receivedResult = false; // 是否收到了 result 事件
+        let receivedError = false; // 是否收到了 error 事件
+        let lastEventTime = Date.now(); // 最后收到事件的时间
 
         // ========== 循环读取流 ==========
         while (!shouldStop) {
             const { value, done } = await reader.read();
             if (done) break; // 流结束
+
+            // 更新最后事件时间
+            lastEventTime = Date.now();
 
             // 解码并追加到缓冲区
             buffer += decoder.decode(value, { stream: true });
@@ -332,6 +339,11 @@ export default function Home() {
                     if (dataStr) {
                         try {
                             const payload = JSON.parse(dataStr) as AgentEventPayload;
+                            
+                            // 记录是否收到了终止事件
+                            if (payload.event === 'result') receivedResult = true;
+                            if (payload.event === 'error') receivedError = true;
+                            
                             const shouldTerminate = handleAgentEvent(payload);
                             if (shouldTerminate) {
                                 shouldStop = true; // 收到终止信号
@@ -352,10 +364,20 @@ export default function Home() {
         if (trimmed.startsWith('data:')) {
             try {
                 const payload = JSON.parse(trimmed.replace(/^data:\s*/, '')) as AgentEventPayload;
+                if (payload.event === 'result') receivedResult = true;
+                if (payload.event === 'error') receivedError = true;
                 handleAgentEvent(payload);
             } catch (error) {
                 console.warn('解析剩余 SSE 数据失败:', error);
             }
+        }
+
+        // ========== 检测流异常结束 ==========
+        // 如果流结束了但没有收到 result 或 error 事件，说明连接被意外断开
+        if (!receivedResult && !receivedError) {
+            console.error('[SSE] 流异常结束：未收到 result 或 error 事件');
+            setSessionStatus('error');
+            toast.error('连接中断', '服务器连接超时或已断开，请重试');
         }
 
         // ========== 清理资源 ==========
