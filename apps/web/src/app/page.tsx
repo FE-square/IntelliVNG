@@ -137,7 +137,7 @@ export default function Home() {
                     clearRedirectCountdown();
                     const project = finalProjectRef.current;
                     if (project) {
-                        router.push(`/editor?projectId=${project.id}`);
+                        router.push(`/generate-assets?projectId=${project.id}`);
                     }
                     return null;
                 }
