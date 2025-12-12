@@ -257,11 +257,13 @@ IntelliVNG/
 │           ├── agents/             # 🤖 多智能体定义
 │           │   ├── storyPlanner.ts # Story Planner Agent
 │           │   ├── nodeWriter.ts   # Node Writer Agent
-│           │   └── storyReviewer.ts# Story Reviewer Agent
+│           │   ├── storyReviewer.ts# Story Reviewer Agent（Function 工具版）
+│           │   └── storyReviewer.mcp.ts # Story Reviewer Agent（MCP 工具版）
 │           ├── workflows/           # 🔀 工作流编排
 │           ├── prompts/            # Prompt 模板管理
 │           ├── routes/             # API 路由
 │           └── services/           # 业务逻辑
+│               └── intellivng-mcp-client.ts # MCP stdio client（供 Agent 工具调用）
 │
 ├── packages/                       # 功能包层
 │   ├── core/                       # 核心类型与常量
@@ -301,6 +303,19 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL_NAME=gpt-4.1
 TONGYI_API_BASE=sk-xxxx
 PORT=4000
+```
+
+#### （可选）启用服务端 MCP 工具版 Reviewer
+
+`Story Reviewer` 默认使用**本地工具实现**。如需让服务端 Agent 通过 MCP 调用 `packages/mcp-server` 的工具（结构/路径/分支分布/约束/非线性评分），可在 `apps/intelli-services/.env` 增加：
+
+```env
+# 启用 MCP 版 story-reviewer（默认 false）
+REVIEWER_USE_MCP=true
+
+# （可选）覆盖 MCP server 启动方式（stdio）
+# INTELLIVNG_MCP_COMMAND=node
+# INTELLIVNG_MCP_ARGS=/abs/path/to/IntelliVNG/packages/mcp-server/dist/index.js
 ```
 
 ### 本地运行

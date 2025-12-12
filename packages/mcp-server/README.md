@@ -213,6 +213,38 @@
 
 ---
 
+## 在 IntelliVNG 服务端（intelli-services）中接入
+
+IntelliVNG 已在服务端实现了一个 **“MCP 工具版 Story Reviewer”**，用于让 Mastra Agent 在运行时通过 stdio 拉起并调用本 MCP server。
+
+### 启用方式（推荐）
+
+在 `apps/intelli-services/.env` 增加：
+
+```env
+REVIEWER_USE_MCP=true
+```
+
+启用后：
+
+- `apps/intelli-services/src/mastra/index.ts` 会将 `"story-reviewer"` 注册为 MCP 版 agent；
+- `apps/intelli-services/src/workflows/storyGeneration.ts` 会切换到 `workflow.review.mcp` 提示词，引导模型调用更多 MCP 工具；
+- MCP server 默认会以 stdio 方式自动启动：
+  - 优先使用 `packages/mcp-server/dist/index.js`
+  - 若 dist 不存在，则 fallback 到 `npx tsx packages/mcp-server/src/index.ts`
+
+### 覆盖 MCP server 启动方式（可选）
+
+```env
+INTELLIVNG_MCP_COMMAND=node
+INTELLIVNG_MCP_ARGS=/abs/path/to/IntelliVNG/packages/mcp-server/dist/index.js
+```
+
+### 关键文件
+
+- MCP client：`apps/intelli-services/src/services/intellivng-mcp-client.ts`
+- MCP 版 Reviewer：`apps/intelli-services/src/agents/storyReviewer.mcp.ts`
+
 ## 安装
 
 ```bash
