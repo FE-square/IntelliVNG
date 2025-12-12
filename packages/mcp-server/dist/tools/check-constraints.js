@@ -40,8 +40,12 @@ export const CheckConstraintsOutputSchema = z.object({
     violations: z.array(z.string()),
     complianceScore: z.number(),
 });
-function findStart(nodes) {
-    return nodes.find((n) => n.isStart) || nodes[0];
+function resolveStart(nodes) {
+    const explicitStart = nodes.find((n) => n.isStart);
+    return {
+        hasStart: Boolean(explicitStart),
+        startNode: explicitStart || nodes[0],
+    };
 }
 function computeMaxDepth(nodes, startId) {
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
@@ -74,11 +78,8 @@ export function checkConstraints(input) {
     const endingCount = nodes.filter((n) => n.isEnding).length;
     const branchPointCount = nodes.filter((n) => (n.choices?.length || 0) > 1).length;
     const maxBranchingFound = nodes.reduce((max, n) => Math.max(max, n.choices?.length || 0), 0);
-    const startNode = findStart(nodes);
-    const hasStart = Boolean(startNode);
-    const maxDepthFound = hasStart
-        ? computeMaxDepth(nodes, startNode.id)
-        : 0;
+    const { hasStart, startNode } = resolveStart(nodes);
+    const maxDepthFound = startNode ? computeMaxDepth(nodes, startNode.id) : 0;
     const violations = [];
     if (!hasStart)
         violations.push(t("constraint.missingStart", locale));

@@ -44,6 +44,17 @@ export type AnalyzeDialogueOutput = z.infer<typeof AnalyzeDialogueOutputSchema>;
  */
 export function analyzeDialogue(input: AnalyzeDialogueInput): AnalyzeDialogueOutput {
   const { nodes } = input;
+  if (!nodes || nodes.length === 0) {
+    return {
+      avgDialoguesPerNode: 0,
+      shortNodes: [],
+      longNodes: [],
+      noNarrationNodes: [],
+      characterStats: [],
+      emotionDistribution: {},
+      qualityScore: 0,
+    };
+  }
   
   // 基础统计
   const stats = nodes.map((n) => ({
@@ -56,8 +67,7 @@ export function analyzeDialogue(input: AnalyzeDialogueInput): AnalyzeDialogueOut
     ),
   }));
 
-  const avgDialogues =
-    stats.reduce((sum, s) => sum + s.dialogueCount, 0) / stats.length;
+  const avgDialogues = stats.reduce((sum, s) => sum + s.dialogueCount, 0) / stats.length;
 
   // 对话过少（< 2）或过多（> 8）的节点
   const shortNodes = stats.filter((s) => s.dialogueCount < 2).map((s) => s.id);

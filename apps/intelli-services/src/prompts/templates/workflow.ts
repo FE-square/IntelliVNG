@@ -114,6 +114,35 @@ ToT 是一种结构化思维方法，你需要像下棋一样"向前看几步"�
     variables: ['drafts', 'planOutline', 'characters', 'nodesForValidation'],
   },
 
+  'workflow.review.mcp': {
+    user: `## 待审阅的节点草稿
+{{drafts}}
+
+## 原始故事规划
+{{planOutline}}
+
+## 角色档案
+{{characters}}
+
+## 约束（可选）
+{{constraints}}
+
+---
+
+请按照 ReAct 模式审阅这个故事（可使用更丰富的分析工具）：
+1. 调用 validate-structure 检查结构
+2. 调用 analyze-paths 分析路径多样性/非线性程度
+3. 调用 analyze-dialogue-quality 检查对话质量
+4. 调用 analyze-branch-distribution 检测“伪非线性”（分支是否集中在末尾）
+5. （可选）如果提供了 constraints，调用 check-constraints-compliance 做约束合规检查
+6. 调用 score-nonlinearity 得到 0-100 的综合非线性评分
+7. 基于工具输出，给出综合评分和修改建议
+
+检查用的节点数据:
+{{nodesForValidation}}`,
+    variables: ['drafts', 'planOutline', 'characters', 'constraints', 'nodesForValidation'],
+  },
+
   'workflow.rewrite': {
     user: `## 原始草稿
 {{originalDraft}}

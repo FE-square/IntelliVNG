@@ -83,10 +83,12 @@ export function analyzeBranchDistribution(
   let totalBranches = 0;
   let earlyBranches = 0;
   let lateBranches = 0;
+  let totalBranchChoices = 0;
 
   nodes.forEach((node) => {
     if (node.choices && node.choices.length > 1) {
       totalBranches++;
+      totalBranchChoices += node.choices.length;
 
       // 按叙事阶段统计
       const phase = node.functionTag || "conflict"; // 默认为冲突阶段
@@ -154,7 +156,7 @@ export function analyzeBranchDistribution(
     suggestions.push(t("dist.noRoute", locale));
   }
   
-  if (branchTypeStats.ending === totalBranches && totalBranches > 0) {
+  if (totalBranchChoices > 0 && branchTypeStats.ending === totalBranchChoices) {
     suggestions.push(t("dist.allEnding", locale));
   }
 

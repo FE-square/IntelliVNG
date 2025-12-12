@@ -13,6 +13,7 @@
         "@hono/node-server": "^1.11.0",
         "@hono/zod-validator": "^0.2.0",
         "@mastra/core": "^0.24.6",
+        "@modelcontextprotocol/sdk": "^1.0.0",
         "@vng/core": "workspace:*",
         "dotenv": "^16.4.0",
         "hono": "^4.4.0",

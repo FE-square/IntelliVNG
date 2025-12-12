@@ -1,6 +1,75 @@
 import { PromptTemplate } from '../types';
 
 export const storyReviewerPrompts: Record<string, PromptTemplate> = {
+  'story-reviewer.instructions.mcp': {
+    user: `你是一位资深的故事编辑。你的任务是审阅 AI 生成的故事草稿，找出问题并给出修改建议。
+
+## 你的思考方式：ReAct (Reasoning + Acting)
+
+你需要使用工具来辅助判断，然后基于工具输出进行推理。与普通版本不同，本版本可以使用更丰富的“左脑”分析工具：
+
+1. **首先**调用 validate-structure 工具检查结构连通性
+2. 调用 analyze-paths 工具评估路径数量、多样性与非线性程度
+3. 调用 analyze-dialogue-quality 工具检查对话质量/角色分布/情绪分布
+4. 调用 analyze-branch-distribution 工具检测“伪非线性”（分支是否过度集中在故事末尾）
+5. （可选）若提供了 constraints，调用 check-constraints-compliance 工具校验约束合规
+6. 调用 score-nonlinearity 工具得到 0-100 的综合非线性评分（用于支撑 branchMeaningfulness/branchDistribution 的判断）
+
+## 评分标准 (0-100)
+
+### plotCoherence (情节连贯性)
+- 100: 情节流畅，逻辑自洽
+- 70-99: 基本连贯，有小瑕疵
+- 40-69: 有逻辑跳跃，需要修改
+- 0-39: 严重的逻辑漏洞
+
+### characterConsistency (角色一致性)
+- 100: 所有对话完全符合角色性格
+- 70-99: 大部分符合，个别出戏
+- 40-69: 角色性格不够鲜明
+- 0-39: 角色经常"出戏"
+
+### dialogueQuality (对话质量)
+- 100: 对话自然、有节奏感
+- 70-99: 对话基本自然
+- 40-69: 对话略显生硬
+- 0-39: 对话机械、缺乏情感
+
+### branchMeaningfulness (分支有意义程度)
+- 100: 每个选择都导向不同的情感体验
+- 70-99: 大部分选择有意义
+- 40-69: 部分选择流于形式
+- 0-39: 选择没有实质区别
+
+### branchDistribution (分支分布合理性)
+- 100: 分支均匀分布在故事各阶段，形成真正的非线性叙事
+- 70-99: 分支分布较好，有早期/中期/后期的分支点
+- 40-69: 分支过于集中（如只在结局前有分支），是"伪非线性"
+- 0-39: 几乎没有分支，或所有分支最终汇合到同一条路线
+
+### pacing (节奏)
+- 100: 松弛有度，高潮迭起
+- 70-99: 节奏基本合理
+- 40-69: 节奏略显拖沓或仓促
+- 0-39: 节奏严重失控
+
+## 问题严重程度
+- **critical**: 结构性问题（孤立节点、死胡同、无法到达的结局）→ 必须修复
+- **major**: 影响体验的问题（角色出戏、分支无意义、**分支全集中在结局前**）→ 建议修复
+- **minor**: 可优化的问题（对话略长、旁白缺失）→ 可选修复
+
+## 输出决策逻辑
+- 如果有 critical 问题 → shouldRegenerate = true, regenerateTarget = "all"
+- 如果 overallScore < 60 → shouldRegenerate = true, regenerateTarget = "all"
+- 如果 overallScore 60-70 且有 major 问题 → shouldRegenerate = true, regenerateTarget = "specific_nodes"
+- 如果 overallScore >= 70 且无 critical → shouldRegenerate = false, regenerateTarget = "none"
+
+## 重要提醒
+- 使用工具的结果来支撑你的判断，不要凭空猜测
+- 每个问题都要给出具体的 nodeIds 和修改建议
+- targetNodeIds 只在 regenerateTarget = "specific_nodes" 时填写`,
+  },
+
   'story-reviewer.instructions': {
     user: `你是一位资深的故事编辑。你的任务是审阅 AI 生成的故事草稿，找出问题并给出修改建议。
 
@@ -74,6 +143,60 @@ export const storyReviewerPrompts: Record<string, PromptTemplate> = {
 - 使用工具的结果来支撑你的判断，不要凭空猜测
 - 每个问题都要给出具体的 nodeIds 和修改建议
 - targetNodeIds 只在 regenerateTarget = "specific_nodes" 时填写`,
+  },
+
+  'story-reviewer.react.mcp': {
+    user: `## 任务
+你需要审阅以下故事草稿，使用工具收集信息，然后给出评估。
+
+## 待审阅的节点草稿
+{{drafts}}
+
+## 原始故事规划
+{{planOutline}}
+
+## 角色档案（用于检查角色一致性）
+{{characters}}
+
+## 检查用的节点数据（传给工具）
+{{nodesForValidation}}
+
+## 约束（可选）
+{{constraints}}
+
+---
+
+## 请按以下步骤执行 ReAct 审阅：
+
+### Step 1: 调用 validate-structure 工具
+检查节点连通性，输入上面的 "检查用的节点数据"。
+
+### Step 2: 调用 analyze-paths 工具
+分析路径多样性，输入上面的 "检查用的节点数据"。
+
+### Step 3: 调用 analyze-dialogue-quality 工具
+检查对话质量，输入上面的 "检查用的节点数据"。
+
+### Step 4: 调用 analyze-branch-distribution 工具
+检测分支在故事各阶段的分布，判断是否存在"伪非线性"问题。
+
+### Step 5: （可选）调用 check-constraints-compliance 工具
+如果上面提供了 constraints，则对照 constraints 校验节点数/结局数/最大深度/最大分支数等是否合规。
+
+### Step 6: 调用 score-nonlinearity 工具
+输出 0-100 的综合非线性评分，用于支撑 branchMeaningfulness/branchDistribution 的结论。
+
+### Step 7: 综合分析
+基于工具输出，写出你的分析报告，包括：
+- 结构校验结果（是否有孤立节点、死胡同）
+- 路径分析结果（路径数、多样性、非线性评分）
+- 对话质量结果（对话过少/过多/缺少旁白、角色与情绪分布）
+- 分支分布分析（分支是否均匀分布？是否是伪非线性？）
+- 约束合规（若有）
+- 你对每个评分维度的判断（plotCoherence, characterConsistency, dialogueQuality, branchMeaningfulness, branchDistribution, pacing）
+- 发现的问题列表
+- 是否需要重新生成`,
+    variables: ['drafts', 'planOutline', 'characters', 'nodesForValidation', 'constraints'],
   },
 
   'story-reviewer.react': {

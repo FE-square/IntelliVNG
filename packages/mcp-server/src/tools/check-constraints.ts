@@ -50,8 +50,12 @@ export const CheckConstraintsOutputSchema = z.object({
 export type CheckConstraintsInput = z.infer<typeof CheckConstraintsInputSchema>;
 export type CheckConstraintsOutput = z.infer<typeof CheckConstraintsOutputSchema>;
 
-function findStart(nodes: { id: string; isStart?: boolean }[]) {
-  return nodes.find((n) => n.isStart) || nodes[0];
+function resolveStart(nodes: { id: string; isStart?: boolean }[]) {
+  const explicitStart = nodes.find((n) => n.isStart);
+  return {
+    hasStart: Boolean(explicitStart),
+    startNode: explicitStart || nodes[0],
+  };
 }
 
 function computeMaxDepth(
@@ -97,11 +101,8 @@ export function checkConstraints(
     0
   );
 
-  const startNode = findStart(nodes);
-  const hasStart = Boolean(startNode);
-  const maxDepthFound = hasStart
-    ? computeMaxDepth(nodes, startNode.id)
-    : 0;
+  const { hasStart, startNode } = resolveStart(nodes);
+  const maxDepthFound = startNode ? computeMaxDepth(nodes, startNode.id) : 0;
 
   const violations: string[] = [];
 

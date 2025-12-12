@@ -6,6 +6,7 @@ import { Mastra } from "@mastra/core/mastra";
 import { createStoryPlannerAgent } from "../agents/storyPlanner";
 import { createNodeWriterAgent } from "../agents/nodeWriter";
 import { createStoryReviewerAgent } from "../agents/storyReviewer";
+import { createStoryReviewerMcpAgent } from "../agents/storyReviewer.mcp";
 import { storyGenerationWorkflow } from "../workflows/storyGeneration";
 import type { LLMProfile } from "../utils/llm-config";
 
@@ -20,11 +21,13 @@ import type { LLMProfile } from "../utils/llm-config";
  */
 function createMastraInstance(profile: LLMProfile = 'primary') {
   console.log(`[Mastra] 初始化 ${profile} 配置`);
+  const useMcpReviewer = process.env.REVIEWER_USE_MCP === 'true';
   return new Mastra({
     agents: {
       "story-planner": createStoryPlannerAgent(profile),
       "node-writer": createNodeWriterAgent(profile),
-      "story-reviewer": createStoryReviewerAgent(profile),
+      // 默认保留原实现；开启 REVIEWER_USE_MCP=true 则切到 MCP 工具版本
+      "story-reviewer": useMcpReviewer ? createStoryReviewerMcpAgent(profile) : createStoryReviewerAgent(profile),
     },
     workflows: {
       "story-generation": storyGenerationWorkflow,

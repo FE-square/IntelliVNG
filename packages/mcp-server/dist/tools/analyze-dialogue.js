@@ -38,6 +38,17 @@ export const AnalyzeDialogueOutputSchema = z.object({
  */
 export function analyzeDialogue(input) {
     const { nodes } = input;
+    if (!nodes || nodes.length === 0) {
+        return {
+            avgDialoguesPerNode: 0,
+            shortNodes: [],
+            longNodes: [],
+            noNarrationNodes: [],
+            characterStats: [],
+            emotionDistribution: {},
+            qualityScore: 0,
+        };
+    }
     // 基础统计
     const stats = nodes.map((n) => ({
         id: n.id,

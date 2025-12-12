@@ -12,5 +12,18 @@ export {
   analyzeDialogueQualityTool,
 } from "./storyReviewer";
 
+// MCP version (保留原实现，同时提供接入 MCP 的版本)
+export {
+  storyReviewerMcpAgent,
+  createStoryReviewerMcpAgent,
+  reviewStoryMcp,
+  validateStructureToolMcp,
+  analyzePathsToolMcp,
+  analyzeDialogueQualityToolMcp,
+  analyzeBranchDistributionToolMcp,
+  checkConstraintsComplianceToolMcp,
+  scoreNonlinearityToolMcp,
+} from "./storyReviewer.mcp";
+
 
 

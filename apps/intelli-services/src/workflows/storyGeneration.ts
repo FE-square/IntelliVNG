@@ -41,6 +41,7 @@ export const planStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    constraints: z.any().optional(),
     locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   execute: async ({ inputData, mastra }) => {
@@ -59,6 +60,7 @@ export const planStep = createStep({
       worldBible: inputData.worldBible,
       characterDB: inputData.characterDB,
       styleGuide: inputData.styleGuide || {},
+      constraints: inputData.constraints,
       locale: (inputData.locale as Locale) || DEFAULT_LOCALE,
     };
   },
@@ -72,6 +74,7 @@ export const writeStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    constraints: z.any().optional(),
     locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   outputSchema: z.object({
@@ -80,11 +83,12 @@ export const writeStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    constraints: z.any().optional(),
     locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   execute: async ({ inputData, mastra }) => {
     const agent = mastra.getAgent("node-writer");
-    const { plan, characterDB, styleGuide, worldBible } = inputData;
+    const { plan, characterDB, styleGuide, worldBible, constraints } = inputData;
     const locale = (inputData.locale as Locale) || DEFAULT_LOCALE;
 
     // 拓扑排序：按深度分层
@@ -134,7 +138,7 @@ export const writeStep = createStep({
 
     console.log(`[WriteStep] 写作完成，共生成 ${Object.keys(drafts).length} 个节点草稿`);
 
-    return { plan, drafts, worldBible, characterDB, styleGuide, locale };
+    return { plan, drafts, worldBible, characterDB, styleGuide, constraints, locale };
   },
 });
 
@@ -147,6 +151,7 @@ export const reviewStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    constraints: z.any().optional(),
     locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   outputSchema: z.object({
@@ -156,11 +161,12 @@ export const reviewStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    constraints: z.any().optional(),
     locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   execute: async ({ inputData, mastra }) => {
     const agent = mastra.getAgent("story-reviewer");
-    const { plan, drafts, worldBible, characterDB, styleGuide } = inputData;
+    const { plan, drafts, worldBible, characterDB, styleGuide, constraints } = inputData;
     const locale = (inputData.locale as Locale) || DEFAULT_LOCALE;
 
     console.log(`[ReviewStep] 开始审阅故事...`);
@@ -177,7 +183,9 @@ export const reviewStep = createStep({
       narration: d.narration,
     }));
 
-    const { user: prompt } = promptManager.build('workflow.review', {
+    const useMcpPrompt = process.env.REVIEWER_USE_MCP === 'true';
+    const promptName = useMcpPrompt ? 'workflow.review.mcp' : 'workflow.review';
+    const { user: prompt } = promptManager.build(promptName, {
       drafts: JSON.stringify(Object.values(drafts), null, 2),
       planOutline: JSON.stringify(plan.outline, null, 2),
       characters: JSON.stringify(characterDB.characters?.map((c: any) => ({
@@ -185,6 +193,7 @@ export const reviewStep = createStep({
         displayName: c.displayName,
         personality: c.personality?.traits,
       })), null, 2),
+      constraints: JSON.stringify(constraints || {}, null, 2),
       nodesForValidation: JSON.stringify(nodesForValidation, null, 2),
     }, locale);
 
@@ -198,7 +207,7 @@ export const reviewStep = createStep({
     const report = response.object as z.infer<typeof CriticReportSchema>;
     console.log(`[ReviewStep] 审阅完成，综合评分: ${report.overallScore}`);
 
-    return { plan, drafts, report, worldBible, characterDB, styleGuide, locale };
+    return { plan, drafts, report, worldBible, characterDB, styleGuide, constraints, locale };
   },
 });
 
@@ -212,6 +221,7 @@ export const rewriteStep = createStep({
     worldBible: z.any(),
     characterDB: z.any(),
     styleGuide: z.any(),
+    constraints: z.any().optional(),
     locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
   }),
   outputSchema: z.object({
