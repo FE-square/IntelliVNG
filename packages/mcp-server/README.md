@@ -261,7 +261,30 @@ pnpm install
 
 ## 使用方式
 
-### 方式一：作为 MCP Server 运行
+### 方式一：通过 npx 直接运行（推荐）✨
+
+已发布到 npm，可直接通过 npx 运行，无需克隆仓库：
+
+```bash
+npx @intellivng/mcp-server
+```
+
+在 Claude Desktop / Cursor 等 MCP 客户端中配置：
+
+```json
+{
+  "mcpServers": {
+    "intellivng": {
+      "command": "npx",
+      "args": ["-y", "@intellivng/mcp-server"]
+    }
+  }
+}
+```
+
+> 📦 npm 包地址：https://www.npmjs.com/package/@intellivng/mcp-server
+
+### 方式二：作为 MCP Server 本地运行
 
 ```bash
 # 开发模式（便于调试）
@@ -272,7 +295,7 @@ pnpm build
 pnpm start
 ```
 
-### 方式二：在 Claude Desktop / Cursor 等宿主客户端中配置
+### 方式三：在 Claude Desktop / Cursor 中指定本地路径
 
 在 `claude_desktop_config.json` 中添加：
 
@@ -287,7 +310,7 @@ pnpm start
 }
 ```
 
-### 方式三：在 Cursor 中直接跑源码
+### 方式四：在 Cursor 中直接跑源码（开发调试）
 
 在 `.cursor/mcp.json` 中配置：
 

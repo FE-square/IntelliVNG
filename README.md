@@ -211,6 +211,21 @@ const TOOLS = {
 };
 ```
 
+**📦 已发布到 npm，可直接在任何 MCP 客户端中使用：**
+
+```json
+{
+  "mcpServers": {
+    "intellivng": {
+      "command": "npx",
+      "args": ["-y", "@intellivng/mcp-server"]
+    }
+  }
+}
+```
+
+> npm 包地址：https://www.npmjs.com/package/@intellivng/mcp-server
+
 所有工具输入输出都由 Zod Schema 定义，支持 `i18n` 多语言反馈，天然兼容 OpenAI Function Calling、Mastra Structured Output。
 
 ### 5. Schema 驱动的数据流
