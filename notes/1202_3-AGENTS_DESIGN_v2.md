@@ -1,8 +1,6 @@
 # IntelliVNG 多智能体剧本创作系统设计 (Opus)
 
-> **目标**：用 3 个 Agent + 1 个 Orchestrator 实现"规划 → 写作 → 审稿"的非线性故事创作闭环，在 Hackathon 中展示技术创新性和可复用性。
-
----
+> **目标**：用 3 个 Agent + 1 个 Orchestrator 实现"规划 → 写作 → 审稿"的非线性故事创作闭环
 
 ## 一、总体架构
 
@@ -33,8 +31,6 @@
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
----
-
 ## 二、技术模式映射（Hackathon 可讲点）
 
 | Agent | 角色 | 采用的技术模式 | 可讲点 |
@@ -43,8 +39,6 @@
 | **Node Writer** | 节点写作师 | **Few-Shot CoT** + 并行生成 | 上下文学习、高效并发 |
 | **Story Reviewer** | 故事审稿人 | **ReAct (Reasoning + Acting)** | 工具增强推理、可解释性 |
 | **Orchestrator** | 流程控制器 | **Plan-and-Execute** + 状态机 | 流程编排、自适应重试 |
-
----
 
 ## 三、Shared Context 设计
 
@@ -91,8 +85,6 @@ interface SharedContext {
 | L1: 核心设定 | WorldBible 摘要 + 角色简表 | 每次调用都包含（~500 tokens） |
 | L2: 当前任务 | 当前节点的 PlanNode + 前序节点摘要 | 按需包含（~300 tokens） |
 | L3: 详细档案 | 完整角色档案、场景细节 | 仅相关时包含（~200 tokens/角色） |
-
----
 
 ## 四、Agent A: Story Planner（故事规划师）
 
@@ -273,8 +265,6 @@ function quickValidatePlan(plan: NarrativePlan): ValidationResult {
 }
 ```
 
----
-
 ## 五、Agent B: Node Writer（节点写作师）
 
 ### 5.1 职责
@@ -404,8 +394,6 @@ interface ChoiceDraft {
   "summary": "主角在误会升级后面临选择：道歉或逃避。"
 }
 ```
-
----
 
 ## 六、Agent C: Story Reviewer（故事审稿人）
 
@@ -571,8 +559,6 @@ interface Issue {
 - 如果有 critical 问题，`shouldRegenerate = true`
 - 如果 overallScore < 70，建议重写评分最低的节点
 ```
-
----
 
 ## 七、Orchestrator 实现
 
@@ -757,8 +743,6 @@ export class StoryOrchestrator {
 }
 ```
 
----
-
 ## 八、与现有代码的集成
 
 ### 8.1 文件结构建议
@@ -809,8 +793,6 @@ export class GameGenerator {
 }
 ```
 
----
-
 ## 九、Hackathon 演示策略
 
 ### 9.1 可视化演示点
@@ -823,7 +805,7 @@ export class GameGenerator {
 | **Step 4: 审稿阶段** | 显示 Reviewer 的评分和修改建议 | ReAct 推理过程可视化 |
 | **Step 5: 最终输出** | Flow Editor 中展示完整故事图 | 与现有编辑器无缝对接 |
 
-### 9.2 关键话术
+### 9.2 关键
 
 > "我们的系统不是简单的 'prompt → 输出'，而是一个**多智能体协作系统**：
 > - **Story Planner** 使用 Tree-of-Thoughts 探索多条叙事路径，选择最优方案
@@ -831,20 +813,17 @@ export class GameGenerator {
 > - **Story Reviewer** 采用 ReAct 模式，结合工具调用和推理，确保故事质量
 > - 整个流程由**状态机驱动**，支持自动重试和局部修正"
 
----
-
 ## 十、迭代计划
 
-### Phase 1: MVP (Hackathon 前)
+### Phase 1: MVP
 - [ ] 实现 StoryOrchestrator 状态机
 - [ ] 实现 StoryPlanner (ToT 简化版)
 - [ ] 实现 NodeWriter (带并行)
 - [ ] 实现 StoryReviewer (ReAct 简化版)
 - [ ] 集成到现有 API
 
-### Phase 2: 增强 (Hackathon 后)
+### Phase 2: 增强
 - [ ] 添加更多 Reviewer 工具
 - [ ] 支持"角色关系图"输入
 - [ ] 支持用户干预中间结果
 - [ ] 流式输出优化
-

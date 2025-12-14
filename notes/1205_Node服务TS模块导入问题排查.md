@@ -1,6 +1,4 @@
-### 1206 Docker 部署踩坑笔记（Nginx + pnpm + Node ESM）
-
----
+### Docker 部署踩坑笔记（Nginx + pnpm + Node ESM）
 
 ## 一、背景
 
@@ -13,8 +11,6 @@
   - `runner`：跑 `intelli-services` + `next start` + Nginx 反向代理
 
 最终目标：在容器里跑通前后端，并通过 Nginx 暴露统一入口。
-
----
 
 ## 二、问题 1：Nginx 指令“户口问题” & 主配置文件接管
 
@@ -157,8 +153,6 @@ COPY docker/nginx.conf /etc/nginx/nginx.conf
 - 所有“xxx directive is not allowed here”本质上都是 **上下文不对**。
 - 通过完全接管 `/etc/nginx/nginx.conf`，我们自己控制 `http` / `server` / `upstream` / `access_log` 的位置，彻底绕开镜像里诡异的默认配置。
 
----
-
 ## 三、问题 2：`pnpm prune --prod` 导致依赖丢失
 
 ### 2.1 现象
@@ -231,8 +225,6 @@ RUN rm -rf apps/web/.next/cache
   - `pnpm deploy --filter intelli-services ./deploy/intelli-services`
 
 总之，不要在 workspace 根随手跑 `pnpm prune --prod`，尤其是在根包没有 `dependencies` 的情况下。
-
----
 
 ## 四、问题 3：Node ESM 下的 `ERR_MODULE_NOT_FOUND`（dist/routes/game）
 
@@ -308,8 +300,6 @@ PORT="${SERVICES_PORT}" NODE_OPTIONS="--experimental-specifier-resolution=node" 
 
 目前我们在 Docker 里采用的是 **B 方案的落地版本**，优点是改动小、见效快。
 
----
-
 ## 五、整体排查思路小结
 
 - **Nginx 报“指令不允许出现在这里”**：
@@ -327,8 +317,6 @@ PORT="${SERVICES_PORT}" NODE_OPTIONS="--experimental-specifier-resolution=node" 
     - 是否缺少 `.js` 扩展名；
     - TS 的 `moduleResolution` 和 Node 的真实解析规则是否对齐。
   - 临时解法可以用 `--experimental-specifier-resolution=node` 快速救火。
-
----
 
 ## 六、这次踩坑带来的 checklist（以后可以复用）
 

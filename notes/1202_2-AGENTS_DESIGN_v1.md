@@ -9,8 +9,6 @@
   - **适度检查**：结构 + 叙事质量 + 连续性做到“可用且可讲”，避免过度工程；
   - **与现有系统平滑对齐**：对外仍输出 `GameProject`，最大限度复用当前代码。
 
----
-
 ## 总体架构：3-Agent 的“非线性故事工坊”
 
 - **核心理念**：用 3 个能力清晰、可讲性强的 Agent 角色，串起“规划 → 逐节点写作 → 审稿与修订”的闭环。
@@ -31,8 +29,6 @@
 
   - **Orchestrator**
     - 由现在的 `GameGenerator` 演化：控制流程、调用各 Agent、运行 TS 级校验（`validateNodeConnections`），最终产出 `GameProject`。
-
----
 
 ## Agent A：Story Planner（故事规划师）
 
@@ -88,8 +84,6 @@
   - Prompt 中采用 **CoT / Tree-of-Thoughts**：
     - 先写 premise / centralConflict → 再设计各幕结构 → 再分配分支与结局；
     - 最后整理为结构化 JSON。
-
----
 
 ## Agent B：Node Writer（节点写作师）
 
@@ -155,8 +149,6 @@
       - 映射到 `StoryNode.notes` / `tags` 中；
       - 或压缩进 `condition` 字段（比如 `"情感:沉重;后果:走向坏结局"`）。
 
----
-
 ## Agent C：Story Reviewer（故事审稿人）
 
 - **角色定位**
@@ -215,8 +207,6 @@
     - 携带原始 `NodeDraft` + `issues.suggestion`；
     - Node Writer 做“修订版”生成，而不是从零开始。
 
----
-
 ## 与现有 `StoryNode` / `GameProject` 的对齐方式
 
 - **中间层 → 现有层的映射**
@@ -241,8 +231,6 @@
   - Reviewer 负责：
     - 高层叙事质量与连续性；
   - Orchestrator 先跑 TS 校验，再把结构报告送给 Reviewer 做“工具增强的 ReAct”。
-
----
 
 ## 工作流程（Demo 友好的“讲故事”版本）
 
@@ -281,8 +269,6 @@
   - 调用现有的 `transformToGameProjectWithSetup` → 得到最终 `GameProject`；
   - 返回给前端，进入你已有的可视化编辑 / 游玩流程。
 
----
-
 ## 小结：复杂度适中 & 可讲性
 
 - **复杂度控制在 3 个核心 Agent + 1 个 Orchestrator + 1 组 TS 校验工具**，实现成本可控；
@@ -292,15 +278,11 @@
   - `types/agents.ts` 的 TS 接口；
   - 以及 `StoryOrchestrator` 的伪代码/流程骨架，方便你在 `intelli-services` 中直接落地。
 
----
-
 # 基于 Mastra 的 Agent 和 Workflow 两种模式进行实现
 
 [2 tools called]
 
 根据 Mastra 的设计理念，答案是 **分而治之**！让我给你一个清晰的对应关系：
-
----
 
 ## 📊 模式选择策略
 
@@ -326,8 +308,6 @@
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
----
-
 ## 🎯 对应关系
 
 | 你的设计 | Mastra 模式 | 原因 |
@@ -336,8 +316,6 @@
 | **Node Writer** | `Agent` | 有独立指令、可被并行调用 |
 | **Story Reviewer** | `Agent` + `Tools` | 需要调用工具（ReAct 模式） |
 | **Orchestrator** | `Workflow` | 编排顺序、条件分支、重试逻辑 |
-
----
 
 ## 📐 架构示意
 
@@ -413,8 +391,6 @@ export const storyGenerationWorkflow = new Workflow({ name: 'story-generation' }
   .commit();
 ```
 
----
-
 ## 🔑 关键点
 
 ### 为什么 Agent 不能单独完成？
@@ -435,8 +411,6 @@ Workflow 只是**流程控制**，它不负责：
 
 这些是 **Agent** 的职责。
 
----
-
 ## ✅ 最终答案
 
 ```
@@ -448,16 +422,7 @@ Workflow 只是**流程控制**，它不负责：
 │   Workflow 模式 →  编排智能体的"协作流程"                   │
 │                   (顺序、并行、分支、重试)                   │
 │                                                            │
-│   两者结合 = 你设计的 Multi-Agent 系统                      │
+│   两者结合 = Multi-Agent 系统                      │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
-
----
-
-要我现在开始实现吗？建议从 **Agent 定义** 开始（因为 Workflow 依赖 Agent）：
-
-1. 先定义 `storyPlannerAgent` + Zod Schema
-2. 再定义 `nodeWriterAgent`
-3. 再定义 `storyReviewerAgent` + Tools
-4. 最后用 `Workflow` 把它们串起来

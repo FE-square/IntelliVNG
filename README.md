@@ -35,6 +35,7 @@
 - **Story Planner** (故事规划)：采用 Tree-of-Thoughts 探索多种叙事方向，评估后选择最优
 - **Node Writer** (节点写手)：基于 Few-Shot CoT 并行撰写各节点对话与旁白
 - **Story Reviewer** (故事审阅)：使用 ReAct 模式 + 工具调用，检测结构错误、客观分析剧本质量
+- **MCP Server** (工具调用)：提供模型调用接口，为 Multi-agent System 提供多种工具调用能力
 
 ### 📝 可视化剧本编辑
 
@@ -57,8 +58,8 @@
 
 ### 🌐 国际化支持
 
-- 界面支持多语言切换 (locale: zh-CN/zh-HK/en-US) 
-- 支持服务端渲染
+- 界面、模型、MCP工具 全面支持多语言切换 (locale: zh-CN/zh-HK/en-US/) 
+- 多语言界面支持服务端渲染
 - AI 生成文本内容可根据用户语言，自动实现本地化
 
 ## 🧩 端到端体验流程
