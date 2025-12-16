@@ -961,3 +961,404 @@ gameRoutes.post(
         }
     }
 );
+
+// =====================================================
+// 编辑器 AI 对话 API
+// =====================================================
+
+import { 
+    editorChatAgent, 
+    createEditorChatAgent,
+    extractActions, 
+    type EditorAction 
+} from '../agents/editorChat';
+import { 
+    getSession, 
+    addMessage, 
+    updateContext, 
+    generateContextFromProject, 
+    getMessagesForLLM 
+} from '../services/chat-memory';
+import { callIntelliVngMcpTool } from '../services/intellivng-mcp-client';
+
+const editorChatSchema = z.object({
+    projectId: z.string().min(1, 'projectId is required'),
+    message: z.string().min(1, 'message is required'),
+    currentScript: z.array(z.any()).optional(),
+    characters: z.array(z.any()).optional(),
+    backgrounds: z.array(z.any()).optional(),
+    projectTitle: z.string().optional(),
+    locale: z.enum(['zh-CN', 'zh-HK', 'en-US']).optional(),
+});
+
+// POST /api/game/editor-chat - 编辑器 AI 对话 (SSE)
+gameRoutes.post(
+    '/editor-chat',
+    zValidator('json', editorChatSchema),
+    async (c) => {
+        const { projectId, message, currentScript, characters, backgrounds, projectTitle, locale } = c.req.valid('json');
+        const userLocale = getLocaleFromRequest(locale);
+        
+        console.log(`[EditorChat] 收到对话请求: projectId=${projectId}, locale=${userLocale}, chars=${characters?.length || 0}, bgs=${backgrounds?.length || 0}, message="${message.slice(0, 50)}..."`);
+        
+        // 更新项目上下文
+        if (currentScript || characters || projectTitle) {
+            updateContext(projectId, {
+                projectId,
+                title: projectTitle,
+                nodeCount: currentScript?.length || 0,
+                characterCount: characters?.length || 0,
+                endingCount: currentScript?.filter((n: any) => n.isEnding).length || 0,
+                hasStartNode: currentScript?.some((n: any) => n.isStart) || false,
+            });
+        }
+        
+        // 添加用户消息到记忆
+        addMessage(projectId, {
+            role: 'user',
+            content: message,
+        });
+        
+        // 构建带上下文的提示
+        const contextMessages = getMessagesForLLM(projectId, true);
+        
+        // 如果提供了当前剧本，添加到上下文
+        let systemContext = '';
+        if (currentScript && currentScript.length > 0) {
+            const scriptSummary = currentScript.map((node: any) => ({
+                id: node.id,
+                title: node.title,
+                type: node.type,
+                isStart: node.isStart,
+                isEnding: node.isEnding,
+                dialogueCount: node.dialogues?.length || 0,
+                choiceCount: node.choices?.length || 0,
+                nextNodeId: node.nextNodeId,
+            }));
+            systemContext = `\n\n当前剧本结构:\n${JSON.stringify(scriptSummary, null, 2)}`;
+        }
+        
+        if (characters && characters.length > 0) {
+            const characterSummary = characters.map((char: any) => ({
+                id: char.id,
+                name: char.displayName || char.name,
+                hasAvatar: !!char.avatarUrl,
+                hasSpriteCount: char.sprites?.length || 0,
+            }));
+            systemContext += `\n\n角色列表:\n${JSON.stringify(characterSummary, null, 2)}`;
+        }
+        
+        if (backgrounds && backgrounds.length > 0) {
+            const bgSummary = backgrounds.map((bg: any) => ({
+                id: bg.id,
+                name: bg.name,
+                hasImage: !!bg.imageUrl,
+            }));
+            systemContext += `\n\n背景列表:\n${JSON.stringify(bgSummary, null, 2)}`;
+        }
+        
+        // 创建 SSE 流
+        return new Response(
+            new ReadableStream({
+                async start(controller) {
+                    const encoder = new TextEncoder();
+                    let isStreamClosed = false;
+                    
+                    const sendEvent = (event: string, data: any): boolean => {
+                        if (isStreamClosed) return false;
+                        try {
+                            const payload = JSON.stringify({ event, ...data });
+                            controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+                            return true;
+                        } catch (err) {
+                            isStreamClosed = true;
+                            return false;
+                        }
+                    };
+                    
+                    const safeCloseStream = () => {
+                        if (!isStreamClosed) {
+                            try {
+                                controller.close();
+                            } catch (err) {
+                                // ignore
+                            }
+                            isStreamClosed = true;
+                        }
+                    };
+                    
+                    try {
+                        // 发送开始事件
+                        sendEvent('start', { timestamp: Date.now() });
+                        
+                        // 构建完整的用户消息（包含上下文）
+                        const fullMessage = systemContext 
+                            ? `${message}\n\n[系统上下文]${systemContext}`
+                            : message;
+                        
+                        // 调用 Agent
+                        sendEvent('thinking', { message: '正在思考...' });
+                        
+                        // 创建特定 locale 的 agent 实例
+                        const createAgent = (profile: 'primary' | 'backup') => createEditorChatAgent(profile, userLocale);
+                        
+                        let response;
+                        try {
+                            const primaryAgent = createAgent('primary');
+                            response = await primaryAgent.generate(fullMessage, {
+                                maxSteps: 5,
+                                modelSettings: { temperature: 0.7 },
+                            });
+                        } catch (error) {
+                            console.warn('[EditorChat] Primary agent failed, trying backup...', error);
+                            // Fallback to backup profile
+                            const backupAgent = createAgent('backup');
+                            response = await backupAgent.generate(fullMessage, {
+                                maxSteps: 5,
+                                modelSettings: { temperature: 0.7 },
+                            });
+                        }
+                        
+                        // 提取工具调用结果
+                        console.log('[EditorChat] Agent 响应:', {
+                            textLength: response.text?.length,
+                            toolCalls: response.toolCalls?.length || 0,
+                            toolResults: response.toolResults?.length || 0,
+                            steps: response.steps?.length || 0,
+                        });
+                        
+                        // 调试：打印详细的工具调用信息
+                        // 先打印第一个 toolCall 的完整结构来了解格式
+                        if (response.toolCalls && response.toolCalls.length > 0) {
+                            console.log('[EditorChat] toolCalls[0] 结构:', JSON.stringify(response.toolCalls[0], null, 2).slice(0, 500));
+                        }
+                        // 从 steps 中提取工具调用信息（更可靠）
+                        if (response.steps && response.steps.length > 0) {
+                            response.steps.forEach((step: any, i: number) => {
+                                if (step.toolCalls && step.toolCalls.length > 0) {
+                                    step.toolCalls.forEach((tc: any) => {
+                                        console.log(`[EditorChat] Step ${i + 1} 工具: ${tc.toolName}`, JSON.stringify(tc.args || {}).slice(0, 200));
+                                    });
+                                }
+                            });
+                        }
+                        
+                        const toolResults = response.toolResults || [];
+                        const actions = extractActions(toolResults);
+                        console.log('[EditorChat] 提取到的动作:', actions.length, actions.map(a => a.action));
+                        
+                        // 处理分析类动作（需要调用 MCP）
+                        const processedActions: any[] = [];
+                        for (const action of actions) {
+                            if (action.action === 'analyze-story' && currentScript) {
+                                sendEvent('tool_call', { 
+                                    tool: 'analyze-story', 
+                                    type: action.analysisType 
+                                });
+                                
+                                try {
+                                    const nodes = currentScript.map((node: any) => ({
+                                        id: node.id,
+                                        type: node.type,
+                                        isStart: node.isStart,
+                                        isEnding: node.isEnding,
+                                        nextNodeId: node.nextNodeId,
+                                        choices: node.choices?.map((c: any) => ({
+                                            targetNodeId: c.targetNodeId,
+                                        })),
+                                        dialogues: node.dialogues,
+                                        narration: node.narration,
+                                    }));
+                                    
+                                    let analysisResult: any = {};
+                                    
+                                    if (action.analysisType === 'all' || action.analysisType === 'validate') {
+                                        analysisResult.validate = await callIntelliVngMcpTool('validate_story_structure', { nodes });
+                                    }
+                                    if (action.analysisType === 'all' || action.analysisType === 'paths') {
+                                        analysisResult.paths = await callIntelliVngMcpTool('analyze_story_paths', { nodes });
+                                    }
+                                    if (action.analysisType === 'all' || action.analysisType === 'dialogue') {
+                                        analysisResult.dialogue = await callIntelliVngMcpTool('analyze_dialogue_quality', { nodes });
+                                    }
+                                    if (action.analysisType === 'all' || action.analysisType === 'branch') {
+                                        analysisResult.branch = await callIntelliVngMcpTool('analyze_branch_distribution', { nodes });
+                                    }
+                                    if (action.analysisType === 'all' || action.analysisType === 'score') {
+                                        analysisResult.score = await callIntelliVngMcpTool('score_nonlinearity', { nodes });
+                                    }
+                                    if (action.analysisType === 'constraints') {
+                                        analysisResult.constraints = await callIntelliVngMcpTool('check_constraints_compliance', { 
+                                            nodes, 
+                                            constraints: action.constraints 
+                                        });
+                                    }
+                                    
+                                    console.log('[EditorChat] MCP 分析结果:', JSON.stringify(analysisResult).slice(0, 500));
+                                    processedActions.push({
+                                        type: 'analysis',
+                                        payload: analysisResult,
+                                    });
+                                } catch (mcpError) {
+                                    console.error('[EditorChat] MCP 调用失败:', mcpError);
+                                    processedActions.push({
+                                        type: 'error',
+                                        payload: { message: '剧本分析失败' },
+                                    });
+                                }
+                            } else if (action.action === 'query-nodes') {
+                                // 查询节点直接返回数据
+                                let queryResult: any[] = currentScript || [];
+                                if (action.nodeId) {
+                                    queryResult = queryResult.filter((n: any) => n.id === action.nodeId);
+                                }
+                                if (action.filter) {
+                                    if (action.filter.type) {
+                                        queryResult = queryResult.filter((n: any) => n.type === action.filter.type);
+                                    }
+                                    if (action.filter.isStart !== undefined) {
+                                        queryResult = queryResult.filter((n: any) => n.isStart === action.filter.isStart);
+                                    }
+                                    if (action.filter.isEnding !== undefined) {
+                                        queryResult = queryResult.filter((n: any) => n.isEnding === action.filter.isEnding);
+                                    }
+                                }
+                                processedActions.push({
+                                    type: 'query-result',
+                                    payload: { nodes: queryResult },
+                                });
+                            } else if (action.action === 'generate-image') {
+                                // 根据 targetName 匹配实际的角色/场景
+                                const imageType = action.type;
+                                const targetName = action.targetName;
+                                let targetId: string | null = null;
+                                let matchedName: string | null = null;
+                                
+                                if (imageType === 'sprite' || imageType === 'avatar') {
+                                    // 从角色列表中查找（支持模糊匹配）
+                                    const char = characters?.find((c: any) => {
+                                        const name = c.displayName || c.name;
+                                        return name === targetName || 
+                                               name.includes(targetName) || 
+                                               targetName.includes(name) ||
+                                               c.name === targetName ||
+                                               c.name.includes(targetName);
+                                    });
+                                    if (char) {
+                                        targetId = char.id;
+                                        matchedName = char.displayName || char.name;
+                                    }
+                                } else if (imageType === 'background') {
+                                    // 从背景列表中查找
+                                    const bg = backgrounds?.find((b: any) => {
+                                        return b.name === targetName || 
+                                               b.name.includes(targetName) || 
+                                               targetName.includes(b.name);
+                                    });
+                                    if (bg) {
+                                        targetId = bg.id;
+                                        matchedName = bg.name;
+                                    }
+                                }
+                                
+                                if (targetId) {
+                                    processedActions.push({
+                                        type: 'generate-image',
+                                        payload: {
+                                            imageType,  // sprite | avatar | background
+                                            targetId,
+                                            targetName: matchedName,
+                                            prompt: action.prompt,
+                                        },
+                                    });
+                                    console.log(`[EditorChat] 匹配到生图目标: ${imageType} -> ${matchedName} (${targetId})`);
+                                } else {
+                                    // 找不到目标，返回错误信息给 AI
+                                    console.warn(`[EditorChat] 找不到生图目标: ${imageType} "${targetName}"`);
+                                    processedActions.push({
+                                        type: 'error',
+                                        payload: { 
+                                            message: `找不到${imageType === 'background' ? '场景' : '角色'}"${targetName}"，请检查名称是否正确` 
+                                        },
+                                    });
+                                }
+                            } else {
+                                // 其他动作直接传递给前端执行
+                                processedActions.push({
+                                    type: 'patch',
+                                    payload: action,
+                                });
+                            }
+                        }
+                        
+                        // 发送 AI 回复
+                        sendEvent('message', { 
+                            content: response.text,
+                            timestamp: Date.now(),
+                        });
+                        
+                        // 发送动作指令
+                        if (processedActions.length > 0) {
+                            for (const action of processedActions) {
+                                sendEvent('action', action);
+                            }
+                        }
+                        
+                        // 保存 AI 回复到记忆
+                        addMessage(projectId, {
+                            role: 'assistant',
+                            content: response.text,
+                            toolCalls: toolResults,
+                            actions: processedActions,
+                        });
+                        
+                        // 发送完成事件
+                        sendEvent('done', { 
+                            timestamp: Date.now(),
+                            actionCount: processedActions.length,
+                        });
+                        
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : '未知错误';
+                        console.error('[EditorChat] 对话处理失败:', errorMessage);
+                        
+                        sendEvent('error', { 
+                            message: errorMessage,
+                            timestamp: Date.now(),
+                        });
+                    } finally {
+                        safeCloseStream();
+                    }
+                },
+            }),
+            {
+                headers: {
+                    'Content-Type': 'text/event-stream',
+                    'Cache-Control': 'no-cache',
+                    'Connection': 'keep-alive',
+                    'X-Accel-Buffering': 'no',
+                },
+            }
+        );
+    }
+);
+
+// GET /api/game/editor-chat/history/:projectId - 获取对话历史
+gameRoutes.get('/editor-chat/history/:projectId', async (c) => {
+    const projectId = c.req.param('projectId');
+    
+    if (!projectId) {
+        return c.json({ success: false, error: 'projectId is required' }, 400);
+    }
+    
+    const session = getSession(projectId);
+    
+    return c.json({
+        success: true,
+        data: {
+            projectId: session.projectId,
+            messages: session.messages,
+            context: session.context,
+        },
+    });
+});

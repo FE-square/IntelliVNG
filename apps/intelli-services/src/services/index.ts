@@ -19,3 +19,6 @@ export { FormAutocomplete } from "./form-autocomplete";
 export { ImageGenerator } from "./image-generator";
 export * from "./cache";
 
+// 聊天记忆服务
+export * from "./chat-memory";
+

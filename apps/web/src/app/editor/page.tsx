@@ -7,7 +7,7 @@ import { ReactFlowProvider } from 'reactflow';
 import { GamePlayer } from '@vng/player';
 import { Button, Card, useToast } from '@vng/ui';
 import { GameProject } from '@vng/core';
-import { FlowEditor } from '@vng/editor';
+import { FlowEditor, ChatBot } from '@vng/editor';
 import { saveProject, saveDraft, clearDraft } from '@/lib/projectStorage';
 import { exportProjectAsJson, exportProjectAsPlayableHtml, exportProjectAsPlayableHtmlWithImages } from '@/lib/projectExport';
 import { useI18N } from '@/components/I18nProvider';
@@ -155,7 +155,11 @@ function EditorPageContent() {
     const searchParams = useSearchParams();
     const toast = useToast();
     // 支持两种参数名：projectId 和 project
-    const projectId = searchParams.get('projectId') || searchParams.get('project');
+    const urlProjectId = searchParams.get('projectId') || searchParams.get('project');
+    const [mockProjectId, setMockProjectId] = useState<string | null>(null);
+    
+    // 实际使用的 projectId (URL 参数优先，其次是 Mock ID)
+    const projectId = urlProjectId || mockProjectId;
     
     const [project, setProject] = useState<GameProject | null>(null);
     const [activeTab, _setActiveTab] = useState<'editor' | 'preview'>('editor');
@@ -211,8 +215,9 @@ function EditorPageContent() {
             setError(null);
 
             // 如果没有 projectId，使用 Mock 数据
-            if (!projectId) {
+            if (!urlProjectId) {
                 setProject(MOCK_PROJECT);
+                setMockProjectId('demo-1'); // 为 Mock 项目设置临时 ID
                 setLoading(false);
                 return;
             }
@@ -239,7 +244,7 @@ function EditorPageContent() {
                 
                 const projectData = data.data;
                 console.log('[Editor] 加载项目数据:', {
-                    projectId,
+                    projectId: urlProjectId,
                     title: projectData.title,
                     characters: projectData.characters?.map((c: any) => ({
                         id: c.id,
@@ -1634,6 +1639,51 @@ function EditorPageContent() {
                         )}
                     </div>
                 </div>
+            )}
+            
+            {/* AI 编辑助手 ChatBot */}
+            {projectId && (
+                <ChatBot
+                    project={project}
+                    projectId={projectId}
+                    onUpdate={(updatedProject) => {
+                        setProject(updatedProject);
+                    }}
+                    onGenerateSprite={handleRegenerateSprite}
+                    onGenerateAvatar={handleRegenerateAvatar}
+                    onGenerateBackground={handleRegenerateBackground}
+                    locale={currentLocale}
+                    i18n={{
+                        title: I18N['key.chatbot.title'] || 'AI 编辑助手',
+                        placeholder: I18N['key.chatbot.placeholder'] || '输入消息，如「添加一个分支节点」...',
+                        send: I18N['key.chatbot.send'] || '发送',
+                        thinking: I18N['key.chatbot.thinking'] || '正在思考...',
+                        noMessages: I18N['key.chatbot.noMessages'] || '你好！我可以帮你编辑剧情、分析剧本、生成立绘和背景。',
+                        actionApplied: I18N['key.chatbot.actionApplied'] || '已应用',
+                        operationsExecuted: I18N['key.chatbot.operationsExecuted'] || '已执行 {count} 个操作',
+                        sprite: I18N['key.chatbot.sprite'] || '立绘',
+                        avatar: I18N['key.chatbot.avatar'] || '头像',
+                        background: I18N['key.chatbot.background'] || '背景',
+                        generatingSprite: I18N['key.chatbot.generatingSprite'] || '正在为「{name}」生成立绘...',
+                        generatingAvatar: I18N['key.chatbot.generatingAvatar'] || '正在为「{name}」生成头像...',
+                        generatingBackground: I18N['key.chatbot.generatingBackground'] || '正在为「{name}」生成背景...',
+                        spriteGenerated: I18N['key.chatbot.spriteGenerated'] || '「{name}」的立绘生成完成！',
+                        avatarGenerated: I18N['key.chatbot.avatarGenerated'] || '「{name}」的头像生成完成！',
+                        backgroundGenerated: I18N['key.chatbot.backgroundGenerated'] || '「{name}」的背景生成完成！',
+                        generationFailed: I18N['key.chatbot.generationFailed'] || '生成失败: {error}',
+                        targetNotFound: I18N['key.chatbot.targetNotFound'] || '找不到目标「{name}」，请检查是否已从项目中删除。',
+                        retry: I18N['key.chatbot.retry'] || '重试',
+                        sendFailed: I18N['key.chatbot.sendFailed'] || '发送失败: {error}',
+                        exampleAddScene: I18N['key.chatbot.exampleAddScene'] || '添加新场景',
+                        exampleGenerateSprite: I18N['key.chatbot.exampleGenerateSprite'] || '给小红生成立绘',
+                        exampleCheckStructure: I18N['key.chatbot.exampleCheckStructure'] || '检查结构',
+                        toolCall: I18N['key.chatbot.toolCall'] || '调用工具: {tool}',
+                        analysisValid: I18N['key.chatbot.analysisValid'] || '结构验证通过',
+                        analysisComplete: I18N['key.chatbot.analysisComplete'] || '分析完成',
+                        queryResult: I18N['key.chatbot.queryResult'] || '查询到 {count} 个节点',
+                        patchApplied: I18N['key.chatbot.patchApplied'] || '已应用修改',
+                    }}
+                />
             )}
         </div>
     );

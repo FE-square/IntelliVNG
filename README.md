@@ -92,7 +92,7 @@ IntelliVNG Studio 为 **AI+互动游戏挑战赛·AI游戏创作工具赛道** �
 
 #### 🎯 技术亮点
 
-- **技术创新性**：Tree-of-Thoughts + ReAct + Few-shot CoT 的多智能体协作系统、AI 自动补全表单、设定生图、故事线可视化交互编辑
+- **技术创新性**：真·多智能体系统，实现 Tree-of-Thoughts + ReAct + Few-shot CoT 模式的 Multi-agent System、MCP Server 工具调用、AI 自动补全表单、设定生图、故事线可视化交互编辑
 - **工具链完成度**：输入 → 实时仪表盘 → 故事线编辑器 → 预览播放器 → DSL/单体游戏导出  
 - **AI逻辑跟随**：SSE 可视化工作流 + MCP 工具调用 + Schema 校验 + Neuro-Symbolic 神经符号架构
 - **工具链复用**：Mastra 落地多种 Agents 设计范式 + Prompts 集中式管理机制 + Agent Tools

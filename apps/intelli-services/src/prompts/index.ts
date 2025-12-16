@@ -18,6 +18,7 @@ import { nodeWriterPrompts } from './templates/node-writer';
 import { storyReviewerPrompts } from './templates/story-reviewer';
 import { workflowPrompts } from './templates/workflow';
 import { formAutocompletePrompts } from './templates/form-autocomplete';
+import { editorChatPrompts } from './templates/editor-chat';
 
 // 重新导出类型定义，以便其他模块可以使用
 export type { PromptTemplate };
@@ -127,6 +128,7 @@ export function registerAllPrompts() {
   promptManager.registerBatch(storyReviewerPrompts);
   promptManager.registerBatch(workflowPrompts);
   promptManager.registerBatch(formAutocompletePrompts);
+  promptManager.registerBatch(editorChatPrompts);
   
   console.log('[PromptManager] 已注册所有prompt模板');
 }

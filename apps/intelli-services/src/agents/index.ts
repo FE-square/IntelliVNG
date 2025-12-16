@@ -25,5 +25,10 @@ export {
   scoreNonlinearityToolMcp,
 } from "./storyReviewer.mcp";
 
-
-
+// Editor Chat Agent (编辑器对话助手)
+export {
+  editorChatAgent,
+  createEditorChatAgent,
+  extractActions,
+  type EditorAction,
+} from "./editorChat";

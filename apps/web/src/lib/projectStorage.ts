@@ -128,17 +128,106 @@ export function clearCurrentProjectId(): void {
 }
 
 /**
+ * 清理旧的草稿（按时间戳排序，删除最旧的）
+ */
+function cleanupOldDrafts(keepCount: number = 5): void {
+    if (typeof window === 'undefined') return;
+    
+    try {
+        // 收集所有草稿
+        const drafts: Array<{ key: string; savedAt: string; size: number }> = [];
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(DRAFT_PREFIX)) {
+                try {
+                    const value = localStorage.getItem(key);
+                    if (value) {
+                        const parsed = JSON.parse(value);
+                        drafts.push({
+                            key,
+                            savedAt: parsed.savedAt || '1970-01-01T00:00:00.000Z',
+                            size: value.length,
+                        });
+                    }
+                } catch (e) {
+                    // 忽略解析失败的项
+                }
+            }
+        }
+        
+        // 按时间戳排序（最旧的在前）
+        drafts.sort((a, b) => new Date(a.savedAt).getTime() - new Date(b.savedAt).getTime());
+        
+        // 删除最旧的草稿，只保留最新的 keepCount 个
+        const toDelete = drafts.slice(0, Math.max(0, drafts.length - keepCount));
+        let freedSpace = 0;
+        
+        for (const draft of toDelete) {
+            try {
+                localStorage.removeItem(draft.key);
+                freedSpace += draft.size;
+                console.log(`[ProjectStorage] 已删除旧草稿: ${draft.key}, 释放空间: ${draft.size} 字符`);
+            } catch (e) {
+                console.warn(`[ProjectStorage] 删除草稿失败: ${draft.key}`, e);
+            }
+        }
+        
+        if (toDelete.length > 0) {
+            console.log(`[ProjectStorage] 清理完成: 删除了 ${toDelete.length} 个旧草稿, 释放了约 ${freedSpace} 字符的空间`);
+        }
+    } catch (error) {
+        console.error('[ProjectStorage] 清理旧草稿失败:', error);
+    }
+}
+
+/**
  * 保存草稿（编辑器临时状态）
+ * 如果存储空间不足，会自动清理旧的草稿
  */
 export function saveDraft(projectId: string, data: Partial<GameProject>): void {
     if (typeof window === 'undefined') return;
+    
+    const key = `${DRAFT_PREFIX}${projectId}`;
+    const draftData = {
+        ...data,
+        savedAt: new Date().toISOString(),
+    };
+    const value = JSON.stringify(draftData);
+    
     try {
-        localStorage.setItem(`${DRAFT_PREFIX}${projectId}`, JSON.stringify({
-            ...data,
-            savedAt: new Date().toISOString(),
-        }));
-    } catch (error) {
-        console.error('[ProjectStorage] 保存草稿失败:', error);
+        localStorage.setItem(key, value);
+    } catch (error: any) {
+        // 如果是配额超出错误，尝试清理旧数据后重试
+        if (error?.name === 'QuotaExceededError' || error?.code === 22) {
+            console.warn('[ProjectStorage] 存储空间不足，开始清理旧草稿...');
+            
+            // 清理旧草稿（保留最新的 5 个）
+            cleanupOldDrafts(5);
+            
+            // 重试保存
+            try {
+                localStorage.setItem(key, value);
+                console.log('[ProjectStorage] 清理后保存草稿成功');
+            } catch (retryError: any) {
+                // 如果还是失败，尝试只保留当前这一个草稿
+                if (retryError?.name === 'QuotaExceededError' || retryError?.code === 22) {
+                    console.warn('[ProjectStorage] 清理后仍空间不足，尝试更激进的清理...');
+                    cleanupOldDrafts(1); // 只保留最新的 1 个
+                    
+                    try {
+                        localStorage.setItem(key, value);
+                        console.log('[ProjectStorage] 激进清理后保存草稿成功');
+                    } catch (finalError) {
+                        console.error('[ProjectStorage] 保存草稿失败（存储空间严重不足）:', finalError);
+                    }
+                } else {
+                    console.error('[ProjectStorage] 保存草稿失败:', retryError);
+                }
+            }
+        } else {
+            console.error('[ProjectStorage] 保存草稿失败:', error);
+        }
     }
 }
 
@@ -162,6 +251,50 @@ export function getDraft(projectId: string): (Partial<GameProject> & { savedAt: 
 export function clearDraft(projectId: string): void {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(`${DRAFT_PREFIX}${projectId}`);
+}
+
+/**
+ * 清除所有草稿（手动清理）
+ */
+export function clearAllDrafts(): void {
+    if (typeof window === 'undefined') return;
+    
+    const keysToDelete: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(DRAFT_PREFIX)) {
+            keysToDelete.push(key);
+        }
+    }
+    
+    for (const key of keysToDelete) {
+        localStorage.removeItem(key);
+    }
+    
+    console.log(`[ProjectStorage] 已清除 ${keysToDelete.length} 个草稿`);
+}
+
+/**
+ * 获取草稿存储统计信息
+ */
+export function getDraftStats(): { count: number; totalSize: number } {
+    if (typeof window === 'undefined') return { count: 0, totalSize: 0 };
+    
+    let count = 0;
+    let totalSize = 0;
+    
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(DRAFT_PREFIX)) {
+            const value = localStorage.getItem(key);
+            if (value) {
+                count++;
+                totalSize += value.length;
+            }
+        }
+    }
+    
+    return { count, totalSize };
 }
 
 /**

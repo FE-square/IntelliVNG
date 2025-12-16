@@ -12,7 +12,7 @@ const app = new Hono();
 // Middleware
 app.use('*', logger());
 app.use('*', cors({
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type'],
 }));
@@ -44,6 +44,8 @@ console.log(`   POST /api/game/generate-image     - Generate image (sprite/avata
 console.log(`   GET  /api/game/projects           - List all projects`);
 console.log(`   GET  /api/game/projects/:id       - Get project by ID`);
 console.log(`   PUT  /api/game/projects/:id       - Update project`);
+console.log(`   POST /api/game/editor-chat        - Editor AI chat (SSE)`);
+console.log(`   GET  /api/game/editor-chat/history/:id - Get chat history`);
 console.log(`   GET  /health                      - Health check`);
 console.log('');
 
