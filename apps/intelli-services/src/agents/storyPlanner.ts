@@ -151,7 +151,7 @@ export async function generateNarrativePlanWithToT(
     );
   } catch (error) {
     console.warn("[ToT] ⚠️ Round 1 解析失败，回退到默认候选:", error instanceof Error ? error.message : error);
-    candidates = createFallbackCandidates(input);
+    candidates = createFallbackCandidates(input, locale);
   }
   callbacks?.onRoundComplete?.('round1', { candidates: candidates.paths });
   
@@ -183,42 +183,45 @@ export async function generateNarrativePlanWithToT(
     );
   } catch (error) {
     console.warn("[ToT] ⚠️ Round 2 解析失败，回退到默认评估:", error instanceof Error ? error.message : error);
-    evaluation = createFallbackEvaluation(candidates.paths);
+    evaluation = createFallbackEvaluation(candidates.paths, locale);
   }
-function createFallbackCandidates(input: WorkflowInput) {
-  const worldName = input.worldBible?.name || '故事世界';
-  const mainScene = input.worldBible?.scenes?.[0]?.name || '起始场景';
+function createFallbackCandidates(input: WorkflowInput, locale: Locale = DEFAULT_LOCALE) {
+  const isCN = locale.includes('zh');
+  const worldName = input.worldBible?.name || (isCN ? '故事世界' : 'Story World');
+  const mainScene = input.worldBible?.scenes?.[0]?.name || (isCN ? '起始场景' : 'Starting Scene');
+  
   return {
     paths: [
       {
         id: 'path-1',
-        name: `${worldName} · 主线探秘`,
-        description: `围绕 ${worldName} 的核心秘密展开线性推进`,
-        premise: `主角在 ${worldName} 追寻真相`,
-        centralConflict: '真相与代价的取舍',
-        potentialEndings: ['解锁真相', '陷入更深阴谋'],
+        name: isCN ? `${worldName} · 主线探秘` : `${worldName} · Main Mystery`,
+        description: isCN ? `围绕 ${worldName} 的核心秘密展开线性推进` : `Linear progression centered on the core secrets of ${worldName}`,
+        premise: isCN ? `主角在 ${worldName} 追寻真相` : `The protagonist seeks the truth in ${worldName}`,
+        centralConflict: isCN ? '真相与代价的取舍' : 'The choice between truth and its cost',
+        potentialEndings: isCN ? ['解锁真相', '陷入更深阴谋'] : ['Unlock the truth', 'Fall into deeper conspiracy'],
       },
       {
         id: 'path-2',
-        name: `${mainScene} · 关系冲突`,
-        description: `以人际关系为驱动力的情感主线`,
-        premise: `在 ${mainScene} 中伙伴间的信任考验`,
-        centralConflict: '信任与背叛',
-        potentialEndings: ['羁绊更深', '关系破裂'],
+        name: isCN ? `${mainScene} · 关系冲突` : `${mainScene} · Relationship Conflict`,
+        description: isCN ? `以人际关系为驱动力的情感主线` : `An emotional plot driven by interpersonal relationships`,
+        premise: isCN ? `在 ${mainScene} 中伙伴间的信任考验` : `A test of trust between companions in ${mainScene}`,
+        centralConflict: isCN ? '信任与背叛' : 'Trust and betrayal',
+        potentialEndings: isCN ? ['羁绊更深', '关系破裂'] : ['Deeper bonds', 'Relationship breakdown'],
       },
       {
         id: 'path-3',
-        name: `系统对抗`,
-        description: '聚焦与权威系统的博弈与反击',
-        premise: '主角对抗掌控一切的系统',
-        centralConflict: '自由与控制',
-        potentialEndings: ['推翻系统', '被系统同化'],
+        name: isCN ? `系统对抗` : `System Opposition`,
+        description: isCN ? '聚焦与权威系统的博弈与反击' : 'Focus on game and counter-strikes against authoritarian systems',
+        premise: isCN ? '主角对抗掌控一切的系统' : 'The protagonist opposes the system that controls everything',
+        centralConflict: isCN ? '自由与控制' : 'Freedom and control',
+        potentialEndings: isCN ? ['推翻系统', '被系统同化'] : ['Overthrow the system', 'Assimilated by the system'],
       },
     ],
   };
 }
 
-function createFallbackEvaluation(paths: any[]) {
+function createFallbackEvaluation(paths: any[], locale: Locale = DEFAULT_LOCALE) {
+  const isCN = locale.includes('zh');
   const safePaths = Array.isArray(paths) ? paths : [];
   const evaluations = safePaths.map((path, idx) => ({
     pathId: path.id || path.name || `path-${idx + 1}`,
@@ -229,7 +232,7 @@ function createFallbackEvaluation(paths: any[]) {
       thematicDepth: 3,
     },
     totalScore: 12,
-    reasoning: 'Fallback evaluation',
+    reasoning: isCN ? '默认评估' : 'Fallback evaluation',
   }));
 
   const selectedPathId = evaluations[0]?.pathId || safePaths[0]?.id || 'path-1';
@@ -237,14 +240,24 @@ function createFallbackEvaluation(paths: any[]) {
   return {
     evaluations,
     selectedPathId,
-    selectionReasoning: '使用默认评分，选择首个候选方向',
+    selectionReasoning: isCN ? '使用默认评分，选择首个候选方向' : 'Using default scores, selecting the first candidate path',
   };
 }
 
-function createFallbackPlan(input: WorkflowInput, selectedPath: any): NarrativePlan {
-  const premise = selectedPath?.premise || `一个发生在 ${input.worldBible?.name || '世界'} 的故事`;
-  const conflict = selectedPath?.centralConflict || '角色与系统之间的冲突';
-  const sceneName = input.worldBible?.scenes?.[0]?.name || '默认场景';
+function createFallbackPlan(input: WorkflowInput, selectedPath: any, locale: Locale = DEFAULT_LOCALE): NarrativePlan {
+  // 判断是否为中文
+  const isCN = locale.includes('zh');
+
+  const premise = selectedPath?.premise || 
+    (isCN 
+      ? `一个发生在 ${input.worldBible?.name || '世界'} 的故事`
+      : `A story set in ${input.worldBible?.name || 'the world'}`);
+  
+  const conflict = selectedPath?.centralConflict || 
+    (isCN ? '角色与系统之间的冲突' : 'Conflict between characters and the system');
+  
+  const sceneName = input.worldBible?.scenes?.[0]?.name || 
+    (isCN ? '默认场景' : 'Default Scene');
 
   const startId = 'node-start';
   const branchId = 'node-branch';
@@ -255,7 +268,8 @@ function createFallbackPlan(input: WorkflowInput, selectedPath: any): NarrativeP
     outline: {
       premise,
       centralConflict: conflict,
-      thematicArc: selectedPath?.description || '自我觉醒与成长',
+      thematicArc: selectedPath?.description || 
+        (isCN ? '自我觉醒与成长' : 'Self-awakening and growth'),
     },
     nodes: [
       {
@@ -263,8 +277,8 @@ function createFallbackPlan(input: WorkflowInput, selectedPath: any): NarrativeP
         type: 'scene',
         isStart: true,
         isEnding: false,
-        title: '故事开端',
-        brief: '主角接触到世界规则的裂缝',
+        title: isCN ? '故事开端' : 'Story Beginning',
+        brief: isCN ? '主角接触到世界规则的裂缝' : 'The protagonist touches upon a crack in the world\'s rules',
         functionTag: 'setup',
         sceneName,
         nextNodeId: branchId,
@@ -276,14 +290,14 @@ function createFallbackPlan(input: WorkflowInput, selectedPath: any): NarrativeP
         type: 'branch',
         isStart: false,
         isEnding: false,
-        title: '关键抉择',
-        brief: '主角面临选择，决定故事走向',
+        title: isCN ? '关键抉择' : 'Critical Choice',
+        brief: isCN ? '主角面临选择，决定故事走向' : 'The protagonist faces a choice that determines the story\'s direction',
         functionTag: 'conflict',
         sceneName,
         nextNodeId: undefined,
         choicesMeta: [
-          { id: 'choice-a', leadsTo: endingA, text: '接受规则' },
-          { id: 'choice-b', leadsTo: endingB, text: '冲破规则' },
+          { id: 'choice-a', leadsTo: endingA, text: isCN ? '接受规则' : 'Accept the rules' },
+          { id: 'choice-b', leadsTo: endingB, text: isCN ? '冲破规则' : 'Break the rules' },
         ],
         position: { x: 0, y: 200 },
       },
@@ -292,8 +306,8 @@ function createFallbackPlan(input: WorkflowInput, selectedPath: any): NarrativeP
         type: 'ending',
         isStart: false,
         isEnding: true,
-        title: '顺从结局',
-        brief: '主角选择守护现状，付出自我',
+        title: isCN ? '顺从结局' : 'Acceptance Ending',
+        brief: isCN ? '主角选择守护现状，付出自我' : 'The protagonist chooses to protect the status quo at great personal cost',
         functionTag: 'resolution',
         sceneName,
         choicesMeta: [],
@@ -305,8 +319,8 @@ function createFallbackPlan(input: WorkflowInput, selectedPath: any): NarrativeP
         type: 'ending',
         isStart: false,
         isEnding: true,
-        title: '反抗结局',
-        brief: '主角冲破系统，开启新的秩序',
+        title: isCN ? '反抗结局' : 'Rebellion Ending',
+        brief: isCN ? '主角冲破系统，开启新的秩序' : 'The protagonist breaks through the system and establishes a new order',
         functionTag: 'resolution',
         sceneName,
         choicesMeta: [],
@@ -356,7 +370,7 @@ function createFallbackPlan(input: WorkflowInput, selectedPath: any): NarrativeP
     );
   } catch (error) {
     console.warn("[ToT] ⚠️ Round 3 解析失败，回退到默认故事骨架:", error instanceof Error ? error.message : error);
-    plan = createFallbackPlan(input, selectedPath);
+    plan = createFallbackPlan(input, selectedPath, locale);
   }
   callbacks?.onRoundComplete?.('round3', { plan });
   

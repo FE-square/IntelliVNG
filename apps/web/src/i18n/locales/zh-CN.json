@@ -359,6 +359,8 @@
   "key.editor.pleaseRetry": "请重试",
   "key.editor.spriteRegenerated": "立绘重新生成",
   "key.editor.spriteReplaced": "已替换为最新的立绘",
+  "key.editor.secondsAgo": "秒前",
+  "key.editor.minutesAgo": "分鐘前",
   "key.chatbot.title": "AI 编辑助手",
   "key.chatbot.placeholder": "输入消息，如「添加一个分支节点」...",
   "key.chatbot.send": "发送",
@@ -992,5 +994,10 @@
   "key.editor.toast.spriteAddDesc": "已添加到立绘列表",
   "key.editor.toast.backgroundAddSuccess": "背景添加成功",
   "key.editor.toast.backgroundAddDesc": "已更新为指定URL的图片",
-  "key.editor.toast.pleaseEnterUrl": "请输入URL"
+  "key.editor.toast.pleaseEnterUrl": "请输入URL",
+  "key.storyNode.start": "开始",
+  "key.storyNode.ending": "结尾",
+  "key.storyNode.dialogues": "段对话",
+  "key.storyNode.branches": "个分支",
+  "key.storyNode.appearingCharacters": "出场人物:"
 }

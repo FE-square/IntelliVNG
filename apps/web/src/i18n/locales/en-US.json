@@ -238,6 +238,8 @@
   "key.setup.summary.item3": "✓ Visual Editor",
   "key.setup.summary.item4": "✓ Export Game Project",
   "key.editor.alreadyInView": "Already in this view",
+  "key.editor.secondsAgo": "seconds ago",
+  "key.editor.minutesAgo": "minutes ago",
   "key.editor.backToProjects": "Back to Projects",
   "key.editor.saveWithNote": "Save with Note",
   "key.editor.export": "Export",
@@ -862,5 +864,10 @@
   "key.editor.toast.spriteAddDesc": "Added to sprite list",
   "key.editor.toast.backgroundAddSuccess": "Background Added Successfully",
   "key.editor.toast.backgroundAddDesc": "Updated to the specified URL image",
-  "key.editor.toast.pleaseEnterUrl": "Please enter URL"
+  "key.editor.toast.pleaseEnterUrl": "Please enter URL",
+  "key.storyNode.start": "Start",
+  "key.storyNode.ending": "Ending",
+  "key.storyNode.dialogues": "dialogues",
+  "key.storyNode.branches": "branches",
+  "key.storyNode.appearingCharacters": "Appearing characters:"
 }

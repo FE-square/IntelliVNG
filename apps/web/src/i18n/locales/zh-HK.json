@@ -485,6 +485,8 @@
   "key.editor.packaging": "正在打包",
   "key.editor.generatingHtml": "正在生成獨立可玩 HTML 檔案...",
   "key.editor.preparingExport": "準備匯出...",
+  "key.editor.secondsAgo": "秒前",
+  "key.editor.minutesAgo": "分鐘前",
   "key.chatbot.title": "AI 編輯助手",
   "key.chatbot.placeholder": "輸入消息，如「添加一个分支节点」...",
   "key.chatbot.send": "發送",
@@ -844,5 +846,10 @@
   "key.editor.toast.spriteAddDesc": "已添加到立繪列表",
   "key.editor.toast.backgroundAddSuccess": "背景添加成功",
   "key.editor.toast.backgroundAddDesc": "已更新為指定URL的圖片",
-  "key.editor.toast.pleaseEnterUrl": "請輸入URL"
+  "key.editor.toast.pleaseEnterUrl": "請輸入URL",
+  "key.storyNode.start": "開始",
+  "key.storyNode.ending": "結尾",
+  "key.storyNode.dialogues": "段對話",
+  "key.storyNode.branches": "個分支",
+  "key.storyNode.appearingCharacters": "出場人物:",
 }

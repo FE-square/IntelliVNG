@@ -95,6 +95,11 @@ const i18nMap = {
     saveDialogPlaceholder: 'key.editor.saveDialogPlaceholder',
     cancel: 'key.editor.cancel',
     confirmSave: 'key.editor.confirmSave',
+    nodeStart: 'key.storyNode.start',
+    nodeEnding: 'key.storyNode.ending',
+    nodeDialogues: 'key.storyNode.dialogues',
+    nodeBranches: 'key.storyNode.branches',
+    nodeAppearingCharacters: 'key.storyNode.appearingCharacters',
     exportDialogTitle: 'key.editor.exportDialogTitle',
     exportDialogDesc: 'key.editor.exportDialogDesc',
     notSaved: 'key.editor.notSaved',
@@ -147,91 +152,94 @@ const i18nMap = {
 };
 
 // Mock Project for testing (fallback)
-const MOCK_PROJECT: GameProject = {
-    id: 'demo-1',
-    title: 'Demo Project',
-    description: 'A demo visual novel',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    meta: {
-        author: 'User',
-        version: '1.0.0',
-        genre: 'mystery',
-        artStyle: 'anime',
-    },
-    settings: {
-        textSpeed: 50,
-        autoPlayDelay: 2000,
-        defaultTransition: 'fade',
-    },
-    characters: [
-        {
-            id: 'char-1',
-            name: 'Alice',
-            displayName: 'Alice',
-            description: 'A cheerful detective',
-            defaultSpriteId: 'sprite-1',
-            sprites: [],
+const MOCK_PROJECT = (locale: string): GameProject => {
+    const isCN = locale.includes('zh');
+    return {
+        id: 'demo-1',
+        title: 'Demo Project',
+        description: 'A demo visual novel',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        meta: {
+            author: 'User',
+            version: '1.0.0',
+            genre: 'mystery',
+            artStyle: 'anime',
         },
-        {
-            id: 'char-2',
-            name: 'Bob',
-            displayName: 'Bob',
-            description: 'A mysterious stranger',
-            defaultSpriteId: 'sprite-2',
-            sprites: [],
-        }
-    ],
-    backgrounds: [
-        {
-            id: 'bg-1',
-            name: 'City Street',
-            description: 'A busy city street at night',
-            imageUrl: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=1000&auto=format&fit=crop',
-        }
-    ],
-    script: [
-        {
-            id: 'node-1',
-            type: 'scene',
-            isStart: true,
-            title: '初次相遇',
-            backgroundId: 'bg-1',
-            sceneName: 'City Street',
-            nextNodeId: 'node-2',
-            position: { x: 100, y: 100 },
-            dialogues: [
-                {
-                    id: 'd1-1',
-                    characterId: 'char-1',
-                    text: 'Hello! Welcome to IntelliVNG.',
-                }
-            ],
+        settings: {
+            textSpeed: 50,
+            autoPlayDelay: 2000,
+            defaultTransition: 'fade',
         },
-        {
-            id: 'node-2',
-            type: 'scene',
-            title: '对话继续',
-            backgroundId: 'bg-1',
-            nextNodeId: 'node-3',
-            position: { x: 100, y: 300 },
-            dialogues: [
-                {
-                    id: 'd2-1',
-                    characterId: 'char-2',
-                    text: 'This is a demo of the engine.',
-                }
-            ],
-        },
-        {
-            id: 'node-3',
-            type: 'ending',
-            isEnding: true,
-            title: '结局',
-            position: { x: 100, y: 500 },
-            dialogues: [],
-        },
-    ]
+        characters: [
+            {
+                id: 'char-1',
+                name: isCN ? '爱丽丝' : 'Alice',
+                displayName: isCN ? '爱丽丝' : 'Alice',
+                description: isCN ? '一个开朗的侦探女孩。' : 'A cheerful detective girl.',
+                defaultSpriteId: 'sprite-1',
+                sprites: [],
+            },
+            {
+                id: 'char-2',
+                name: isCN ? '鲍勃' : 'Bob',
+                displayName: isCN ? '鲍勃' : 'Bob',
+                description: isCN ? '一个神秘的陌生男人。' : 'A mysterious stranger man.',
+                defaultSpriteId: 'sprite-2',
+                sprites: [],
+            }
+        ],
+        backgrounds: [
+            {
+                id: 'bg-1',
+                name: isCN ? '城市街道' : 'City Street',
+                description: isCN ? '一个繁忙的城市街道夜晚。' : 'A busy city street at night.',
+                imageUrl: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=1000&auto=format&fit=crop',
+            }
+        ],
+        script: [
+            {
+                id: 'node-1',
+                type: 'scene',
+                isStart: true,
+                title: isCN ? '初次相遇' : 'Initial Meeting',
+                backgroundId: 'bg-1',
+                sceneName: isCN ? '城市街道' : 'City Street',
+                nextNodeId: 'node-2',
+                position: { x: 100, y: 100 },
+                dialogues: [
+                    {
+                        id: 'd1-1',
+                        characterId: 'char-1',
+                        text: 'Hello! Welcome to IntelliVNG.',
+                    }
+                ],
+            },
+            {
+                id: 'node-2',
+                type: 'scene',
+                title: isCN ? '对话继续' : 'Dialogue Continued',
+                backgroundId: 'bg-1',
+                nextNodeId: 'node-3',
+                position: { x: 100, y: 300 },
+                dialogues: [
+                    {
+                        id: 'd2-1',
+                        characterId: 'char-2',
+                        text: isCN ? '这是一个引擎的演示。' : 'This is a demo of the engine.',
+                    }
+                ],
+            },
+            {
+                id: 'node-3',
+                type: 'ending',
+                isEnding: true,
+                title: isCN ? '结局' : 'Ending',
+                position: { x: 100, y: 500 },
+                dialogues: [],
+            },
+        ]
+    };
 };
 
 function EditorPageContent() {
@@ -241,10 +249,10 @@ function EditorPageContent() {
     // 支持两种参数名：projectId 和 project
     const urlProjectId = searchParams.get('projectId') || searchParams.get('project');
     const [mockProjectId, setMockProjectId] = useState<string | null>(null);
-    
+
     // 实际使用的 projectId (URL 参数优先，其次是 Mock ID)
     const projectId = urlProjectId || mockProjectId;
-    
+
     const [project, setProject] = useState<GameProject | null>(null);
     const [activeTab, _setActiveTab] = useState<'editor' | 'preview'>('editor');
     const setActiveTab = useCallback((tab: 'editor' | 'preview') => {
@@ -287,11 +295,11 @@ function EditorPageContent() {
         total: 100,
         message: ''
     });
-    
+
     // 获取当前locale
-    const currentLocale = typeof window !== 'undefined' 
-    ? (new URLSearchParams(window.location.search).get('locale') || 'zh-CN')
-    : 'zh-CN';
+    const currentLocale = typeof window !== 'undefined'
+        ? (new URLSearchParams(window.location.search).get('locale') || 'zh-CN')
+        : 'zh-CN';
 
     useEffect(() => {
         const loadProject = async () => {
@@ -300,7 +308,7 @@ function EditorPageContent() {
 
             // 如果没有 projectId，使用 Mock 数据
             if (!urlProjectId) {
-                setProject(MOCK_PROJECT);
+                setProject(MOCK_PROJECT(currentLocale));
                 setMockProjectId('demo-1'); // 为 Mock 项目设置临时 ID
                 setLoading(false);
                 return;
@@ -310,7 +318,7 @@ function EditorPageContent() {
                 // 🔧 直接调用后端API，绕过前端Next.js API路由
                 const BACKEND_URL = process.env.NEXT_PUBLIC_INTELLI_SERVICES_URL || 'http://localhost:4000';
                 const response = await fetch(`${BACKEND_URL}/api/game/projects/${projectId}`);
-                
+
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.error || `HTTP ${response.status}`);
@@ -325,7 +333,7 @@ function EditorPageContent() {
                         sprites: c.sprites?.length
                     }))
                 });
-                
+
                 const projectData = data.data;
                 console.log('[Editor] 加载项目数据:', {
                     projectId: urlProjectId,
@@ -347,9 +355,9 @@ function EditorPageContent() {
                 const message = err instanceof Error ? err.message : 'Failed to load project';
                 console.error('[Editor] Error loading project:', message);
                 setError(message);
-                
+
                 // 出错时使用 Mock 数据作为 fallback
-                setProject(MOCK_PROJECT);
+                setProject(MOCK_PROJECT(currentLocale));
             } finally {
                 setLoading(false);
             }
@@ -357,7 +365,7 @@ function EditorPageContent() {
 
         loadProject();
     }, [projectId, setProject]);
-    
+
     // ✅ 点击外部关闭预览菜单
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -366,13 +374,13 @@ function EditorPageContent() {
                 setShowPreviewMenu(false);
             }
         };
-        
+
         if (showPreviewMenu) {
             document.addEventListener('click', handleClickOutside);
             return () => document.removeEventListener('click', handleClickOutside);
         }
     }, [showPreviewMenu]);
-    
+
     // ✅ 点击外部关闭下拉菜单
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -383,38 +391,38 @@ function EditorPageContent() {
                 setShowNodesDropdown(false);
             }
         };
-        
+
         if (showCharactersDropdown || showScenesDropdown || showNodesDropdown) {
             document.addEventListener('click', handleClickOutside);
             return () => document.removeEventListener('click', handleClickOutside);
         }
     }, [showCharactersDropdown, showScenesDropdown, showNodesDropdown]);
-    
+
     // 自动保存草稿 - 每30秒保存到本地
     useEffect(() => {
         if (!project || !projectId) return;
-        
+
         if (autoSaveTimerRef.current) {
             clearInterval(autoSaveTimerRef.current);
         }
-        
+
         autoSaveTimerRef.current = setInterval(() => {
             // 保存草稿到本地（不阻塞）
             saveDraft(projectId, project);
             setLastSaveTime(new Date());
         }, 30000);
-        
+
         return () => {
             if (autoSaveTimerRef.current) {
                 clearInterval(autoSaveTimerRef.current);
             }
         };
     }, [project, projectId]);
-    
+
     // 手动保存到后端
     const handleManualSave = async (note?: string) => {
         if (!project || !projectId) return;
-        
+
         setIsSaving(true);
         try {
             // 更新项目的updatedAt时间戳
@@ -422,9 +430,9 @@ function EditorPageContent() {
                 ...project,
                 updatedAt: new Date().toISOString(),
             };
-            
+
             const success = await saveProject(updatedProject);
-            
+
             if (success) {
                 // 更新本地project状态
                 setProject(updatedProject);
@@ -443,11 +451,11 @@ function EditorPageContent() {
             setIsSaving(false);
         }
     };
-    
+
 
     const handleGenerateImage = async (
-        characterId: string, 
-        prompt: string, 
+        characterId: string,
+        prompt: string,
         refImageUrl?: string,
         explicitType?: 'sprite' | 'avatar' | 'background'
     ): Promise<{ imageUrl: string; maskUrl?: string }> => {
@@ -463,27 +471,27 @@ function EditorPageContent() {
                     type = 'avatar';
                 }
             }
-            
-            const generatingTypeLabel = type === 'sprite' 
+
+            const generatingTypeLabel = type === 'sprite'
                 ? (I18N[i18nMap.generatingSprite] || '角色立绘')
-                : type === 'avatar' 
-                ? (I18N[i18nMap.generatingAvatar] || '角色头像')
-                : (I18N[i18nMap.generatingBackground] || '场景背景');
+                : type === 'avatar'
+                    ? (I18N[i18nMap.generatingAvatar] || '角色头像')
+                    : (I18N[i18nMap.generatingBackground] || '场景背景');
             toast.info(I18N[i18nMap.generating] || '生成中', (I18N[i18nMap.generatingDesc] || '正在生成{type},请稍候...').replace('{type}', generatingTypeLabel));
-            
+
             const response = await fetch('/api/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     prompt,
                     type,  // ✅ 后端根据此区分是否需要抠图（type='sprite' 时触发）
                     refImageUrl,
                     refStrength: refImageUrl ? 0.7 : undefined  // 使用参考图时保持70%相似度
                 }),
             });
-            
+
             const data = await response.json();
-            
+
             if (!response.ok) {
                 // ✅ 显示详细的错误信息
                 const errorMessage = data.details || data.error || '图片生成失败';
@@ -496,16 +504,16 @@ function EditorPageContent() {
                 });
                 throw new Error(errorMessage);
             }
-            
+
             if (!data.imageUrl) {
                 throw new Error('未返回图片URL');
             }
-            
-            const generatedTypeLabel = type === 'sprite' 
+
+            const generatedTypeLabel = type === 'sprite'
                 ? (I18N[i18nMap.spriteGenerated] || '角色立绘')
-                : type === 'avatar' 
-                ? (I18N[i18nMap.avatarGenerated] || '角色头像')
-                : (I18N[i18nMap.backgroundGenerated] || '场景背景');
+                : type === 'avatar'
+                    ? (I18N[i18nMap.avatarGenerated] || '角色头像')
+                    : (I18N[i18nMap.backgroundGenerated] || '场景背景');
             toast.success(I18N[i18nMap.generateSuccess] || '生成成功', `${generatedTypeLabel}已生成 ✨`);
             return {
                 imageUrl: data.imageUrl,
@@ -517,17 +525,17 @@ function EditorPageContent() {
             throw error;
         }
     };
-    
+
     // 重新生成角色立绘
     const handleRegenerateSprite = async (character: any) => {
         if (isGeneratingSprite || !project) return;
-        
+
         setIsGeneratingSprite(true);
         try {
             const prompt = `${character.displayName || character.name}, ${character.description}, 全身立绘, 动漫风格, 纯白色背景, 人物居中, 高质量`;
             // ✅ 不使用参考图,让后端走抠图流程 generateSpriteWithTransparency
             const result = await handleGenerateImage(character.id, prompt, undefined, 'sprite');
-            
+
             // 更新项目数据
             const updatedCharacters = project.characters?.map(c => {
                 if (c.id === character.id) {
@@ -545,7 +553,7 @@ function EditorPageContent() {
                 }
                 return c;
             });
-            
+
             setProject({ ...project, characters: updatedCharacters } as GameProject);
             setSelectedCharacter({ ...character, sprites: updatedCharacters?.find(c => c.id === character.id)?.sprites });
             toast.success(I18N[i18nMap.regenerateSpriteSuccess] || '立绘重新生成', I18N[i18nMap.regenerateSpriteDesc] || '已替换为最新的立绘');
@@ -555,18 +563,18 @@ function EditorPageContent() {
             setIsGeneratingSprite(false);
         }
     };
-    
+
     // 重新生成角色头像
     const handleRegenerateAvatar = async (character: any) => {
         if (isGeneratingAvatar || !project) return;
-        
+
         setIsGeneratingAvatar(true);
         try {
             const prompt = `${character.displayName || character.name}, ${character.description}, 头像特写, 圆形头像, 动漫风格, 纯白色背景, 简洁, 高质量`;
             // 如果有立绘，使用立绘作为参考图
             const refImageUrl = character.sprites?.[0]?.imageUrl;
             const result = await handleGenerateImage(character.id, prompt, refImageUrl, 'avatar');
-            
+
             // 更新项目数据
             const updatedCharacters = project.characters?.map(c => {
                 if (c.id === character.id) {
@@ -574,7 +582,7 @@ function EditorPageContent() {
                 }
                 return c;
             });
-            
+
             setProject({ ...project, characters: updatedCharacters } as GameProject);
             setSelectedCharacter({ ...character, avatarUrl: result.imageUrl });
             toast.success(I18N[i18nMap.regenerateAvatarSuccess] || '头像重新生成', I18N[i18nMap.regenerateAvatarDesc] || '已替换为最新的头像');
@@ -584,16 +592,16 @@ function EditorPageContent() {
             setIsGeneratingAvatar(false);
         }
     };
-    
+
     // 重新生成场景背景
     const handleRegenerateBackground = async (background: any) => {
         if (isGeneratingBackground || !project) return;
-        
+
         setIsGeneratingBackground(true);
         try {
             const prompt = `${background.name}, ${background.description || ''}, 场景背景, 动漫风格, 高质量, 细节丰富`;
             const result = await handleGenerateImage(background.id, prompt, undefined, 'background');
-            
+
             // 更新项目数据
             const updatedBackgrounds = project.backgrounds?.map(bg => {
                 if (bg.id === background.id) {
@@ -601,7 +609,7 @@ function EditorPageContent() {
                 }
                 return bg;
             });
-            
+
             setProject({ ...project, backgrounds: updatedBackgrounds } as GameProject);
             setSelectedBackground({ ...background, imageUrl: result.imageUrl });
             toast.success(I18N[i18nMap.regenerateBackgroundSuccess] || '背景重新生成', I18N[i18nMap.regenerateBackgroundDesc] || '已替换为最新的背景');
@@ -611,11 +619,11 @@ function EditorPageContent() {
             setIsGeneratingBackground(false);
         }
     };
-    
+
     // 删除角色立绘
     const handleDeleteSprite = async (character: any, spriteId: string) => {
         if (!project) return;
-        
+
         try {
             // 更新项目数据
             const updatedCharacters = project.characters?.map(c => {
@@ -625,14 +633,14 @@ function EditorPageContent() {
                         ...c,
                         sprites: remainingSprites,
                         // 如果删除的是默认立绘，更新默认立绘ID
-                        defaultSpriteId: c.defaultSpriteId === spriteId 
+                        defaultSpriteId: c.defaultSpriteId === spriteId
                             ? (remainingSprites[0]?.id || undefined)
                             : c.defaultSpriteId,
                     };
                 }
                 return c;
             });
-            
+
             setProject({ ...project, characters: updatedCharacters } as GameProject);
             setSelectedCharacter({ ...character, sprites: updatedCharacters?.find(c => c.id === character.id)?.sprites });
             toast.success(I18N[i18nMap.deleteSuccess] || '删除成功', I18N[i18nMap.spriteDeleted] || '立绘已删除');
@@ -641,18 +649,18 @@ function EditorPageContent() {
             toast.error(I18N[i18nMap.deleteFailed] || '删除失败', I18N[i18nMap.saveRetry] || '请重试');
         }
     };
-    
+
     // ✅ 格式化最后保存时间
     const formatLastSaveTime = () => {
         if (!lastSaveTime) return I18N[i18nMap.notSaved] || '未保存';
         const now = new Date();
         const diff = Math.floor((now.getTime() - lastSaveTime.getTime()) / 1000);  // 秒
-        
+
         if (diff < 60) return `${diff}${I18N[i18nMap.secondsAgo] || '秒前'}`;
         if (diff < 3600) return `${Math.floor(diff / 60)}${I18N[i18nMap.minutesAgo] || '分钟前'}`;
         return lastSaveTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
     };
-    
+
     // ✅ 为 FlowEditor 提供的包装函数（只返回 imageUrl）
     const handleGenerateImageForEditor = async (
         characterId: string,
@@ -687,8 +695,8 @@ function EditorPageContent() {
                     <div className="text-center">
                         <p className="text-xl font-bold text-slate-800 mb-2" suppressHydrationWarning>{I18N[i18nMap.projectLoadFailed] || '项目加载失败'}</p>
                         <p className="text-sm text-slate-500 mb-4" suppressHydrationWarning>{I18N[i18nMap.cannotLoadProject] || '无法加载指定的项目数据'}</p>
-                        <a 
-                            href="/" 
+                        <a
+                            href="/"
                             className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg transition-all shadow-lg"
                         >
                             <Home className="w-4 h-4" />
@@ -716,7 +724,7 @@ function EditorPageContent() {
                         )}
                     </div>
                 </div>
-                
+
                 {/* Error notification */}
                 {error && (
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-sm border border-amber-200">
@@ -724,7 +732,7 @@ function EditorPageContent() {
                         <span suppressHydrationWarning>{I18N[i18nMap.demoDataNote] || '使用演示数据 (项目未找到)'}</span>
                     </div>
                 )}
-                
+
                 <div className="flex gap-2 items-center">
                     {/* ✅ 最后保存时间 */}
                     {projectId && (
@@ -733,7 +741,7 @@ function EditorPageContent() {
                             <span suppressHydrationWarning>{I18N[i18nMap.lastSaved] || '最后保存'}: {formatLastSaveTime()}</span>
                         </div>
                     )}
-                    
+
                     {/* ✅ 手动保存按钮 */}
                     {projectId && (
                         <Button
@@ -746,7 +754,7 @@ function EditorPageContent() {
                             <span suppressHydrationWarning>{isSaving ? (I18N[i18nMap.saving] || '保存中...') : (I18N[i18nMap.save] || '保存')}</span>
                         </Button>
                     )}
-                    
+
                     <Button
                         variant="outline"
                         onClick={() => setActiveTab('editor')}
@@ -754,7 +762,7 @@ function EditorPageContent() {
                     >
                         <span suppressHydrationWarning>📝 {I18N[i18nMap.scriptEditor] || '脚本编辑器'}</span>
                     </Button>
-                    
+
                     {/* ✅ 预览游戏下拉菜单 */}
                     <div className="relative preview-menu-container">
                         <Button
@@ -768,7 +776,7 @@ function EditorPageContent() {
                         >
                             <span suppressHydrationWarning>▶️ {I18N[i18nMap.previewGame] || '预览游戏'} ▼</span>
                         </Button>
-                        
+
                         {/* 下拉菜单 */}
                         {showPreviewMenu && (
                             <div className="absolute top-full mt-1 right-0 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[200px]">
@@ -817,9 +825,9 @@ function EditorPageContent() {
                             </div>
                         )}
                     </div>
-                    
+
                     <div className="relative export-menu-container group">
-                        <Button 
+                        <Button
                             variant="outline"
                             className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
                         >
@@ -839,7 +847,7 @@ function EditorPageContent() {
                                 <div>
                                     <div className="font-semibold text-slate-800" suppressHydrationWarning>{I18N[i18nMap.exportJson] || '导出 JSON'}</div>
                                     <div className="text-xs text-slate-500" suppressHydrationWarning>{I18N[i18nMap.exportJsonDesc] || '项目源文件，用于备份或导入'}</div>
-                                    </div>
+                                </div>
                             </button>
                             <button
                                 onClick={() => {
@@ -895,8 +903,8 @@ function EditorPageContent() {
                 <div className="flex gap-6">
                     {/* ✅ 角色下拉 */}
                     <div className="relative dropdown-container">
-                        <span 
-                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
+                        <span
+                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors"
                             title={I18N[i18nMap.viewCharacterList] || "查看角色列表"}
                             onClick={() => {
                                 setShowCharactersDropdown(!showCharactersDropdown);
@@ -913,8 +921,8 @@ function EditorPageContent() {
                             <div className="absolute top-full mt-1 left-0 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[280px] max-h-[400px] overflow-y-auto">
                                 {project.characters && project.characters.length > 0 ? (
                                     project.characters.map((char, idx) => (
-                                        <div 
-                                            key={idx} 
+                                        <div
+                                            key={idx}
                                             className="px-4 py-3 hover:bg-indigo-50 transition-colors border-b border-slate-100 last:border-0 cursor-pointer"
                                             onClick={() => {
                                                 setSelectedCharacter(char);
@@ -932,9 +940,9 @@ function EditorPageContent() {
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-semibold text-slate-800">{char.name}</div>
                                                     <div className="text-xs text-slate-500 line-clamp-1">
-                                                        {char.description || 
-                                                         (typeof char.personality === 'string' ? char.personality : 
-                                                          char.personality?.traits?.join('、') || (I18N[i18nMap.noDescription] || '暂无描述'))}
+                                                        {char.description ||
+                                                            (typeof char.personality === 'string' ? char.personality :
+                                                                char.personality?.traits?.join('、') || (I18N[i18nMap.noDescription] || '暂无描述'))}
                                                     </div>
                                                 </div>
                                             </div>
@@ -946,11 +954,11 @@ function EditorPageContent() {
                             </div>
                         )}
                     </div>
-                    
+
                     {/* ✅ 场景下拉 */}
                     <div className="relative dropdown-container">
-                        <span 
-                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
+                        <span
+                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors"
                             title={I18N[i18nMap.viewSceneList] || "查看场景列表"}
                             onClick={() => {
                                 setShowScenesDropdown(!showScenesDropdown);
@@ -967,8 +975,8 @@ function EditorPageContent() {
                             <div className="absolute top-full mt-1 left-0 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[280px] max-h-[400px] overflow-y-auto">
                                 {project.backgrounds && project.backgrounds.length > 0 ? (
                                     project.backgrounds.map((bg, idx) => (
-                                        <div 
-                                            key={idx} 
+                                        <div
+                                            key={idx}
                                             className="px-4 py-3 hover:bg-purple-50 transition-colors border-b border-slate-100 last:border-0 cursor-pointer"
                                             onClick={() => {
                                                 setSelectedBackground(bg);
@@ -977,10 +985,10 @@ function EditorPageContent() {
                                         >
                                             <div className="flex items-center gap-3">
                                                 {bg.imageUrl ? (
-                                                    <img 
-                                                        src={bg.imageUrl} 
-                                                        alt={bg.name} 
-                                                        className="w-16 h-10 rounded object-cover flex-shrink-0" 
+                                                    <img
+                                                        src={bg.imageUrl}
+                                                        alt={bg.name}
+                                                        className="w-16 h-10 rounded object-cover flex-shrink-0"
                                                     />
                                                 ) : (
                                                     <div className="w-16 h-10 rounded bg-purple-100 flex items-center justify-center text-purple-600 text-xs flex-shrink-0">
@@ -1000,11 +1008,11 @@ function EditorPageContent() {
                             </div>
                         )}
                     </div>
-                    
+
                     {/* ✅ 故事情节下拉 */}
                     <div className="relative dropdown-container">
-                        <span 
-                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
+                        <span
+                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors"
                             title={I18N[i18nMap.viewStoryNodeList] || "查看故事情节列表"}
                             onClick={() => {
                                 setShowNodesDropdown(!showNodesDropdown);
@@ -1021,8 +1029,8 @@ function EditorPageContent() {
                             <div className="absolute top-full mt-1 left-0 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 min-w-[320px] max-h-[400px] overflow-y-auto">
                                 {project.script && project.script.length > 0 ? (
                                     project.script.map((node: any, idx) => (
-                                        <div 
-                                            key={idx} 
+                                        <div
+                                            key={idx}
                                             className="px-4 py-3 hover:bg-pink-50 transition-colors border-b border-slate-100 last:border-0 cursor-pointer"
                                             onClick={() => {
                                                 setSelectedNodeId(node.id);
@@ -1103,8 +1111,8 @@ function EditorPageContent() {
             <main className="flex-1 overflow-hidden">
                 {activeTab === 'editor' ? (
                     <ReactFlowProvider>
-                        <FlowEditor 
-                            project={project} 
+                        <FlowEditor
+                            project={project}
                             onUpdate={(updatedProject) => {
                                 setProject(updatedProject);
                                 // ✅ 不再在这里自动保存,由定时器处理
@@ -1185,6 +1193,11 @@ function EditorPageContent() {
                                 nodeEditNoCharacterSelected: I18N['key.nodeEdit.noCharacterSelected'] || '未选择角色',
                                 nodeEditDialoguePlaceholder: I18N['key.nodeEdit.dialoguePlaceholder'] || '输入对话内容...',
                                 nodeEditNoDialogues: I18N['key.nodeEdit.noDialogues'] || '还没有对话，点击上方按钮添加',
+                                nodeStart: I18N['key.storyNode.start'] || '开始',
+                                nodeEnding: I18N['key.storyNode.ending'] || '结尾',
+                                nodeDialogues: I18N['key.storyNode.dialogues'] || '段对话',
+                                nodeBranches: I18N['key.storyNode.branches'] || '个分支',
+                                nodeAppearingCharacters: I18N['key.storyNode.appearingCharacters'] || '出场人物:',
                             }}
                         />
                     </ReactFlowProvider>
@@ -1196,12 +1209,11 @@ function EditorPageContent() {
                                 {/* ✅ 顶部提示条 - 显示当前预览模式 */}
                                 <div className="mb-4 px-4 py-2 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-700/50 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full ${
-                                            previewMode === 'from-start' ? 'bg-blue-500' : 'bg-green-500'
-                                        } animate-pulse`} />
+                                        <div className={`w-2 h-2 rounded-full ${previewMode === 'from-start' ? 'bg-blue-500' : 'bg-green-500'
+                                            } animate-pulse`} />
                                         <span className="text-sm text-slate-300" suppressHydrationWarning>
-                                            {previewMode === 'from-start' 
-                                                ? (I18N[i18nMap.previewModeFromStart] || '🏁 从开始节点的开头预览') 
+                                            {previewMode === 'from-start'
+                                                ? (I18N[i18nMap.previewModeFromStart] || '🏁 从开始节点的开头预览')
                                                 : (I18N[i18nMap.previewModeFromCurrent]?.replace('{nodeId}', selectedNodeId || '') || `▶️ 从节点 ${selectedNodeId} 的开头预览`)}
                                         </span>
                                     </div>
@@ -1212,11 +1224,10 @@ function EditorPageContent() {
                                                 setPreviewMode('from-start');
                                                 setPreviewKey(prev => prev + 1);  // ✅ 强制重新挂载
                                             }}
-                                            className={`px-3 py-1 rounded text-xs transition-all ${
-                                                previewMode === 'from-start'
-                                                    ? 'bg-blue-500 text-white'
-                                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                            }`}
+                                            className={`px-3 py-1 rounded text-xs transition-all ${previewMode === 'from-start'
+                                                ? 'bg-blue-500 text-white'
+                                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                                }`}
                                         >
                                             🏁 从头
                                         </button>
@@ -1230,17 +1241,16 @@ function EditorPageContent() {
                                                 setPreviewKey(prev => prev + 1);  // ✅ 强制重新挂载
                                             }}
                                             disabled={!selectedNodeId}
-                                            className={`px-3 py-1 rounded text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                                                previewMode === 'from-current'
-                                                    ? 'bg-green-500 text-white'
-                                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                            }`}
+                                            className={`px-3 py-1 rounded text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${previewMode === 'from-current'
+                                                ? 'bg-green-500 text-white'
+                                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                                }`}
                                         >
                                             ▶️ 从当前
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <Card className="aspect-video w-full overflow-hidden border-0 shadow-2xl ring-1 ring-white/10">
                                     <GamePlayer
                                         key={previewKey}  // ✅ 通过key强制重新挂载
@@ -1261,14 +1271,14 @@ function EditorPageContent() {
                     </div>
                 )}
             </main>
-            
+
             {/* ✅ 保存备注对话框 */}
             {showSaveNoteDialog && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
                         <h3 className="text-xl font-bold text-slate-800 mb-4" suppressHydrationWarning>{I18N[i18nMap.saveDialogTitle] || '💾 保存项目'}</h3>
                         <p className="text-sm text-slate-600 mb-4" suppressHydrationWarning>{I18N[i18nMap.saveDialogDesc] || '添加版本备注(可选),方便后续查看和管理'}</p>
-                        
+
                         <input
                             type="text"
                             placeholder={I18N[i18nMap.saveDialogPlaceholder] || "例如: 调整分支逻辑、添加新场景...或留空"}
@@ -1283,7 +1293,7 @@ function EditorPageContent() {
                                 }
                             }}
                         />
-                        
+
                         <div className="flex gap-3">
                             <Button
                                 variant="outline"
@@ -1307,13 +1317,13 @@ function EditorPageContent() {
                     </div>
                 </div>
             )}
-            
+
             {/* ✅ 导出进度对话框 */}
             {exportProgress.show && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
                         <h3 className="text-xl font-bold text-slate-800 mb-4" suppressHydrationWarning>{I18N[i18nMap.exportDialogTitle] || '📦 正在导出'}</h3>
-                        
+
                         {/* 进度条 */}
                         <div className="mb-4">
                             <div className="flex justify-between text-sm text-slate-600 mb-2">
@@ -1321,27 +1331,27 @@ function EditorPageContent() {
                                 <span>{exportProgress.current}%</span>
                             </div>
                             <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
-                                <div 
+                                <div
                                     className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-300 ease-out"
                                     style={{ width: `${exportProgress.current}%` }}
                                 />
                             </div>
                         </div>
-                        
+
                         <p className="text-xs text-slate-500" suppressHydrationWarning>
                             {I18N[i18nMap.exportDialogDesc] || '正在将所有图片转换为 Base64 并内嵌到 HTML 中...'}
                         </p>
                     </div>
                 </div>
             )}
-            
+
             {/* ✅ 角色立绘查看弹窗 */}
             {selectedCharacter && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                     onClick={() => setSelectedCharacter(null)}
                 >
-                    <div 
+                    <div
                         className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 border border-slate-200"
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -1353,9 +1363,9 @@ function EditorPageContent() {
                                 <div className="flex-1 min-w-0">
                                     <h3 className="text-2xl font-bold text-slate-800">{selectedCharacter.name}</h3>
                                     <p className="text-sm text-slate-500">
-                                        {selectedCharacter.description || 
-                                         (typeof selectedCharacter.personality === 'string' ? selectedCharacter.personality : 
-                                          selectedCharacter.personality?.traits?.join('、') || (I18N[i18nMap.noDescription] || '暂无描述'))}
+                                        {selectedCharacter.description ||
+                                            (typeof selectedCharacter.personality === 'string' ? selectedCharacter.personality :
+                                                selectedCharacter.personality?.traits?.join('、') || (I18N[i18nMap.noDescription] || '暂无描述'))}
                                     </p>
                                 </div>
                             </div>
@@ -1366,7 +1376,7 @@ function EditorPageContent() {
                                 ✕
                             </button>
                         </div>
-                        
+
                         {/* ✅ 操作按钮区 - 分两行显示 */}
                         <div className="mb-6 space-y-3">
                             {/* 第一行：头像相关 */}
@@ -1392,7 +1402,7 @@ function EditorPageContent() {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             {/* 第二行：立绘相关 */}
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2 flex-1">
@@ -1417,7 +1427,7 @@ function EditorPageContent() {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* ✅ 头像URL输入框 */}
                         {showAvatarUrlInput && (
                             <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
@@ -1481,7 +1491,7 @@ function EditorPageContent() {
                                 </div>
                             </div>
                         )}
-                        
+
                         {/* ✅ 立绘URL输入框 */}
                         {showSpriteUrlInput && (
                             <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
@@ -1569,13 +1579,13 @@ function EditorPageContent() {
                                 </div>
                             </div>
                         )}
-                        
+
                         {selectedCharacter.sprites && selectedCharacter.sprites.length > 0 ? (
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
                                 {selectedCharacter.sprites.map((sprite: any, idx: number) => (
                                     <div key={idx} className="group relative aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden">
-                                        <img 
-                                            src={sprite.imageUrl} 
+                                        <img
+                                            src={sprite.imageUrl}
                                             alt={`${selectedCharacter.name} - ${sprite.emotion}`}
                                             className="w-full h-full object-contain"
                                             style={{ mixBlendMode: 'multiply' }}
@@ -1613,14 +1623,14 @@ function EditorPageContent() {
                     </div>
                 </div>
             )}
-            
+
             {/* ✅ 场景背景查看弹窗 */}
             {selectedBackground && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                     onClick={() => setSelectedBackground(null)}
                 >
-                    <div 
+                    <div
                         className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full p-6 border border-slate-200"
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -1636,7 +1646,7 @@ function EditorPageContent() {
                                 ✕
                             </button>
                         </div>
-                        
+
                         {/* ✅ 操作按钮区 */}
                         <div className="mb-6">
                             <div className="flex items-center gap-3">
@@ -1661,7 +1671,7 @@ function EditorPageContent() {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* ✅ 背景URL输入框 */}
                         {showBackgroundUrlInput && (
                             <div className="mb-4 p-4 bg-cyan-50 rounded-lg border border-cyan-200">
@@ -1725,11 +1735,11 @@ function EditorPageContent() {
                                 </div>
                             </div>
                         )}
-                        
+
                         {selectedBackground.imageUrl ? (
                             <div className="bg-slate-100 rounded-lg overflow-hidden max-h-[70vh]">
-                                <img 
-                                    src={selectedBackground.imageUrl} 
+                                <img
+                                    src={selectedBackground.imageUrl}
                                     alt={selectedBackground.name}
                                     className="w-full h-full object-contain"
                                 />
@@ -1750,7 +1760,7 @@ function EditorPageContent() {
                     </div>
                 </div>
             )}
-            
+
             {/* AI 编辑助手 ChatBot */}
             {projectId && (
                 <ChatBot
@@ -1801,15 +1811,15 @@ function EditorPageContent() {
 
 // 默认导出：用 Suspense 包裹以支持 useSearchParams
 export default function EditorPage() {
+    const { I18N } = useI18N();
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 flex items-center justify-center">
                 <div className="text-slate-600 text-center"></div>
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-500" />
-                    <p className="font-medium" suppressHydrationWarning>{I18N['key.editor.loading'] || '加载编辑器中...'}</p>
-                </div>
-            </div>
-        }>
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-500" />
+                <p className="font-medium" suppressHydrationWarning>{I18N['key.editor.loading'] || '加载编辑器中...'}</p>
+            </div>}
+        >
             <EditorPageContent />
         </Suspense>
     );
