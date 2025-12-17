@@ -163,14 +163,14 @@ export const deleteNodeTool = createTool({
 
 /**
  * 查询节点工具
+ * 注意：通常不需要调用此工具，因为系统上下文中已经包含了完整的节点列表。
+ * 只有在需要获取节点的详细对话内容等信息时才使用。
  */
 export const queryNodesTool = createTool({
   id: "query-nodes",
   description: `查询剧本中的节点信息。
-可以：
-- 不传参数：返回所有节点的摘要
-- 传 nodeId：返回指定节点的详细信息
-- 传 filter：按条件筛选节点（如 type="branch" 查找所有分支节点）`,
+【重要】系统上下文中已经包含了所有节点的 id、title、type 等基本信息，直接从上下文获取即可，无需调用此工具。
+仅当需要获取节点的详细对话内容等深层信息时才使用此工具。`,
   inputSchema: z.object({
     nodeId: z.string().optional().describe("指定节点ID"),
     filter: z.object({
@@ -365,6 +365,13 @@ export function extractActions(toolResults: any[]): EditorAction[] {
   
   const rawActions = toolResults
     .map((result) => {
+      // Mastra AI SDK v5 格式: { type: "tool-result", payload: { toolName: "xxx", result: { action: "xxx" } } }
+      if (result?.type === 'tool-result' && result?.payload?.result) {
+        const res = result.payload.result;
+        if (typeof res === 'object' && 'action' in res) {
+          return res;
+        }
+      }
       // Mastra 格式: { type: "tool-result", payload: { result: { action: "xxx" } } }
       if (result?.payload?.result && typeof result.payload.result === 'object') {
         return result.payload.result;
@@ -374,10 +381,12 @@ export function extractActions(toolResults: any[]): EditorAction[] {
         return result.result;
       }
       // 直接格式: { action: "xxx" }
-      return result;
+      if (result && typeof result === 'object' && 'action' in result) {
+        return result;
+      }
+      return null;
     })
-    .filter((result) => result && typeof result === "object" && "action" in result)
-    .map((result) => result as EditorAction);
+    .filter((result): result is EditorAction => result !== null && typeof result === "object" && "action" in result);
   
   // 去重：同一类型的动作只保留最后一个（通常参数最完整）
   const actionMap = new Map<string, EditorAction>();

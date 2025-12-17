@@ -1198,6 +1198,11 @@ function EditorPageContent() {
                                 nodeDialogues: I18N['key.storyNode.dialogues'] || '段对话',
                                 nodeBranches: I18N['key.storyNode.branches'] || '个分支',
                                 nodeAppearingCharacters: I18N['key.storyNode.appearingCharacters'] || '出场人物:',
+                                // 新增节点标题
+                                newNodeStartTitle: I18N['key.flowEditor.newNodeStartTitle'] || '新开始',
+                                newNodeSceneTitle: I18N['key.flowEditor.newNodeSceneTitle'] || '新场景',
+                                newNodeBranchTitle: I18N['key.flowEditor.newNodeBranchTitle'] || '新分支',
+                                newNodeEndingTitle: I18N['key.flowEditor.newNodeEndingTitle'] || '新结局',
                             }}
                         />
                     </ReactFlowProvider>
@@ -1802,6 +1807,26 @@ function EditorPageContent() {
                         analysisComplete: I18N['key.chatbot.analysisComplete'] || '分析完成',
                         queryResult: I18N['key.chatbot.queryResult'] || '查询到 {count} 个节点',
                         patchApplied: I18N['key.chatbot.patchApplied'] || '已应用修改',
+                        // Token 统计
+                        tokenInput: I18N['key.chatbot.tokenInput'] || 'in',
+                        tokenOutput: I18N['key.chatbot.tokenOutput'] || 'out',
+                        tokenTotal: I18N['key.chatbot.tokenTotal'] || 'tokens',
+                        sessionTokens: I18N['key.chatbot.sessionTokens'] || '会话总计',
+                        // 分析结果相关
+                        analysisIssuesFound: I18N['key.chatbot.analysisIssuesFound'] || '⚠️ 发现 {totalIssues} 个问题',
+                        analysisPaths: I18N['key.chatbot.analysisPaths'] || '📊 共 {totalPaths} 条路径, {endings} 个结局',
+                        analysisDialogueQuality: I18N['key.chatbot.analysisDialogueQuality'] || '💬 对话质量: {score}',
+                        analysisBranchDistribution: I18N['key.chatbot.analysisBranchDistribution'] || '🌿 分支分布: {score}',
+                        analysisNonlinearScore: I18N['key.chatbot.analysisNonlinearScore'] || '⭐ 非线性评分: {score}',
+                        // 思考步骤
+                        thinkingStepsLabel: I18N['key.chatbot.thinkingStepsLabel'] || '思考步骤',
+                        stepLabel: I18N['key.chatbot.stepLabel'] || '步骤',
+                        // 其他缺失的键
+                        generateImageWithName: I18N['key.chatbot.generateImageWithName'] || '🎨 生成{typeLabel}: {targetName}',
+                        generateImage: I18N['key.chatbot.generateImage'] || '🎨 生成{typeLabel}',
+                        operationFailed: I18N['key.chatbot.operationFailed'] || '操作失败',
+                        choiceDefault: I18N['key.chatbot.choiceDefault'] || '选项',
+                        resizeHeight: I18N['key.chatbot.resizeHeight'] || '拖拽调整高度',
                     }}
                 />
             )}

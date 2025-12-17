@@ -10,6 +10,7 @@ import { z } from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { tokenTracker } from '../services/token-tracker';
 
 // ============ 缓存配置 ============
 
@@ -365,6 +366,15 @@ export async function generateStructuredOutput<T>(
   if (fallbackOnly) {
     const enhancedPrompt = enhancePromptForJson(prompt, schema);
     const response = await agent.generate(enhancedPrompt, { modelSettings });
+    
+    // ✅ 追踪 Token 使用
+    tokenTracker.trackMastraAgent({
+      agentName,
+      model: 'unknown',  // 从 agent 配置获取
+      response,
+      operation: `structured-output.${schemaName}.fallback`,
+    });
+    
     result = extractAndValidateJson(response.text, schema);
     
     // 保存到缓存
@@ -378,6 +388,14 @@ export async function generateStructuredOutput<T>(
       structuredOutput: { schema },
       modelSettings,
       ...(maxSteps && { maxSteps }),
+    });
+
+    // ✅ 追踪 Token 使用
+    tokenTracker.trackMastraAgent({
+      agentName,
+      model: 'unknown',
+      response,
+      operation: `structured-output.${schemaName}.main`,
     });
 
     console.log(`[StructuredOutput] 📦 收到响应 (Length: ${response.text?.length || 0}, Object: ${!!response.object})`);
@@ -415,6 +433,14 @@ export async function generateStructuredOutput<T>(
     // 重新生成，使用增强的提示词要求返回 JSON
     const enhancedPrompt = enhancePromptForJson(prompt, schema);
     const response = await agent.generate(enhancedPrompt, { modelSettings });
+    
+    // ✅ 追踪 Token 使用
+    tokenTracker.trackMastraAgent({
+      agentName,
+      model: 'unknown',
+      response,
+      operation: `structured-output.${schemaName}.retry`,
+    });
     
     if (!response.text) {
       throw new Error('Agent 没有返回任何文本内容');

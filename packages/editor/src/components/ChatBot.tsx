@@ -16,6 +16,16 @@ interface ChatMessage {
     type: 'patch' | 'analysis' | 'query-result' | 'error' | 'generate-image';
     payload: any;
   }>;
+  thinkingSteps?: Array<{
+    stepIndex: number;
+    content: string;
+    timestamp: number;
+  }>;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 
 interface ChatBotProps {
@@ -74,6 +84,14 @@ interface ChatBotProps {
     generateImage?: string;
     choiceDefault?: string;
     resizeHeight?: string;
+    // Token 统计
+    tokenInput?: string;
+    tokenOutput?: string;
+    tokenTotal?: string;
+    sessionTokens?: string;
+    // 思考步骤
+    thinkingStepsLabel?: string;
+    stepLabel?: string;
   };
 }
 
@@ -229,6 +247,7 @@ export function ChatBot({
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [showActionIndicator, setShowActionIndicator] = useState(false);
+  const [totalUsage, setTotalUsage] = useState({ promptTokens: 0, completionTokens: 0, totalTokens: 0 });
   
   // 高度调整相关
   const CHATBOT_HEIGHT_KEY = 'vng_chatbot_height';
@@ -541,10 +560,22 @@ export function ChatBot({
             
             switch (data.event) {
               case 'thinking':
+                // ✅ 添加思考步骤到消息
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantMessageId
-                      ? { ...m, content: i18n?.thinking || '正在思考...' }
+                      ? { 
+                          ...m, 
+                          content: i18n?.thinking || '正在思考...',
+                          thinkingSteps: [
+                            ...(m.thinkingSteps || []),
+                            {
+                              stepIndex: data.stepIndex,
+                              content: data.content,
+                              timestamp: data.timestamp,
+                            }
+                          ]
+                        }
                       : m
                   )
                 );
@@ -581,6 +612,30 @@ export function ChatBot({
                 applyAction(data);
                 break;
                 
+              case 'usage':
+                // ✅ 添加 Token 使用信息到当前消息
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessageId
+                      ? { 
+                          ...m, 
+                          usage: {
+                            promptTokens: data.promptTokens,
+                            completionTokens: data.completionTokens,
+                            totalTokens: data.totalTokens,
+                          }
+                        }
+                      : m
+                  )
+                );
+                // ✅ 累加会话总计 Token
+                setTotalUsage((prev) => ({
+                  promptTokens: prev.promptTokens + (data.promptTokens || 0),
+                  completionTokens: prev.completionTokens + (data.completionTokens || 0),
+                  totalTokens: prev.totalTokens + (data.totalTokens || 0),
+                }));
+                break;
+              
               case 'done':
                 setMessages((prev) =>
                   prev.map((m) =>
@@ -830,6 +885,45 @@ export function ChatBot({
                           {renderMessageContent(msg.content)}
                         </p>
                         
+                        {/* 思考过程显示 */}
+                        {msg.thinkingSteps && msg.thinkingSteps.length > 0 && msg.role === 'assistant' && (() => {
+                          // 过滤掉空内容的步骤
+                          const validSteps = msg.thinkingSteps.filter(step => step.content && step.content.trim());
+                          if (validSteps.length === 0) return null;
+                          
+                          return (
+                            <details className="mt-1.5 pt-1.5 border-t border-slate-200/50">
+                              <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-700 flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" />
+                                {i18n?.thinkingStepsLabel || '思考步骤'} ({validSteps.length})
+                              </summary>
+                              <div className="mt-1 space-y-1 pl-4">
+                                {validSteps.map((step, idx) => (
+                                  <div key={idx} className="text-xs text-slate-600 border-l-2 border-slate-300 pl-2 py-0.5">
+                                    <span className="font-medium">{i18n?.stepLabel || '步骤'} {(typeof step.stepIndex === 'number' ? step.stepIndex : idx) + 1}: </span>
+                                    <span className="whitespace-pre-wrap">{renderMessageContent(step.content)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
+                          );
+                        })()}
+                        
+                        {/* Token 使用信息 */}
+                        {msg.usage && msg.role === 'assistant' && (
+                          <div className="mt-1.5 pt-1.5 border-t border-slate-200/50 text-xs text-slate-400 flex items-center gap-1.5">
+                            <span className="opacity-70">📊</span>
+                            <span className="text-blue-500">{msg.usage.promptTokens.toLocaleString()}</span>
+                            <span className="opacity-50">{i18n?.tokenInput || 'in'}</span>
+                            <span className="opacity-50">+</span>
+                            <span className="text-green-500">{msg.usage.completionTokens.toLocaleString()}</span>
+                            <span className="opacity-50">{i18n?.tokenOutput || 'out'}</span>
+                            <span className="opacity-50">=</span>
+                            <span className="font-medium text-slate-600">{msg.usage.totalTokens.toLocaleString()}</span>
+                            <span className="opacity-50">{i18n?.tokenTotal || 'tokens'}</span>
+                          </div>
+                        )}
+                        
                         {/* 动作指示器 - 显示详细内容 */}
                         {msg.actions && msg.actions.length > 0 && (
                           <div className="mt-1.5 pt-1.5 border-t border-slate-200/50 space-y-1">
@@ -908,6 +1002,21 @@ export function ChatBot({
                     )}
                   </button>
                 </div>
+                
+                {/* 会话总计 Token 统计 */}
+                {totalUsage.totalTokens > 0 && (
+                  <div className="mt-2 pt-2 border-t border-slate-200/50 flex items-center justify-center gap-2 text-xs">
+                    <span className="text-slate-400">📊 {i18n?.sessionTokens || '会话总计'}:</span>
+                    <span className="text-blue-500 font-medium">{totalUsage.promptTokens.toLocaleString()}</span>
+                    <span className="text-slate-300">{i18n?.tokenInput || 'in'}</span>
+                    <span className="text-slate-300">+</span>
+                    <span className="text-green-500 font-medium">{totalUsage.completionTokens.toLocaleString()}</span>
+                    <span className="text-slate-300">{i18n?.tokenOutput || 'out'}</span>
+                    <span className="text-slate-300">=</span>
+                    <span className="font-semibold text-indigo-600">{totalUsage.totalTokens.toLocaleString()}</span>
+                    <span className="text-slate-400">{i18n?.tokenTotal || 'tokens'}</span>
+                  </div>
+                )}
               </div>
             </div>
           </>

@@ -631,13 +631,13 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
         // 构建新节点标题
         let newNodeTitle = '';
         if (isStart) {
-            newNodeTitle = `新${i18n?.newNodeStart || '开始'}`;
+            newNodeTitle = i18n?.newNodeStartTitle || '新开始';
         } else if (type === 'scene') {
-            newNodeTitle = `新${i18n?.newNodeScene || '场景'}`;
+            newNodeTitle = i18n?.newNodeSceneTitle || '新场景';
         } else if (type === 'branch') {
-            newNodeTitle = `新${i18n?.newNodeBranch || '分支'}`;
+            newNodeTitle = i18n?.newNodeBranchTitle || '新分支';
         } else {
-            newNodeTitle = `新${i18n?.newNodeEnding || '结局'}`;
+            newNodeTitle = i18n?.newNodeEndingTitle || '新结局';
         }
         
         const newNode: StoryNode = {

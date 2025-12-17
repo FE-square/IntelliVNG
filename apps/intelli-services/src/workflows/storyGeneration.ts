@@ -13,6 +13,7 @@ import {
 } from "../agents/schemas";
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { promptManager } from '../prompts';
+import { tokenTracker } from '../services/token-tracker';
 
 // ============ 提示词构建函数 ============
 
@@ -53,6 +54,14 @@ export const planStep = createStep({
       structuredOutput: {
         schema: NarrativePlanSchema,
       },
+    });
+
+    // ✅ 追踪 Token 使用
+    tokenTracker.trackMastraAgent({
+      agentName: 'story-planner',
+      model: 'gpt-4o',
+      response,
+      operation: 'workflow.plan',
     });
 
     return { 
@@ -124,6 +133,14 @@ export const writeStep = createStep({
             structuredOutput: {
               schema: NodeDraftSchema,
             },
+          });
+
+          // ✅ 追踪 Token 使用
+          tokenTracker.trackMastraAgent({
+            agentName: 'node-writer',
+            model: 'gpt-4o',
+            response,
+            operation: `workflow.write.${node.id}`,
           });
 
           return { nodeId: node.id, draft: response.object as z.infer<typeof NodeDraftSchema> };
@@ -204,6 +221,14 @@ export const reviewStep = createStep({
       maxSteps: 5,
     });
 
+    // ✅ 追踪 Token 使用
+    tokenTracker.trackMastraAgent({
+      agentName: 'story-reviewer',
+      model: 'gpt-4o',
+      response,
+      operation: 'workflow.review',
+    });
+
     const report = response.object as z.infer<typeof CriticReportSchema>;
     console.log(`[ReviewStep] 审阅完成，综合评分: ${report.overallScore}`);
 
@@ -274,6 +299,14 @@ export const rewriteStep = createStep({
           structuredOutput: {
             schema: NodeDraftSchema,
           },
+        });
+
+        // ✅ 追踪 Token 使用
+        tokenTracker.trackMastraAgent({
+          agentName: 'node-writer',
+          model: 'gpt-4o',
+          response,
+          operation: `workflow.rewrite.${nodeId}`,
         });
 
         updatedDrafts[nodeId] = response.object as z.infer<typeof NodeDraftSchema>;

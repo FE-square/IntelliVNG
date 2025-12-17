@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { promptManager } from '../prompts';
+import { tokenTracker } from './token-tracker';
 
 // Types - 统一使用 StoryNode 格式（与 @vng/core 保持一致）
 interface GameProject {
@@ -154,6 +155,13 @@ export class GameGenerator {
             max_tokens: 10000,  // 增加 token 限制以避免截断
         });
 
+        // ✅ 追踪 Token 使用
+        tokenTracker.trackOpenAI({
+            model: this.modelName,
+            response,
+            operation: 'game-generator.idea',
+        });
+
         const choice = response.choices[0];
         const content = choice?.message?.content;
         
@@ -261,6 +269,13 @@ export class GameGenerator {
             ],
             temperature: 0.8,
             max_tokens: 10000,
+        });
+
+        // ✅ 追踪 Token 使用
+        tokenTracker.trackOpenAI({
+            model: this.modelName,
+            response,
+            operation: 'game-generator.setup',
         });
 
         const choice = response.choices[0];

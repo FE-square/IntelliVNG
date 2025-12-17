@@ -9,6 +9,7 @@ import { ImageGenerator, ImageType } from '../services/image-generator';
 import { FormAutocomplete, FormType } from '../services/form-autocomplete';
 import { getCacheKey, getFromCache, saveToCache, saveProject, getProject, listProjects, deleteProject } from '../services/cache';
 import { getLocaleFromRequest, type Locale } from '../utils/locale';
+import { tokenTracker } from '../services/token-tracker';
 
 export const gameRoutes = new Hono();
 
@@ -1030,9 +1031,6 @@ gameRoutes.post(
             content: message,
         });
         
-        // 构建带上下文的提示
-        const contextMessages = getMessagesForLLM(projectId, true);
-        
         // 如果提供了当前剧本，添加到上下文
         let systemContext = '';
         if (currentScript && currentScript.length > 0) {
@@ -1136,7 +1134,40 @@ gameRoutes.post(
                             toolCalls: response.toolCalls?.length || 0,
                             toolResults: response.toolResults?.length || 0,
                             steps: response.steps?.length || 0,
+                            usage: response.usage ? JSON.stringify(response.usage) : 'N/A',
                         });
+                        
+                        // ✅ 追踪 Token 使用
+                        tokenTracker.trackMastraAgent({
+                            sessionId: projectId,
+                            agentName: 'editor-chat',
+                            model: 'gpt-4o-mini',  // 或从 agent 配置中获取
+                            response,
+                            operation: 'editor-chat',
+                            metadata: { messageLength: fullMessage.length },
+                        });
+                        
+                        // ✅ 如果有 thinking/reasoning 过程，输出到前端
+                        if (response.steps && response.steps.length > 0) {
+                            response.steps.forEach((step: any, index: number) => {
+                                if (step.text) {
+                                    sendEvent('thinking', { 
+                                        stepIndex: index,
+                                        content: step.text,
+                                        timestamp: Date.now() 
+                                    });
+                                }
+                            });
+                        }
+                        
+                        // ✅ 输出 Token 使用信息到前端
+                        const usageInfo = tokenTracker.extractFromMastraResponse(response);
+                        if (usageInfo) {
+                            sendEvent('usage', {
+                                ...usageInfo,
+                                timestamp: Date.now(),
+                            });
+                        }
                         
                         // 调试：打印详细的工具调用信息
                         // 先打印第一个 toolCall 的完整结构来了解格式
@@ -1155,6 +1186,10 @@ gameRoutes.post(
                         }
                         
                         const toolResults = response.toolResults || [];
+                        // ✅ 调试：打印 toolResults 结构
+                        if (toolResults.length > 0) {
+                            console.log('[EditorChat] toolResults[0] 结构:', JSON.stringify(toolResults[0], null, 2).slice(0, 800));
+                        }
                         const actions = extractActions(toolResults);
                         console.log('[EditorChat] 提取到的动作:', actions.length, actions.map(a => a.action));
                         
@@ -1371,5 +1406,64 @@ gameRoutes.get('/editor-chat/history/:projectId', async (c) => {
             messages: session.messages,
             context: session.context,
         },
+    });
+});
+
+// ============ Token 使用统计 API ============
+
+// GET /api/game/token-stats - 获取全局 Token 统计
+gameRoutes.get('/token-stats', async (c) => {
+    const summary = tokenTracker.getGlobalSummary();
+    
+    return c.json({
+        success: true,
+        data: {
+            totalPromptTokens: summary.totalPromptTokens,
+            totalCompletionTokens: summary.totalCompletionTokens,
+            totalTokens: summary.totalTokens,
+            callCount: summary.callCount,
+            bySource: summary.bySource,
+            byModel: summary.byModel,
+            byAgent: summary.byAgent,
+        },
+    });
+});
+
+// GET /api/game/token-stats/:sessionId - 获取会话 Token 统计
+gameRoutes.get('/token-stats/:sessionId', async (c) => {
+    const sessionId = c.req.param('sessionId');
+    const summary = tokenTracker.getSessionSummary(sessionId);
+    
+    return c.json({
+        success: true,
+        data: {
+            sessionId,
+            totalPromptTokens: summary.totalPromptTokens,
+            totalCompletionTokens: summary.totalCompletionTokens,
+            totalTokens: summary.totalTokens,
+            callCount: summary.callCount,
+            bySource: summary.bySource,
+            byModel: summary.byModel,
+            byAgent: summary.byAgent,
+        },
+    });
+});
+
+// GET /api/game/token-stats/report - 获取格式化报告
+gameRoutes.get('/token-stats/report', async (c) => {
+    const report = tokenTracker.getFormattedReport();
+    
+    return c.text(report, 200, {
+        'Content-Type': 'text/plain; charset=utf-8',
+    });
+});
+
+// DELETE /api/game/token-stats - 清除所有统计
+gameRoutes.delete('/token-stats', async (c) => {
+    tokenTracker.clearAll();
+    
+    return c.json({
+        success: true,
+        message: 'Token statistics cleared',
     });
 });

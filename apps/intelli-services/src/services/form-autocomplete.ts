@@ -12,6 +12,7 @@
 import OpenAI from 'openai';
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { promptManager } from '../prompts';
+import { tokenTracker } from './token-tracker';
 
 // 支持的表单类型
 export type FormType = 'character' | 'world' | 'scene' | 'theme' | 'background';
@@ -234,6 +235,13 @@ export class FormAutocomplete {
                 ],
                 temperature: 0.8,
                 max_tokens: 2000,
+            });
+
+            // ✅ 追踪 Token 使用
+            tokenTracker.trackOpenAI({
+                model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+                response,
+                operation: `form-autocomplete.${formType}`,
             });
 
             const content = response.choices[0]?.message?.content;

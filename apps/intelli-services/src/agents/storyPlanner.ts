@@ -13,6 +13,7 @@ import { NarrativePlanSchema, type NarrativePlan, type WorkflowInput } from "./s
 import { promptManager } from '../prompts';
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { generateStructuredOutput } from '../utils/structured-output-helper';
+import { tokenTracker } from '../services/token-tracker';
 
 export type ToTRound = 'round1' | 'round2' | 'round3';
 
@@ -417,6 +418,14 @@ export async function generateNarrativePlan(
     structuredOutput: {
       schema: schema,
     },
+  });
+
+  // ✅ 追踪 Token 使用
+  tokenTracker.trackMastraAgent({
+    agentName: 'story-planner',
+    model: 'gpt-4o',  // 从 agent 配置获取
+    response,
+    operation: 'story-planner.generate',
   });
 
   return response.object;

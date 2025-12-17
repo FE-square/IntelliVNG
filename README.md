@@ -44,6 +44,32 @@
 - 支持实时整体预览、局部预览
 - 可对 AI 生成内容进行精细微调
 
+### 🤖 AI 编辑器助手 (Editor Assistant)
+
+**业界领先的 AI 协作编辑体验**，支持自然语言驱动的剧本编辑：
+
+- **多动作执行**：单次对话可触发多个操作（添加/删除/修改节点、连接剧情线、生成立绘）
+- **工具调用可视化**：实时展示 AI 思考过程 (Thinking Steps)，每个决策透明可追溯
+- **Token 用量追踪**：每条消息显示 Token 消耗，会话级累计统计，成本透明可控
+- **SSE 流式响应**：打字机效果输出，操作即时生效，无需等待完整响应
+
+```
+用户: "删除名为新场景的节点，然后给小红生成立绘"
+       ↓
+AI 思考: 从上下文找到 nodeId → 调用 deleteNode → 调用 generateImage
+       ↓
+前端自动: 更新节点树 + 触发立绘生成 + 显示 Token 消耗
+```
+
+### 📊 LLM Token 用量追踪 (Token Tracker)
+
+**全链路 Token 消耗可观测**，支持多来源、多维度统计：
+
+- **多来源追踪**：统一追踪 Mastra Agent、OpenAI SDK、Anthropic SDK 调用
+- **多维度统计**：按来源/模型/Agent/会话分组，支持时间范围查询
+- **实时日志**：每次调用输出 `📊 mastra-agent/gpt-5: 7995 + 63 = 8058 tokens`
+- **REST API 暴露**：`/api/game/token-stats` 接口供外部系统集成
+
 ### 🎬 即时预览与导出
 
 - **所见即所得** 的游戏预览
@@ -92,21 +118,32 @@ IntelliVNG Studio 为 **AI+互动游戏挑战赛·AI游戏创作工具赛道** �
 
 #### 🎯 技术亮点
 
-- **技术创新性**：真·多智能体系统，实现 Tree-of-Thoughts + ReAct + Few-shot CoT 模式的 Multi-agent System、MCP Server 工具调用、AI 自动补全表单、设定生图、故事线可视化交互编辑
-- **工具链完成度**：输入 → 实时仪表盘 → 故事线编辑器 → 预览播放器 → DSL/单体游戏导出  
-- **AI逻辑跟随**：SSE 可视化工作流 + MCP 工具调用 + Schema 校验 + Neuro-Symbolic 神经符号架构
-- **工具链复用**：Mastra 落地多种 Agents 设计范式 + Prompts 集中式管理机制 + Agent Tools
+| 评分维度 | 创新实现 | 亮点功能 |
+|---------|---------|---------|
+| **技术创新性 | 真·多智能体系统，实现 Tree-of-Thoughts + ReAct + Few-shot CoT | • MCP Server 工具调用<br>• AI 编辑助手 (ChatBot) 自然语言驱动<br>• LLM Token 全链路追踪 (TokenTracker) |
+| **工具链完成度 | 输入 → 实时仪表盘 → 故事线编辑器 → 预览播放器 → 导出 | • 单 HTML 离线游戏导出<br>• DSL JSON 项目导入导出<br>• AI 素材一键生成 |
+| **AI逻辑跟随 | SSE 可视化工作流 + Schema 校验 + Neuro-Symbolic 架构 | • AI 思考过程可视化 (Thinking Steps)<br>• 多动作单次执行<br>• 操作结果即时反馈 |
+| **工具链复用 | Mastra 落地多种 Agents 设计范式 + Prompts 集中式管理 | • MCP Server 已发布 npm<br>• TokenTracker 服务可独立使用<br>• Agent Tools 模块化设计 |
+
+**🆕 新增技术创新点：**
+
+- **AI 编辑助手 (EditorAssistant)**：[📄 技术文档](./docs/ChatBot.md)
+  - 自然语言驱动的剧本编辑，支持增删改节点、连接剧情线、生成立绘
+  - AI 思考与行动可视化，每个决策透明可追溯
+
+- **Token 用量追踪 (TokenTracker)**：[📄 技术文档](./docs/TokenTracker.md)
+  - 统一追踪 Mastra Agent / OpenAI SDK 调用
+  - 多维度统计：按来源/模型/Agent/会话分组
+  - REST API 暴露，支持外部系统集成
 
 #### 🌍 项目价值与影响力
 
-| 维度 | 核心优势 |
-|------|----------|
-| **🎓 教育场景** | 教师可快速制作互动课件(历史模拟、语言学习、心理健康教育) |
-| **🤝 公益应用** | 低成本生成科普互动故事、文化传承内容 |
-| **♿️ 无障碍设计** | 结构化 JSON 天然适配屏幕阅读器,支持 TTS 语音生成; **Cognitive Friendly** 认知友好度检查 |
-| **💼 商业模式** | **C 端订阅**:创作者高级功能付费(云端存储、高级模型、素材市场)<br>**B 端合作**:游戏公司剧情原型工具,教育机构互动内容定制<br>**技术输出**:IntelliVNG MCP Server (SaaS) 及 IntelliVNG-CLI 工具链,以云服务形式收费 |
-| **🌍 国际化** | 界面支持 zh-CN/zh-HK/en-US 多语言切换; **MCP 工具** 也内置多语言支持 |
-| **🌿 开源贡献** | 完全开源 (MIT 协议),Mastra Agents 实践可供社区参考 |
+| 加分维度 | 核心优势 | 分值 |
+|---------|----------|------|
+| **🌿 开源贡献** | 完全开源 (MIT 协议)；Mastra Agents EditorAssistant 组件可供社区复用 | +5分 |
+| **🎓 社会价值** | 教师可快速制作互动课件；低成本生成科普/文化传承内容；**Cognitive Friendly** 认知友好度检查；结构化 JSON 天然适配屏幕阅读器 | +5分 |
+| **💼 商业潜力** | **C 端订阅**:创作者高级功能付费<br>**B 端合作**:游戏公司剧情原型工具<br>**技术输出**:IntelliVNG MCP Server (SaaS)、Token 用量计费 | +3分 |
+| **🌍 国际化** | 界面支持 zh-CN/zh-HK/en-US 多语言切换；MCP EditorAssistant 完整 i18n 支持 | +2分 |
 
 #### 🚀 功能特性
 
@@ -279,14 +316,23 @@ IntelliVNG/
 │           ├── prompts/            # Prompt 模板管理
 │           ├── routes/             # API 路由
 │           └── services/           # 业务逻辑
-│               └── intellivng-mcp-client.ts # MCP stdio client（供 Agent 工具调用）
+│               ├── intellivng-mcp-client.ts # MCP stdio client（供 Agent 工具调用）
+│               └── token-tracker.ts # 🆕 LLM Token 用量追踪服务
 │
 ├── packages/                       # 功能包层
 │   ├── core/                       # 核心类型与常量
 │   ├── editor/                     # 剧本编辑器组件
+│   │   └── src/components/
+│   │       ├── FlowEditor.tsx      # 节点式剧本编辑器
+│   │       ├── ChatBot.tsx         # 🆕 AI 编辑助手组件
+│   │       └── NodeEditPanel.tsx   # 节点属性编辑面板
 │   ├── player/                     # 游戏播放器引擎
-│   └── ui/                         # 共享 UI 组件库
-│   └── mcp-server/                         # 🔌 MCP 服务
+│   ├── ui/                         # 共享 UI 组件库
+│   └── mcp-server/                 # 🔌 MCP 服务
+│
+├── docs/                           # 📄 技术文档
+│   ├── TokenTracker.md             # Token 追踪服务设计文档
+│   └── ChatBot.md                  # AI 编辑助手组件文档
 │
 └── notes/                          # 开发笔记与调研报告
 ```
@@ -425,6 +471,8 @@ export const myAnalysisTool = createTool({
 | 剧情 Flow 编辑器 | 节点/连线/属性面板/变量系统 | ✅ |
 | 资源生成引擎 | 立绘/背景/BGM 批量生成 | ✅ |
 | Export Kit | 单 HTML、DSL JSON | ✅ |
+| **🆕 AI 编辑助手 (EditorAssistant)** | 自然语言驱动编辑 + 思考过程可视化 + SSE 流式响应 | ✅ |
+| **🆕 Token 追踪 (TokenTracker)** | 多来源统一追踪 + 多维度统计 + REST API | ✅ |
 | 用户账号 & 云同步 | 多人协作、作品库 | 🟡 规划 |
 
 ---
