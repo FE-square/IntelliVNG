@@ -201,7 +201,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                             className="w-full border rounded px-3 py-2"
                             value={editedNode.title}
                             onChange={(e) => setEditedNode({ ...editedNode, title: e.target.value })}
-                            placeholder="例:初次相遇、危机爆发..."
+                            placeholder={i18n.nodeTitlePlaceholder || '例:初次相遇、危机爆发...'}
                         />
                     </div>
                     
@@ -261,17 +261,17 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                         <div className="bg-blue-50 p-3 rounded border border-blue-200">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-sm font-medium text-blue-900">
-                                    已选择 {selectedDialogues.size} 条对话
+                                    {(i18n.selectedCount || '已选择 {count} 条对话').replace('{count}', String(selectedDialogues.size))}
                                 </span>
                                 <button
                                     onClick={() => setSelectedDialogues(new Set())}
                                     className="text-xs text-blue-600 hover:text-blue-800"
                                 >
-                                    取消选择
+                                    {i18n.cancelSelection || '取消选择'}
                                 </button>
                             </div>
                             <div className="flex items-center gap-2">
-                                <label className="text-sm">批量设置角色：</label>
+                                <label className="text-sm">{i18n.batchSetCharacter || '批量设置角色：'}</label>
                                 <select
                                     className="flex-1 border rounded px-2 py-1 text-sm"
                                     onChange={(e) => {
@@ -281,7 +281,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                     }}
                                     defaultValue=""
                                 >
-                                    <option value="">选择角色</option>
+                                    <option value="">{i18n.selectCharacter || '选择角色'}</option>
                                     {characters.map(char => (
                                         <option key={char.id} value={char.id}>
                                             {char.displayName}
@@ -330,7 +330,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                                         <span className="font-medium text-sm">{character.displayName}</span>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-gray-400 text-sm">未选择角色</span>
+                                                    <span className="text-gray-400 text-sm">{i18n.noCharacterSelected || '未选择角色'}</span>
                                                 )}
                                                 
                                                 <select
@@ -338,7 +338,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                                     value={dialogue.characterId}
                                                     onChange={(e) => handleUpdateDialogue(index, 'characterId', e.target.value)}
                                                 >
-                                                    <option value="">选择角色</option>
+                                                    <option value="">{i18n.selectCharacter || '选择角色'}</option>
                                                     {characters.map(char => (
                                                         <option key={char.id} value={char.id}>
                                                             {char.displayName}
@@ -374,7 +374,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                                             className="w-full border rounded px-2 py-1 text-sm min-h-[60px]"
                                             value={dialogue.text}
                                             onChange={(e) => handleUpdateDialogue(index, 'text', e.target.value)}
-                                            placeholder="输入对话内容..."
+                                            placeholder={i18n.dialoguePlaceholder || '输入对话内容...'}
                                         />
                                     </div>
                                 </Card>
@@ -383,7 +383,7 @@ export function NodeEditPanel({ node, characters, scenes = [], onSave, onClose, 
                         
                         {editedNode.dialogues.length === 0 && (
                             <div className="text-center py-8 text-gray-500 text-sm">
-                                还没有对话，点击上方按钮添加
+                                {i18n.noDialogues || '还没有对话，点击上方按钮添加'}
                             </div>
                         )}
                     </div>

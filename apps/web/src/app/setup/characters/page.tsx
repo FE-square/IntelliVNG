@@ -168,9 +168,18 @@ function CharactersPageContent() {
                                 throw new Error(data.error || t('key.characters.sprite.failed') || '生成失败');
                             } else if (data.status) {
                                 // 更新进度
+                                // 优先使用 messageCode（错误码），如果没有则使用 message，最后使用默认值
+                                let displayMessage = getText('key.characters.sprite.generating', '生成中...');
+                                if (data.messageCode) {
+                                    // 根据错误码获取多语言消息
+                                    displayMessage = getText(`key.error.${data.messageCode}`, data.message || displayMessage);
+                                } else if (data.message) {
+                                    displayMessage = data.message;
+                                }
+                                
                                 setSpriteStatus({
                                     status: data.status.toLowerCase() as any,
-                                    message: data.message || getText('key.characters.sprite.generating', '生成中...'),
+                                    message: displayMessage,
                                     progress: data.progress || 0,
                                 });
                             }
@@ -261,9 +270,18 @@ function CharactersPageContent() {
                             } else if (data.status === 'FAILED') {
                                 throw new Error(data.error || getText('key.characters.avatar.failed', '生成失败'));
                             } else if (data.status) {
+                                // 优先使用 messageCode（错误码），如果没有则使用 message，最后使用默认值
+                                let displayMessage = getText('key.characters.avatar.generating', '生成中...');
+                                if (data.messageCode) {
+                                    // 根据错误码获取多语言消息
+                                    displayMessage = getText(`key.error.${data.messageCode}`, data.message || displayMessage);
+                                } else if (data.message) {
+                                    displayMessage = data.message;
+                                }
+                                
                                 setAvatarStatus({
                                     status: data.status.toLowerCase() as any,
-                                    message: data.message || getText('key.characters.avatar.generating', '生成中...'),
+                                    message: displayMessage,
                                     progress: data.progress || 0,
                                 });
                             }

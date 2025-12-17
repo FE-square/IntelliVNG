@@ -37,7 +37,6 @@ const i18nMap = {
     previewFromCurrent: 'key.editor.previewFromCurrent',
     previewFromCurrentDesc: 'key.editor.previewFromCurrentDesc',
     selectNodeFirst: 'key.editor.selectNodeFirst',
-    selectNodeWarning: 'key.editor.selectNodeWarning',
     characters: 'key.editor.characters',
     scenes: 'key.editor.scenes',
     storyNodes: 'key.editor.storyNodes',
@@ -60,6 +59,91 @@ const i18nMap = {
     packaging: 'key.editor.packaging',
     generatingHtml: 'key.editor.generatingHtml',
     preparingExport: 'key.editor.preparingExport',
+    saveSuccess: 'key.editor.toast.saveSuccess',
+    saveSuccessDesc: 'key.editor.toast.saveSuccessDesc',
+    saveFailed: 'key.editor.toast.saveFailed',
+    saveRetry: 'key.editor.toast.saveRetry',
+    generating: 'key.editor.toast.generating',
+    generatingSprite: 'key.editor.toast.generatingSprite',
+    generatingAvatar: 'key.editor.toast.generatingAvatar',
+    generatingBackground: 'key.editor.toast.generatingBackground',
+    generatingDesc: 'key.editor.toast.generatingDesc',
+    generateSuccess: 'key.editor.toast.generateSuccess',
+    spriteGenerated: 'key.editor.toast.spriteGenerated',
+    avatarGenerated: 'key.editor.toast.avatarGenerated',
+    backgroundGenerated: 'key.editor.toast.backgroundGenerated',
+    generateFailed: 'key.editor.toast.generateFailed',
+    regenerateSpriteSuccess: 'key.editor.toast.regenerateSpriteSuccess',
+    regenerateSpriteDesc: 'key.editor.toast.regenerateSpriteDesc',
+    regenerateAvatarSuccess: 'key.editor.toast.regenerateAvatarSuccess',
+    regenerateAvatarDesc: 'key.editor.toast.regenerateAvatarDesc',
+    regenerateBackgroundSuccess: 'key.editor.toast.regenerateBackgroundSuccess',
+    regenerateBackgroundDesc: 'key.editor.toast.regenerateBackgroundDesc',
+    deleteSuccess: 'key.editor.toast.deleteSuccess',
+    spriteDeleted: 'key.editor.toast.spriteDeleted',
+    deleteFailed: 'key.editor.toast.deleteFailed',
+    selectNodeWarning: 'key.editor.toast.selectNodeWarning',
+    avatarAddSuccess: 'key.editor.toast.avatarAddSuccess',
+    avatarAddDesc: 'key.editor.toast.avatarAddDesc',
+    spriteAddSuccess: 'key.editor.toast.spriteAddSuccess',
+    spriteAddDesc: 'key.editor.toast.spriteAddDesc',
+    backgroundAddSuccess: 'key.editor.toast.backgroundAddSuccess',
+    backgroundAddDesc: 'key.editor.toast.backgroundAddDesc',
+    pleaseEnterUrl: 'key.editor.toast.pleaseEnterUrl',
+    saveDialogTitle: 'key.editor.saveDialogTitle',
+    saveDialogDesc: 'key.editor.saveDialogDesc',
+    saveDialogPlaceholder: 'key.editor.saveDialogPlaceholder',
+    cancel: 'key.editor.cancel',
+    confirmSave: 'key.editor.confirmSave',
+    exportDialogTitle: 'key.editor.exportDialogTitle',
+    exportDialogDesc: 'key.editor.exportDialogDesc',
+    notSaved: 'key.editor.notSaved',
+    secondsAgo: 'key.editor.secondsAgo',
+    minutesAgo: 'key.editor.minutesAgo',
+    genreNotSet: 'key.editor.genreNotSet',
+    artStyleNotSet: 'key.editor.artStyleNotSet',
+    genreRomance: 'key.editor.genreRomance',
+    genreFantasy: 'key.editor.genreFantasy',
+    genreSliceOfLife: 'key.editor.genreSliceOfLife',
+    genreMystery: 'key.editor.genreMystery',
+    genreHorror: 'key.editor.genreHorror',
+    genreAction: 'key.editor.genreAction',
+    genreComedy: 'key.editor.genreComedy',
+    genreDrama: 'key.editor.genreDrama',
+    genreSciFi: 'key.editor.genreSciFi',
+    genreAdventure: 'key.editor.genreAdventure',
+    artStyleAnime: 'key.editor.artStyleAnime',
+    artStyleRealistic: 'key.editor.artStyleRealistic',
+    artStylePixel: 'key.editor.artStylePixel',
+    artStyleWatercolor: 'key.editor.artStyleWatercolor',
+    artStyleCartoon: 'key.editor.artStyleCartoon',
+    artStyleSketch: 'key.editor.artStyleSketch',
+    artStyle2d: 'key.editor.artStyle2d',
+    artStyle3d: 'key.editor.artStyle3d',
+    characterAvatar: 'key.editor.characterAvatar',
+    characterSprite: 'key.editor.characterSprite',
+    aiGenerate: 'key.editor.aiGenerate',
+    urlAdd: 'key.editor.urlAdd',
+    inputAvatarUrl: 'key.editor.inputAvatarUrl',
+    inputSpriteUrl: 'key.editor.inputSpriteUrl',
+    inputBackgroundUrl: 'key.editor.inputBackgroundUrl',
+    confirm: 'key.editor.confirm',
+    noSprites: 'key.editor.noSprites',
+    generateSprite: 'key.editor.generateSprite',
+    sceneBackground: 'key.editor.sceneBackground',
+    noBackground: 'key.editor.noBackground',
+    generateBackground: 'key.editor.generateBackground',
+    loadingEditor: 'key.editor.loadingEditor',
+    storyType: 'key.editor.storyType',
+    artStyle: 'key.editor.artStyle',
+    viewCharacterList: 'key.editor.viewCharacterList',
+    viewSceneList: 'key.editor.viewSceneList',
+    viewStoryNodeList: 'key.editor.viewStoryNodeList',
+    deleteSprite: 'key.editor.deleteSprite',
+    previewFromStartShort: 'key.editor.previewFromStartShort',
+    previewFromCurrentShort: 'key.editor.previewFromCurrentShort',
+    storyTypeLabel: 'key.editor.storyType',
+    artStyleTitle: 'key.editor.artStyleTitle',
 };
 
 // Mock Project for testing (fallback)
@@ -348,13 +432,13 @@ function EditorPageContent() {
                 setShowSaveNoteDialog(false);
                 setSaveNote('');
                 clearDraft(projectId);  // 清除草稿
-                toast.success('保存成功', '项目已保存到我的项目 🎉');
+                toast.success(I18N[i18nMap.saveSuccess] || '保存成功', I18N[i18nMap.saveSuccessDesc] || '项目已保存到我的项目 🎉');
             } else {
-                toast.error('保存失败', '请重试');
+                toast.error(I18N[i18nMap.saveFailed] || '保存失败', I18N[i18nMap.saveRetry] || '请重试');
             }
         } catch (error) {
             console.error('[Editor] 保存失败:', error);
-            toast.error('保存失败', '请重试');
+            toast.error(I18N[i18nMap.saveFailed] || '保存失败', I18N[i18nMap.saveRetry] || '请重试');
         } finally {
             setIsSaving(false);
         }
@@ -380,7 +464,12 @@ function EditorPageContent() {
                 }
             }
             
-            toast.info('生成中', `正在生成${type === 'sprite' ? '角色立绘' : type === 'avatar' ? '角色头像' : '场景背景'},请稍候...`);
+            const generatingTypeLabel = type === 'sprite' 
+                ? (I18N[i18nMap.generatingSprite] || '角色立绘')
+                : type === 'avatar' 
+                ? (I18N[i18nMap.generatingAvatar] || '角色头像')
+                : (I18N[i18nMap.generatingBackground] || '场景背景');
+            toast.info(I18N[i18nMap.generating] || '生成中', (I18N[i18nMap.generatingDesc] || '正在生成{type},请稍候...').replace('{type}', generatingTypeLabel));
             
             const response = await fetch('/api/generate-image', {
                 method: 'POST',
@@ -412,14 +501,19 @@ function EditorPageContent() {
                 throw new Error('未返回图片URL');
             }
             
-            toast.success('生成成功', `${type === 'sprite' ? '角色立绘' : type === 'avatar' ? '角色头像' : '场景背景'}已生成 ✨`);
+            const generatedTypeLabel = type === 'sprite' 
+                ? (I18N[i18nMap.spriteGenerated] || '角色立绘')
+                : type === 'avatar' 
+                ? (I18N[i18nMap.avatarGenerated] || '角色头像')
+                : (I18N[i18nMap.backgroundGenerated] || '场景背景');
+            toast.success(I18N[i18nMap.generateSuccess] || '生成成功', `${generatedTypeLabel}已生成 ✨`);
             return {
                 imageUrl: data.imageUrl,
                 maskUrl: data.maskUrl,  // ✅ 返回 maskUrl（如果有）
             };
         } catch (error) {
             console.error('[Editor] 图片生成失败:', error);
-            toast.error('生成失败', error instanceof Error ? error.message : '请重试');
+            toast.error(I18N[i18nMap.generateFailed] || '生成失败', error instanceof Error ? error.message : (I18N[i18nMap.saveRetry] || '请重试'));
             throw error;
         }
     };
@@ -454,7 +548,7 @@ function EditorPageContent() {
             
             setProject({ ...project, characters: updatedCharacters } as GameProject);
             setSelectedCharacter({ ...character, sprites: updatedCharacters?.find(c => c.id === character.id)?.sprites });
-            toast.success('立绘重新生成', '已替换为最新的立绘');
+            toast.success(I18N[i18nMap.regenerateSpriteSuccess] || '立绘重新生成', I18N[i18nMap.regenerateSpriteDesc] || '已替换为最新的立绘');
         } catch (error) {
             console.error('[Editor] 立绘重新生成失败:', error);
         } finally {
@@ -483,7 +577,7 @@ function EditorPageContent() {
             
             setProject({ ...project, characters: updatedCharacters } as GameProject);
             setSelectedCharacter({ ...character, avatarUrl: result.imageUrl });
-            toast.success('头像重新生成', '已替换为最新的头像');
+            toast.success(I18N[i18nMap.regenerateAvatarSuccess] || '头像重新生成', I18N[i18nMap.regenerateAvatarDesc] || '已替换为最新的头像');
         } catch (error) {
             console.error('[Editor] 头像重新生成失败:', error);
         } finally {
@@ -510,7 +604,7 @@ function EditorPageContent() {
             
             setProject({ ...project, backgrounds: updatedBackgrounds } as GameProject);
             setSelectedBackground({ ...background, imageUrl: result.imageUrl });
-            toast.success('背景重新生成', '已替换为最新的背景');
+            toast.success(I18N[i18nMap.regenerateBackgroundSuccess] || '背景重新生成', I18N[i18nMap.regenerateBackgroundDesc] || '已替换为最新的背景');
         } catch (error) {
             console.error('[Editor] 背景重新生成失败:', error);
         } finally {
@@ -541,21 +635,21 @@ function EditorPageContent() {
             
             setProject({ ...project, characters: updatedCharacters } as GameProject);
             setSelectedCharacter({ ...character, sprites: updatedCharacters?.find(c => c.id === character.id)?.sprites });
-            toast.success('删除成功', '立绘已删除');
+            toast.success(I18N[i18nMap.deleteSuccess] || '删除成功', I18N[i18nMap.spriteDeleted] || '立绘已删除');
         } catch (error) {
             console.error('[Editor] 立绘删除失败:', error);
-            toast.error('删除失败', '请重试');
+            toast.error(I18N[i18nMap.deleteFailed] || '删除失败', I18N[i18nMap.saveRetry] || '请重试');
         }
     };
     
     // ✅ 格式化最后保存时间
     const formatLastSaveTime = () => {
-        if (!lastSaveTime) return '未保存';
+        if (!lastSaveTime) return I18N[i18nMap.notSaved] || '未保存';
         const now = new Date();
         const diff = Math.floor((now.getTime() - lastSaveTime.getTime()) / 1000);  // 秒
         
-        if (diff < 60) return `${diff}秒前`;
-        if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
+        if (diff < 60) return `${diff}${I18N[i18nMap.secondsAgo] || '秒前'}`;
+        if (diff < 3600) return `${Math.floor(diff / 60)}${I18N[i18nMap.minutesAgo] || '分钟前'}`;
         return lastSaveTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
     };
     
@@ -803,7 +897,7 @@ function EditorPageContent() {
                     <div className="relative dropdown-container">
                         <span 
                             className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
-                            title="查看角色列表"
+                            title={I18N[i18nMap.viewCharacterList] || "查看角色列表"}
                             onClick={() => {
                                 setShowCharactersDropdown(!showCharactersDropdown);
                                 setShowScenesDropdown(false);
@@ -857,7 +951,7 @@ function EditorPageContent() {
                     <div className="relative dropdown-container">
                         <span 
                             className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
-                            title="查看场景列表"
+                            title={I18N[i18nMap.viewSceneList] || "查看场景列表"}
                             onClick={() => {
                                 setShowScenesDropdown(!showScenesDropdown);
                                 setShowCharactersDropdown(false);
@@ -911,7 +1005,7 @@ function EditorPageContent() {
                     <div className="relative dropdown-container">
                         <span 
                             className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-3 py-1.5 rounded transition-colors" 
-                            title="查看故事情节列表"
+                            title={I18N[i18nMap.viewStoryNodeList] || "查看故事情节列表"}
                             onClick={() => {
                                 setShowNodesDropdown(!showNodesDropdown);
                                 setShowCharactersDropdown(false);
@@ -959,44 +1053,44 @@ function EditorPageContent() {
                     </div>
                 </div>
                 <div className="flex gap-4 text-slate-600">
-                    <span className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded" title="故事类型">
+                    <span className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded" title={I18N[i18nMap.storyType] || "故事类型"}>
                         <span>🎭</span>
                         <span className="text-sm">
                             {(() => {
-                                const genre = project.meta?.genre || '未设定';
+                                const genre = project.meta?.genre || (I18N[i18nMap.genreNotSet] || '未设定');
                                 // ✅ 将英文genre转为中文
                                 const genreMap: Record<string, string> = {
-                                    'romance': '言情',
-                                    'fantasy': '奇幻',
-                                    'slice-of-life': '日常',
-                                    'mystery': '悬疑',
-                                    'horror': '恐怖',
-                                    'action': '动作',
-                                    'comedy': '喜剧',
-                                    'drama': '剧情',
-                                    'sci-fi': '科幻',
-                                    'adventure': '冒险',
+                                    'romance': I18N[i18nMap.genreRomance] || '言情',
+                                    'fantasy': I18N[i18nMap.genreFantasy] || '奇幻',
+                                    'slice-of-life': I18N[i18nMap.genreSliceOfLife] || '日常',
+                                    'mystery': I18N[i18nMap.genreMystery] || '悬疑',
+                                    'horror': I18N[i18nMap.genreHorror] || '恐怖',
+                                    'action': I18N[i18nMap.genreAction] || '动作',
+                                    'comedy': I18N[i18nMap.genreComedy] || '喜剧',
+                                    'drama': I18N[i18nMap.genreDrama] || '剧情',
+                                    'sci-fi': I18N[i18nMap.genreSciFi] || '科幻',
+                                    'adventure': I18N[i18nMap.genreAdventure] || '冒险',
                                 };
                                 // 处理多个类型，用|分隔
                                 return genre.split('|').map(g => genreMap[g.trim()] || g.trim()).join('、');
                             })()}
                         </span>
                     </span>
-                    <span className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded" title="美术风格">
+                    <span className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded" title={I18N[i18nMap.artStyleTitle] || "美术风格"}>
                         <span>🎨</span>
                         <span className="text-sm">
                             {(() => {
-                                const artStyle = project.meta?.artStyle || '未设定';
+                                const artStyle = project.meta?.artStyle || (I18N[i18nMap.artStyleNotSet] || '未设定');
                                 // ✅ 将英文artStyle转为中文
                                 const styleMap: Record<string, string> = {
-                                    'anime': '动漫',
-                                    'realistic': '写实',
-                                    'pixel': '像素',
-                                    'watercolor': '水彩',
-                                    'cartoon': '卡通',
-                                    'sketch': '素描',
-                                    '2d': '2D',
-                                    '3d': '3D',
+                                    'anime': I18N[i18nMap.artStyleAnime] || '动漫',
+                                    'realistic': I18N[i18nMap.artStyleRealistic] || '写实',
+                                    'pixel': I18N[i18nMap.artStylePixel] || '像素',
+                                    'watercolor': I18N[i18nMap.artStyleWatercolor] || '水彩',
+                                    'cartoon': I18N[i18nMap.artStyleCartoon] || '卡通',
+                                    'sketch': I18N[i18nMap.artStyleSketch] || '素描',
+                                    '2d': I18N[i18nMap.artStyle2d] || '2D',
+                                    '3d': I18N[i18nMap.artStyle3d] || '3D',
                                 };
                                 return styleMap[artStyle.trim()] || artStyle;
                             })()}
@@ -1083,6 +1177,14 @@ function EditorPageContent() {
                                 nodeEditMoveUp: I18N['key.nodeEdit.moveUp'] || '上移',
                                 nodeEditMoveDown: I18N['key.nodeEdit.moveDown'] || '下移',
                                 nodeEditDelete: I18N['key.nodeEdit.delete'] || '删除',
+                                nodeEditNodeTitlePlaceholder: I18N['key.nodeEdit.nodeTitlePlaceholder'] || '例:初次相遇、危机爆发...',
+                                nodeEditSelectedCount: I18N['key.nodeEdit.selectedCount'] || '已选择 {count} 条对话',
+                                nodeEditCancelSelection: I18N['key.nodeEdit.cancelSelection'] || '取消选择',
+                                nodeEditBatchSetCharacter: I18N['key.nodeEdit.batchSetCharacter'] || '批量设置角色：',
+                                nodeEditSelectCharacter: I18N['key.nodeEdit.selectCharacter'] || '选择角色',
+                                nodeEditNoCharacterSelected: I18N['key.nodeEdit.noCharacterSelected'] || '未选择角色',
+                                nodeEditDialoguePlaceholder: I18N['key.nodeEdit.dialoguePlaceholder'] || '输入对话内容...',
+                                nodeEditNoDialogues: I18N['key.nodeEdit.noDialogues'] || '还没有对话，点击上方按钮添加',
                             }}
                         />
                     </ReactFlowProvider>
@@ -1121,7 +1223,7 @@ function EditorPageContent() {
                                         <button
                                             onClick={() => {
                                                 if (!selectedNodeId) {
-                                                    toast.warning('请先在编辑器中选中一个节点');
+                                                    toast.warning(I18N[i18nMap.selectNodeWarning] || '请先在编辑器中选中一个节点');
                                                     return;
                                                 }
                                                 setPreviewMode('from-current');
@@ -1144,6 +1246,14 @@ function EditorPageContent() {
                                         key={previewKey}  // ✅ 通过key强制重新挂载
                                         project={project}
                                         startNodeId={previewMode === 'from-current' ? selectedNodeId || undefined : undefined}
+                                        i18n={{
+                                            storyEnded: I18N['key.player.storyEnded'] || '故事结束',
+                                            backgroundAlt: I18N['key.player.backgroundAlt'] || '背景',
+                                            spriteAlt: I18N['key.player.spriteAlt'] || '立绘',
+                                            branchSelection: I18N['key.player.branchSelection'] || '分支选择',
+                                            selectChoiceToContinue: I18N['key.player.selectChoiceToContinue'] || '选择一个选项继续故事',
+                                            makeYourChoice: I18N['key.player.makeYourChoice'] || '做出你的选择',
+                                        }}
                                     />
                                 </Card>
                             </div>
@@ -1156,12 +1266,12 @@ function EditorPageContent() {
             {showSaveNoteDialog && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
-                        <h3 className="text-xl font-bold text-slate-800 mb-4">💾 保存项目</h3>
-                        <p className="text-sm text-slate-600 mb-4">添加版本备注(可选),方便后续查看和管理</p>
+                        <h3 className="text-xl font-bold text-slate-800 mb-4" suppressHydrationWarning>{I18N[i18nMap.saveDialogTitle] || '💾 保存项目'}</h3>
+                        <p className="text-sm text-slate-600 mb-4" suppressHydrationWarning>{I18N[i18nMap.saveDialogDesc] || '添加版本备注(可选),方便后续查看和管理'}</p>
                         
                         <input
                             type="text"
-                            placeholder="例如: 调整分支逻辑、添加新场景...或留空"
+                            placeholder={I18N[i18nMap.saveDialogPlaceholder] || "例如: 调整分支逻辑、添加新场景...或留空"}
                             value={saveNote}
                             onChange={(e) => setSaveNote(e.target.value)}
                             className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-6"
@@ -1183,7 +1293,7 @@ function EditorPageContent() {
                                 }}
                                 className="flex-1"
                             >
-                                取消
+                                {I18N[i18nMap.cancel] || '取消'}
                             </Button>
                             <Button
                                 onClick={() => handleManualSave(saveNote.trim() || undefined)}
@@ -1191,7 +1301,7 @@ function EditorPageContent() {
                                 className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                             >
                                 <Save className="w-4 h-4 mr-1" />
-                                {isSaving ? '保存中...' : '确定保存'}
+                                {isSaving ? (I18N[i18nMap.saving] || '保存中...') : (I18N[i18nMap.confirmSave] || '确定保存')}
                             </Button>
                         </div>
                     </div>
@@ -1202,7 +1312,7 @@ function EditorPageContent() {
             {exportProgress.show && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
-                        <h3 className="text-xl font-bold text-slate-800 mb-4">📦 正在导出</h3>
+                        <h3 className="text-xl font-bold text-slate-800 mb-4" suppressHydrationWarning>{I18N[i18nMap.exportDialogTitle] || '📦 正在导出'}</h3>
                         
                         {/* 进度条 */}
                         <div className="mb-4">
@@ -1218,8 +1328,8 @@ function EditorPageContent() {
                             </div>
                         </div>
                         
-                        <p className="text-xs text-slate-500">
-                            正在将所有图片转换为 Base64 并内嵌到 HTML 中...
+                        <p className="text-xs text-slate-500" suppressHydrationWarning>
+                            {I18N[i18nMap.exportDialogDesc] || '正在将所有图片转换为 Base64 并内嵌到 HTML 中...'}
                         </p>
                     </div>
                 </div>
@@ -1245,7 +1355,7 @@ function EditorPageContent() {
                                     <p className="text-sm text-slate-500">
                                         {selectedCharacter.description || 
                                          (typeof selectedCharacter.personality === 'string' ? selectedCharacter.personality : 
-                                          selectedCharacter.personality?.traits?.join('、') || '暂无描述')}
+                                          selectedCharacter.personality?.traits?.join('、') || (I18N[i18nMap.noDescription] || '暂无描述'))}
                                     </p>
                                 </div>
                             </div>
@@ -1262,13 +1372,13 @@ function EditorPageContent() {
                             {/* 第一行：头像相关 */}
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2 flex-1">
-                                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap">👤 头像：</span>
+                                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap" suppressHydrationWarning>👤 {I18N[i18nMap.characterAvatar] || '头像'}：</span>
                                     <button
                                         onClick={() => handleRegenerateAvatar(selectedCharacter)}
                                         disabled={isGeneratingAvatar}
                                         className="flex-1 px-4 py-2.5 bg-white border-2 border-blue-200 text-slate-700 text-sm rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50"
                                     >
-                                        📷 {isGeneratingAvatar ? '生成中...' : 'AI生成'}
+                                        📷 {isGeneratingAvatar ? (I18N[i18nMap.generating] || '生成中...') : (I18N[i18nMap.aiGenerate] || 'AI生成')}
                                     </button>
                                     <button
                                         onClick={() => {
@@ -1278,7 +1388,7 @@ function EditorPageContent() {
                                         }}
                                         className="flex-1 px-4 py-2.5 bg-white border-2 border-green-200 text-slate-700 text-sm rounded-lg hover:border-green-400 hover:bg-green-50 transition-all shadow-sm"
                                     >
-                                        🔗 URL添加
+                                        🔗 {I18N[i18nMap.urlAdd] || 'URL添加'}
                                     </button>
                                 </div>
                             </div>
@@ -1286,13 +1396,13 @@ function EditorPageContent() {
                             {/* 第二行：立绘相关 */}
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2 flex-1">
-                                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap">🖼️ 立绘：</span>
+                                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap" suppressHydrationWarning>🖼️ {I18N[i18nMap.characterSprite] || '立绘'}：</span>
                                     <button
                                         onClick={() => handleRegenerateSprite(selectedCharacter)}
                                         disabled={isGeneratingSprite}
                                         className="flex-1 px-4 py-2.5 bg-white border-2 border-purple-200 text-slate-700 text-sm rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50"
                                     >
-                                        ✨ {isGeneratingSprite ? '生成中...' : 'AI生成'}
+                                        ✨ {isGeneratingSprite ? (I18N[i18nMap.generating] || '生成中...') : (I18N[i18nMap.aiGenerate] || 'AI生成')}
                                     </button>
                                     <button
                                         onClick={() => {
@@ -1302,7 +1412,7 @@ function EditorPageContent() {
                                         }}
                                         className="flex-1 px-4 py-2.5 bg-white border-2 border-orange-200 text-slate-700 text-sm rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all shadow-sm"
                                     >
-                                        🔗 URL添加
+                                        🔗 {I18N[i18nMap.urlAdd] || 'URL添加'}
                                     </button>
                                 </div>
                             </div>
@@ -1311,7 +1421,7 @@ function EditorPageContent() {
                         {/* ✅ 头像URL输入框 */}
                         {showAvatarUrlInput && (
                             <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">输入头像图片URL</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-2" suppressHydrationWarning>{I18N[i18nMap.inputAvatarUrl] || '输入头像图片URL'}</label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
@@ -1330,7 +1440,7 @@ function EditorPageContent() {
                                                 });
                                                 setProject({ ...project, characters: updatedCharacters } as GameProject);
                                                 setSelectedCharacter({ ...selectedCharacter, avatarUrl: url });
-                                                toast.success('头像添加成功', '已更新为指定URL的图片');
+                                                toast.success(I18N[i18nMap.avatarAddSuccess] || '头像添加成功', I18N[i18nMap.avatarAddDesc] || '已更新为指定URL的图片');
                                                 setShowAvatarUrlInput(false);
                                                 setAvatarUrlValue('');
                                             }
@@ -1339,7 +1449,7 @@ function EditorPageContent() {
                                     <button
                                         onClick={() => {
                                             if (!avatarUrlValue.trim()) {
-                                                toast.warning('请输入URL');
+                                                toast.warning(I18N[i18nMap.pleaseEnterUrl] || '请输入URL');
                                                 return;
                                             }
                                             const url = avatarUrlValue.trim();
@@ -1351,13 +1461,13 @@ function EditorPageContent() {
                                             });
                                             setProject({ ...project, characters: updatedCharacters } as GameProject);
                                             setSelectedCharacter({ ...selectedCharacter, avatarUrl: url });
-                                            toast.success('头像添加成功', '已更新为指定URL的图片');
+                                            toast.success(I18N[i18nMap.avatarAddSuccess] || '头像添加成功', I18N[i18nMap.avatarAddDesc] || '已更新为指定URL的图片');
                                             setShowAvatarUrlInput(false);
                                             setAvatarUrlValue('');
                                         }}
                                         className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors whitespace-nowrap"
                                     >
-                                        确定
+                                        {I18N[i18nMap.confirm] || '确定'}
                                     </button>
                                     <button
                                         onClick={() => {
@@ -1366,7 +1476,7 @@ function EditorPageContent() {
                                         }}
                                         className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors whitespace-nowrap"
                                     >
-                                        取消
+                                        {I18N[i18nMap.cancel] || '取消'}
                                     </button>
                                 </div>
                             </div>
@@ -1375,7 +1485,7 @@ function EditorPageContent() {
                         {/* ✅ 立绘URL输入框 */}
                         {showSpriteUrlInput && (
                             <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">输入立绘图片URL</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-2" suppressHydrationWarning>{I18N[i18nMap.inputSpriteUrl] || '输入立绘图片URL'}</label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
@@ -1406,7 +1516,7 @@ function EditorPageContent() {
                                                 if (updatedChar) {
                                                     setSelectedCharacter(updatedChar);
                                                 }
-                                                toast.success('立绘添加成功', '已添加到立绘列表');
+                                                toast.success(I18N[i18nMap.spriteAddSuccess] || '立绘添加成功', I18N[i18nMap.spriteAddDesc] || '已添加到立绘列表');
                                                 setShowSpriteUrlInput(false);
                                                 setSpriteUrlValue('');
                                             }
@@ -1415,7 +1525,7 @@ function EditorPageContent() {
                                     <button
                                         onClick={() => {
                                             if (!spriteUrlValue.trim()) {
-                                                toast.warning('请输入URL');
+                                                toast.warning(I18N[i18nMap.pleaseEnterUrl] || '请输入URL');
                                                 return;
                                             }
                                             const url = spriteUrlValue.trim();
@@ -1439,13 +1549,13 @@ function EditorPageContent() {
                                             if (updatedChar) {
                                                 setSelectedCharacter(updatedChar);
                                             }
-                                            toast.success('立绘添加成功', '已添加到立绘列表');
+                                            toast.success(I18N[i18nMap.spriteAddSuccess] || '立绘添加成功', I18N[i18nMap.spriteAddDesc] || '已添加到立绘列表');
                                             setShowSpriteUrlInput(false);
                                             setSpriteUrlValue('');
                                         }}
                                         className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors whitespace-nowrap"
                                     >
-                                        确定
+                                        {I18N[i18nMap.confirm] || '确定'}
                                     </button>
                                     <button
                                         onClick={() => {
@@ -1454,7 +1564,7 @@ function EditorPageContent() {
                                         }}
                                         className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors whitespace-nowrap"
                                     >
-                                        取消
+                                        {I18N[i18nMap.cancel] || '取消'}
                                     </button>
                                 </div>
                             </div>
@@ -1490,13 +1600,13 @@ function EditorPageContent() {
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
                                 <div className="text-6xl mb-4">🖼️</div>
-                                <p className="text-lg">该角色暂无立绘</p>
+                                <p className="text-lg" suppressHydrationWarning>{I18N[i18nMap.noSprites] || '该角色暂无立绘'}</p>
                                 <button
                                     onClick={() => handleRegenerateSprite(selectedCharacter)}
                                     disabled={isGeneratingSprite}
                                     className="mt-4 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isGeneratingSprite ? '生成中...' : '生成立绘'}
+                                    {isGeneratingSprite ? (I18N[i18nMap.generating] || '生成中...') : (I18N[i18nMap.generateSprite] || '生成立绘')}
                                 </button>
                             </div>
                         )}
@@ -1517,7 +1627,7 @@ function EditorPageContent() {
                         <div className="flex items-start justify-between mb-6 gap-4">
                             <div className="flex-1 min-w-0">
                                 <h3 className="text-2xl font-bold text-slate-800">{selectedBackground.name}</h3>
-                                <p className="text-sm text-slate-500">{selectedBackground.description || '暂无描述'}</p>
+                                <p className="text-sm text-slate-500" suppressHydrationWarning>{selectedBackground.description || (I18N[i18nMap.noDescription] || '暂无描述')}</p>
                             </div>
                             <button
                                 onClick={() => setSelectedBackground(null)}
@@ -1531,13 +1641,13 @@ function EditorPageContent() {
                         <div className="mb-6">
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2 flex-1">
-                                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap">🌄 背景：</span>
+                                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap" suppressHydrationWarning>🌄 {I18N[i18nMap.sceneBackground] || '背景'}：</span>
                                     <button
                                         onClick={() => handleRegenerateBackground(selectedBackground)}
                                         disabled={isGeneratingBackground}
                                         className="flex-1 px-4 py-2.5 bg-white border-2 border-purple-200 text-slate-700 text-sm rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50"
                                     >
-                                        ✨ {isGeneratingBackground ? '生成中...' : 'AI生成'}
+                                        ✨ {isGeneratingBackground ? (I18N[i18nMap.generating] || '生成中...') : (I18N[i18nMap.aiGenerate] || 'AI生成')}
                                     </button>
                                     <button
                                         onClick={() => {
@@ -1546,7 +1656,7 @@ function EditorPageContent() {
                                         }}
                                         className="flex-1 px-4 py-2.5 bg-white border-2 border-cyan-200 text-slate-700 text-sm rounded-lg hover:border-cyan-400 hover:bg-cyan-50 transition-all shadow-sm"
                                     >
-                                        🔗 URL添加
+                                        🔗 {I18N[i18nMap.urlAdd] || 'URL添加'}
                                     </button>
                                 </div>
                             </div>
@@ -1555,7 +1665,7 @@ function EditorPageContent() {
                         {/* ✅ 背景URL输入框 */}
                         {showBackgroundUrlInput && (
                             <div className="mb-4 p-4 bg-cyan-50 rounded-lg border border-cyan-200">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">输入背景图片URL</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-2" suppressHydrationWarning>{I18N[i18nMap.inputBackgroundUrl] || '输入背景图片URL'}</label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
@@ -1574,7 +1684,7 @@ function EditorPageContent() {
                                                 });
                                                 setProject({ ...project, backgrounds: updatedBackgrounds } as GameProject);
                                                 setSelectedBackground({ ...selectedBackground, imageUrl: url });
-                                                toast.success('背景添加成功', '已更新为指定URL的图片');
+                                                toast.success(I18N[i18nMap.backgroundAddSuccess] || '背景添加成功', I18N[i18nMap.backgroundAddDesc] || '已更新为指定URL的图片');
                                                 setShowBackgroundUrlInput(false);
                                                 setBackgroundUrlValue('');
                                             }
@@ -1583,7 +1693,7 @@ function EditorPageContent() {
                                     <button
                                         onClick={() => {
                                             if (!backgroundUrlValue.trim()) {
-                                                toast.warning('请输入URL');
+                                                toast.warning(I18N[i18nMap.pleaseEnterUrl] || '请输入URL');
                                                 return;
                                             }
                                             const url = backgroundUrlValue.trim();
@@ -1595,13 +1705,13 @@ function EditorPageContent() {
                                             });
                                             setProject({ ...project, backgrounds: updatedBackgrounds } as GameProject);
                                             setSelectedBackground({ ...selectedBackground, imageUrl: url });
-                                            toast.success('背景添加成功', '已更新为指定URL的图片');
+                                            toast.success(I18N[i18nMap.backgroundAddSuccess] || '背景添加成功', I18N[i18nMap.backgroundAddDesc] || '已更新为指定URL的图片');
                                             setShowBackgroundUrlInput(false);
                                             setBackgroundUrlValue('');
                                         }}
                                         className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors whitespace-nowrap"
                                     >
-                                        确定
+                                        {I18N[i18nMap.confirm] || '确定'}
                                     </button>
                                     <button
                                         onClick={() => {
@@ -1610,7 +1720,7 @@ function EditorPageContent() {
                                         }}
                                         className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors whitespace-nowrap"
                                     >
-                                        取消
+                                        {I18N[i18nMap.cancel] || '取消'}
                                     </button>
                                 </div>
                             </div>
@@ -1627,13 +1737,13 @@ function EditorPageContent() {
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-slate-100 rounded-lg">
                                 <div className="text-6xl mb-4">🏞️</div>
-                                <p className="text-lg">该场景暂无背景图</p>
+                                <p className="text-lg" suppressHydrationWarning>{I18N[i18nMap.noBackground] || '该场景暂无背景图'}</p>
                                 <button
                                     onClick={() => handleRegenerateBackground(selectedBackground)}
                                     disabled={isGeneratingBackground}
                                     className="mt-4 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isGeneratingBackground ? '生成中...' : '生成背景'}
+                                    {isGeneratingBackground ? (I18N[i18nMap.generating] || '生成中...') : (I18N[i18nMap.generateBackground] || '生成背景')}
                                 </button>
                             </div>
                         )}
@@ -1694,9 +1804,9 @@ export default function EditorPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-                <div className="text-slate-600 text-center">
+                <div className="text-slate-600 text-center"></div>
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-500" />
-                    <p className="font-medium">加载编辑器中...</p>
+                    <p className="font-medium" suppressHydrationWarning>{I18N['key.editor.loading'] || '加载编辑器中...'}</p>
                 </div>
             </div>
         }>

@@ -97,7 +97,68 @@ interface FlowEditorProps {
         nodeEditMoveUp?: string;
         nodeEditMoveDown?: string;
         nodeEditDelete?: string;
+        nodeEditNodeTitlePlaceholder?: string;
+        nodeEditSelectedCount?: string;
+        nodeEditCancelSelection?: string;
+        nodeEditBatchSetCharacter?: string;
+        nodeEditSelectCharacter?: string;
+        nodeEditNoCharacterSelected?: string;
+        nodeEditDialoguePlaceholder?: string;
+        nodeEditNoDialogues?: string;
+        // StoryNodeComponent i18n
+        nodeStart?: string;
+        nodeEnding?: string;
+        nodeDialogues?: string;
+        nodeBranches?: string;
+        nodeAppearingCharacters?: string;
+        // 逻辑检查相关
+        issueNoStartNode?: string;
+        issueMultipleStartNodes?: string;
+        issueNoEndingNode?: string;
+        issueCharactersWithoutAvatar?: string;
+        // 补全素材相关
+        generateNotConfigured?: string;
+        generateNotConfiguredDesc?: string;
+        generatingAvatar?: string;
+        generatingAvatarDesc?: string;
+        completeSuccess?: string;
+        completeSuccessDesc?: string;
+        noNeedToComplete?: string;
+        noNeedToCompleteDesc?: string;
+        completeFailed?: string;
+        completeFailedDesc?: string;
+        avatarPrompt?: string;
+        // 创建节点相关
+        startNodeAlreadyExists?: string;
+        newNodeStart?: string;
+        newNodeScene?: string;
+        newNodeBranch?: string;
+        newNodeEnding?: string;
+        // 删除节点相关
+        cannotDelete?: string;
+        cannotDeleteStartNode?: string;
+        gotIt?: string;
+        deleteNodeConfirm?: string;
+        deleteNodeTitle?: string;
+        deleteNodeMessage?: string;
+        deleteNodeWithConnections?: string;
+        delete?: string;
+        cancel?: string;
+        // UI 相关
+        undoShortcut?: string;
+        redoShortcut?: string;
+        zoomInTitle?: string;
+        zoomOutTitle?: string;
+        fitViewTitle?: string;
+        logicCheckTitle?: string;
+        completeAssetsTitle?: string;
+        defaultSceneType?: string;
     };
+}
+
+// 简单的字符串模板替换函数
+function formatTemplate(template: string, vars: Record<string, string | number>): string {
+    return template.replace(/\{(\w+)\}/g, (_, key) => String(vars[key] || ''));
 }
 
 export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i18n }: FlowEditorProps) {
@@ -120,6 +181,13 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
         data: { 
             storyNode: node,
             characters: project.characters,
+            i18n: {
+                start: i18n?.nodeStart,
+                ending: i18n?.nodeEnding,
+                dialogues: i18n?.nodeDialogues,
+                branches: i18n?.nodeBranches,
+                appearingCharacters: i18n?.nodeAppearingCharacters,
+            },
         },
     }));
 
@@ -296,6 +364,13 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                     data: { 
                         storyNode: storyNode,
                         characters: project.characters,
+                        i18n: {
+                            start: i18n?.nodeStart,
+                            ending: i18n?.nodeEnding,
+                            dialogues: i18n?.nodeDialogues,
+                            branches: i18n?.nodeBranches,
+                            appearingCharacters: i18n?.nodeAppearingCharacters,
+                        },
                     },
                 };
             });
@@ -334,7 +409,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
             }
         });
         setEdges(newEdges);
-    }, [storyNodes, project.characters, setNodes, setEdges]);
+    }, [storyNodes, project.characters, setNodes, setEdges, i18n]);
 
     // ✅ 逻辑检查 - 只检查影响游戏播放的关键问题
     const checkIssues = useCallback(() => {
@@ -343,15 +418,17 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
         // 检查开始节点（必须有且只有一个）
         const startNodes = storyNodes.filter(n => n.isStart);
         if (startNodes.length === 0) {
-            issues.push('❌ 缺少开始节点（游戏无法启动）');
+            issues.push(i18n?.issueNoStartNode || '❌ 缺少开始节点（游戏无法启动）');
         } else if (startNodes.length > 1) {
-            issues.push(`⚠️ 存在多个开始节点 (${startNodes.length}个)`);
+            issues.push(i18n?.issueMultipleStartNodes 
+                ? formatTemplate(i18n.issueMultipleStartNodes, { count: startNodes.length })
+                : `⚠️ 存在多个开始节点 (${startNodes.length}个)`);
         }
         
         // 检查结尾节点（至少要有一个）
         const endingNodes = storyNodes.filter(n => n.isEnding);
         if (endingNodes.length === 0) {
-            issues.push('⚠️ 缺少结尾节点（玩家可能无法正常结束游戏）');
+            issues.push(i18n?.issueNoEndingNode || '⚠️ 缺少结尾节点（玩家可能无法正常结束游戏）');
         }
         
         // ✅ 检查节点中对话的角色是否缺失素材（影响播放）
@@ -373,16 +450,25 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
         });
         
         if (charactersWithoutAvatar.length > 0) {
-            issues.push(`⚠️ ${charactersWithoutAvatar.length}个对话角色缺少头像: ${charactersWithoutAvatar.join('、')}`);
+            const message = i18n?.issueCharactersWithoutAvatar 
+                ? formatTemplate(i18n.issueCharactersWithoutAvatar, { 
+                    count: charactersWithoutAvatar.length,
+                    characters: charactersWithoutAvatar.join('、')
+                })
+                : `⚠️ ${charactersWithoutAvatar.length}个对话角色缺少头像: ${charactersWithoutAvatar.join('、')}`;
+            issues.push(message);
         }
         
         return issues;
-    }, [storyNodes, project.characters]);
+    }, [storyNodes, project.characters, i18n]);
     
     // ✅ 一键补全视觉素材 - 只补全影响游戏播放的必要素材
     const handleCompleteAssets = useCallback(async () => {
         if (!onGenerateImage) {
-            toast.warning('未配置生成功能', '请检查配置');
+            toast.warning(
+                i18n?.generateNotConfigured || '未配置生成功能',
+                i18n?.generateNotConfiguredDesc || '请检查配置'
+            );
             return;
         }
         
@@ -411,11 +497,19 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                 
                 // 补全头像（游戏播放必需）
                 if (!char.avatarUrl) {
-                    toast.info('生成中', `正在生成 ${char.displayName} 的头像...`);
+                    const generatingDesc = i18n?.generatingAvatarDesc
+                        ? formatTemplate(i18n.generatingAvatarDesc, { name: char.displayName })
+                        : `正在生成 ${char.displayName} 的头像...`;
+                    toast.info(i18n?.generatingAvatar || '生成中', generatingDesc);
                     try {
                         // 如果有立绘，使用立绘作为参考生成头像
                         const refImageUrl = char.sprites?.[0]?.imageUrl;
-                        const prompt = `头像特写, ${char.displayName}, ${char.description || ''}, 头像, 肖像`;
+                        const prompt = i18n?.avatarPrompt
+                            ? formatTemplate(i18n.avatarPrompt, { 
+                                name: char.displayName,
+                                description: char.description || ''
+                            })
+                            : `头像特写, ${char.displayName}, ${char.description || ''}, 头像, 肖像`;
                         const avatarUrl = await onGenerateImage('avatar-' + char.id, prompt, refImageUrl, 'avatar');
                         updatedCharacters[i] = { ...updatedCharacters[i], avatarUrl };
                         generatedCount++;
@@ -432,17 +526,26 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                     characters: updatedCharacters,
                 };
                 onUpdate?.(updatedProject);
-                toast.success('补全完成', `成功生成 ${generatedCount} 个头像 ✨`);
+                const successDesc = i18n?.completeSuccessDesc
+                    ? formatTemplate(i18n.completeSuccessDesc, { count: generatedCount })
+                    : `成功生成 ${generatedCount} 个头像 ✨`;
+                toast.success(i18n?.completeSuccess || '补全完成', successDesc);
             } else {
-                toast.info('无需补全', '游戏播放所需素材都已完整');
+                toast.info(
+                    i18n?.noNeedToComplete || '无需补全',
+                    i18n?.noNeedToCompleteDesc || '游戏播放所需素材都已完整'
+                );
             }
         } catch (error) {
             console.error('[FlowEditor] 补全素材失败:', error);
-            toast.error('补全失败', '请重试');
+            toast.error(
+                i18n?.completeFailed || '补全失败',
+                i18n?.completeFailedDesc || '请重试'
+            );
         } finally {
             setIsGeneratingAssets(false);
         }
-    }, [project, onGenerateImage, onUpdate, toast]);
+    }, [project, onGenerateImage, onUpdate, toast, i18n]);
 
     const onConnect = useCallback(
         (params: Connection) => {
@@ -519,16 +622,28 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
         if (isStart) {
             const hasStartNode = storyNodes.some(n => n.isStart);
             if (hasStartNode) {
-                alert('⚠️ 已存在开始节点，不能创建多个开始节点!');
+                alert(i18n?.startNodeAlreadyExists || '⚠️ 已存在开始节点，不能创建多个开始节点!');
                 setShowAddNodeMenu(false);
                 return;
             }
         }
         
+        // 构建新节点标题
+        let newNodeTitle = '';
+        if (isStart) {
+            newNodeTitle = `新${i18n?.newNodeStart || '开始'}`;
+        } else if (type === 'scene') {
+            newNodeTitle = `新${i18n?.newNodeScene || '场景'}`;
+        } else if (type === 'branch') {
+            newNodeTitle = `新${i18n?.newNodeBranch || '分支'}`;
+        } else {
+            newNodeTitle = `新${i18n?.newNodeEnding || '结局'}`;
+        }
+        
         const newNode: StoryNode = {
             id: newNodeId,
             type: type,
-            title: `新${isStart ? '开始' : type === 'scene' ? '场景' : type === 'branch' ? '分支' : '结局'}`,
+            title: newNodeTitle,
             position,
             dialogues: [],
             isStart: isStart,
@@ -553,7 +668,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
         setShowAddNodeMenu(false);
         
         return newNodeId;
-    }, [project, onUpdate, storyNodes, onSelectNode, getViewport, saveHistory]);
+    }, [project, onUpdate, storyNodes, onSelectNode, getViewport, saveHistory, i18n]);
 
     const handleDeleteNode = useCallback(async (nodeId: string) => {
         const nodeToDelete = storyNodes.find(n => n.id === nodeId);
@@ -562,10 +677,10 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
         const startNodes = storyNodes.filter(n => n.isStart);
         if (nodeToDelete.isStart && startNodes.length === 1) {
             await confirm({
-                title: '无法删除',
-                message: '不能删除唯一的开始节点！',
+                title: i18n?.cannotDelete || '无法删除',
+                message: i18n?.cannotDeleteStartNode || '不能删除唯一的开始节点！',
                 variant: 'danger',
-                confirmText: '知道了',
+                confirmText: i18n?.gotIt || '知道了',
                 cancelText: '',
             });
             return;
@@ -576,17 +691,22 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
             n.choices?.some(c => c.targetNodeId === nodeId)
         );
         
-        let message = `确定要删除节点「${nodeToDelete.title}」吗？`;
+        let message = i18n?.deleteNodeConfirm
+            ? formatTemplate(i18n.deleteNodeConfirm, { title: nodeToDelete.title })
+            : `确定要删除节点「${nodeToDelete.title}」吗？`;
         if (incomingConnections.length > 0) {
-            message += `\n\n⚠️ 有 ${incomingConnections.length} 个节点连接到此节点，删除后这些连接将断开。`;
+            const connectionWarning = i18n?.deleteNodeWithConnections
+                ? formatTemplate(i18n.deleteNodeWithConnections, { count: incomingConnections.length })
+                : `\n\n⚠️ 有 ${incomingConnections.length} 个节点连接到此节点，删除后这些连接将断开。`;
+            message += connectionWarning;
         }
         
         const confirmed = await confirm({
-            title: '删除节点',
+            title: i18n?.deleteNodeTitle || '删除节点',
             message,
             variant: 'danger',
-            confirmText: '删除',
-            cancelText: '取消',
+            confirmText: i18n?.delete || '删除',
+            cancelText: i18n?.cancel || '取消',
         });
         
         if (!confirmed) return;
@@ -610,7 +730,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
         if (selectedNode?.id === nodeId) {
             setSelectedNode(null);
         }
-    }, [project, onUpdate, storyNodes, selectedNode, saveHistory, confirm]);
+    }, [project, onUpdate, storyNodes, selectedNode, saveHistory, confirm, i18n]);
 
     // 从选项创建新节点
     const handleCreateNodeFromChoice = useCallback(async (type: 'scene' | 'branch' | 'ending'): Promise<string> => {
@@ -621,7 +741,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
     const scenes: Scene[] = (project.backgrounds || []).map(bg => ({
         id: bg.id,
         name: bg.name,
-        type: bg.sceneDetails?.type || '室内',
+        type: bg.sceneDetails?.type || (i18n?.defaultSceneType || '室内'),
         atmosphere: bg.sceneDetails?.atmosphere || '',
         details: bg.description,
         imageUrl: bg.imageUrl,
@@ -661,7 +781,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                                 onClick={handleUndo}
                                 disabled={historyIndex <= 0}
                                 className="flex-1 gap-1"
-                                title="撤销 (Ctrl+Z)"
+                                title={i18n?.undoShortcut || '撤销 (Ctrl+Z)'}
                             >
                                 <Undo className="w-4 h-4" />
                                 <span className="text-xs">{i18n?.undo || '撤销'}</span>
@@ -672,7 +792,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                                 onClick={handleRedo}
                                 disabled={historyIndex >= history.length - 1}
                                 className="flex-1 gap-1"
-                                title="重做 (Ctrl+Y)"
+                                title={i18n?.redoShortcut || '重做 (Ctrl+Y)'}
                             >
                                 <Redo className="w-4 h-4" />
                                 <span className="text-xs">{i18n?.redo || '重做'}</span>
@@ -740,7 +860,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                                 variant="outline"
                                 onClick={() => zoomOut()}
                                 className="w-full gap-2"
-                                title="缩小"
+                                title={i18n?.zoomOutTitle || '缩小'}
                             >
                                 <ZoomOut className="w-4 h-4" />
                                 {i18n?.zoomOut || '缩小'}
@@ -750,7 +870,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                                 variant="outline"
                                 onClick={() => fitView({ padding: 0.2 })}
                                 className="w-full gap-2"
-                                title="适应屏幕"
+                                title={i18n?.fitViewTitle || '适应屏幕'}
                             >
                                 <Maximize2 className="w-4 h-4" />
                                 {i18n?.fitView || '适应屏幕'}
@@ -763,7 +883,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                                 variant={showIssues ? 'default' : 'outline'}
                                 onClick={() => setShowIssues(!showIssues)}
                                 className="w-full gap-2"
-                                title="逻辑检查"
+                                title={i18n?.logicCheckTitle || '逻辑检查'}
                             >
                                 <AlertCircle className="w-4 h-4" />
                                 {i18n?.logicCheck || '逻辑检查'}
@@ -812,7 +932,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                                     onClick={handleCompleteAssets}
                                     disabled={isGeneratingAssets || missingAvatars === 0}
                                     className="w-full gap-2 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 hover:from-green-100 hover:to-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed text-green-700"
-                                    title="自动补全对话角色缺失的头像（游戏播放必需）"
+                                    title={i18n?.completeAssetsTitle || '自动补全对话角色缺失的头像（游戏播放必需）'}
                                 >
                                     <Wand2 className="w-4 h-4" />
                                     {isGeneratingAssets ? (i18n?.generating || '生成中...') : missingAvatars > 0 ? `${i18n?.completeAssets || '补全头像'} (${missingAvatars})` : (i18n?.assetsComplete || '素材完整')}
@@ -884,6 +1004,14 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                         moveUp: i18n?.nodeEditMoveUp || '上移',
                         moveDown: i18n?.nodeEditMoveDown || '下移',
                         delete: i18n?.nodeEditDelete || '删除',
+                        nodeTitlePlaceholder: i18n?.nodeEditNodeTitlePlaceholder || '例:初次相遇、危机爆发...',
+                        selectedCount: i18n?.nodeEditSelectedCount || '已选择 {count} 条对话',
+                        cancelSelection: i18n?.nodeEditCancelSelection || '取消选择',
+                        batchSetCharacter: i18n?.nodeEditBatchSetCharacter || '批量设置角色：',
+                        selectCharacter: i18n?.nodeEditSelectCharacter || '选择角色',
+                        noCharacterSelected: i18n?.nodeEditNoCharacterSelected || '未选择角色',
+                        dialoguePlaceholder: i18n?.nodeEditDialoguePlaceholder || '输入对话内容...',
+                        noDialogues: i18n?.nodeEditNoDialogues || '还没有对话，点击上方按钮添加',
                     }}
                 />
             )}

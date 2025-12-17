@@ -60,9 +60,20 @@ interface ChatBotProps {
     toolCall?: string;
     // 分析结果相关
     analysisValid?: string;
+    analysisIssuesFound?: string;
+    analysisPaths?: string;
+    analysisDialogueQuality?: string;
+    analysisBranchDistribution?: string;
+    analysisNonlinearScore?: string;
     analysisComplete?: string;
     queryResult?: string;
     patchApplied?: string;
+    // 其他
+    operationFailed?: string;
+    generateImageWithName?: string;
+    generateImage?: string;
+    choiceDefault?: string;
+    resizeHeight?: string;
   };
 }
 
@@ -103,7 +114,9 @@ function formatActionDescription(action: any, i18n?: ChatBotProps['i18n']): stri
         if (v.valid === true || v.isValid === true || totalIssues === 0) {
           results.push(`✅ ${i18n?.analysisValid || '结构验证通过'}`);
         } else {
-          results.push(`⚠️ 发现 ${totalIssues} 个问题`);
+          results.push(i18n?.analysisIssuesFound 
+            ? formatTemplate(i18n.analysisIssuesFound, { totalIssues })
+            : `⚠️ 发现 ${totalIssues} 个问题`);
         }
       }
       if (payload?.paths) {
@@ -111,14 +124,18 @@ function formatActionDescription(action: any, i18n?: ChatBotProps['i18n']): stri
         // MCP 字段: pathCount, endingCount
         const totalPaths = p.pathCount || p.totalPaths || 0;
         const endings = p.endingCount || p.endings || 0;
-        results.push(`📊 共 ${totalPaths} 条路径, ${endings} 个结局`);
+        results.push(i18n?.analysisPaths
+          ? formatTemplate(i18n.analysisPaths, { totalPaths, endings })
+          : `📊 共 ${totalPaths} 条路径, ${endings} 个结局`);
       }
       if (payload?.dialogue) {
         const d = payload.dialogue;
         // MCP 字段: qualityScore
         const score = d.qualityScore !== undefined ? d.qualityScore : (d.averageQuality || d.quality || d.score);
         if (score !== undefined) {
-          results.push(`💬 对话质量: ${score}`);
+          results.push(i18n?.analysisDialogueQuality
+            ? formatTemplate(i18n.analysisDialogueQuality, { score })
+            : `💬 对话质量: ${score}`);
         }
       }
       if (payload?.branch) {
@@ -126,14 +143,18 @@ function formatActionDescription(action: any, i18n?: ChatBotProps['i18n']): stri
         // MCP 字段: distributionScore
         const score = b.distributionScore !== undefined ? b.distributionScore : (b.branchDensity || b.density || b.distribution);
         if (score !== undefined) {
-          results.push(`🌿 分支分布: ${score}`);
+          results.push(i18n?.analysisBranchDistribution
+            ? formatTemplate(i18n.analysisBranchDistribution, { score })
+            : `🌿 分支分布: ${score}`);
         }
       }
       if (payload?.score) {
         const s = payload.score;
         // MCP 字段: overallScore 或 score
         const score = s.overallScore || s.score || s.total || 'N/A';
-        results.push(`⭐ 非线性评分: ${score}`);
+        results.push(i18n?.analysisNonlinearScore
+          ? formatTemplate(i18n.analysisNonlinearScore, { score })
+          : `⭐ 非线性评分: ${score}`);
       }
       return results.join('; ') || (i18n?.analysisComplete || '分析完成');
     }
@@ -159,13 +180,18 @@ function formatActionDescription(action: any, i18n?: ChatBotProps['i18n']): stri
       const typeLabel = imgType === 'sprite' ? (i18n?.sprite || '立绘')
         : imgType === 'avatar' ? (i18n?.avatar || '头像')
         : (i18n?.background || '背景');
-      return targetName 
-        ? `🎨 生成${typeLabel}: ${targetName}`
+      if (targetName) {
+        return i18n?.generateImageWithName
+          ? formatTemplate(i18n.generateImageWithName, { typeLabel, targetName })
+          : `🎨 生成${typeLabel}: ${targetName}`;
+      }
+      return i18n?.generateImage
+        ? formatTemplate(i18n.generateImage, { typeLabel })
         : `🎨 生成${typeLabel}`;
     }
     
     case 'error': {
-      return `❌ ${payload?.message || '操作失败'}`;
+      return `❌ ${payload?.message || (i18n?.operationFailed || '操作失败')}`;
     }
     
     default:
@@ -326,7 +352,7 @@ export function ChatBot({
       console.error('[ChatBot] 生成图片失败:', error);
       const errorMsg = i18n?.generationFailed 
         ? formatTemplate(i18n.generationFailed, { error: (error as Error).message })
-        : `❌ 生成失败: ${(error as Error).message}`;
+        : `❌ ${i18n?.operationFailed || '生成失败'}: ${(error as Error).message}`;
       setMessages(prev => prev.map(m => 
         m.id === statusMessage.id 
           ? { ...m, content: errorMsg, status: 'error' as const }
@@ -405,7 +431,7 @@ export function ChatBot({
             } else if (data.connectionType === 'choice') {
               const newChoice = {
                 id: `choice-${Date.now()}`,
-                text: data.choiceText || '选项',
+                text: data.choiceText || (i18n?.choiceDefault || '选项'),
                 targetNodeId: data.targetNodeId,
               };
               return {
@@ -425,7 +451,7 @@ export function ChatBot({
         break;
       }
     }
-  }, [project, onUpdate, handleGenerateImageAction]);
+  }, [project, onUpdate, handleGenerateImageAction, i18n]);
   
   // 发送消息（核心逻辑，支持重试）
   const sendMessageCore = useCallback(async (messageContent: string, userMessageId?: string) => {
@@ -588,7 +614,7 @@ export function ChatBot({
       console.error('[ChatBot] 发送消息失败:', error);
       const errorMsg = i18n?.sendFailed 
         ? formatTemplate(i18n.sendFailed, { error: (error as Error).message })
-        : `发送失败: ${(error as Error).message}`;
+        : `❌ ${i18n?.operationFailed || '生成失败'}: ${(error as Error).message}`;
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantMessageId
@@ -722,7 +748,7 @@ export function ChatBot({
               className={`h-5 w-full bg-slate-100 hover:bg-indigo-100 cursor-ns-resize flex items-center justify-center border-b border-slate-300 transition-colors shrink-0 z-10 select-none ${
                 isResizing ? 'bg-indigo-200' : ''
               }`}
-              title="拖拽调整高度"
+              title={i18n?.resizeHeight || '拖拽调整高度'}
             >
               <div className="w-12 h-1.5 bg-slate-400 rounded-full" />
             </div>

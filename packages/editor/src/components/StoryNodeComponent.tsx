@@ -8,10 +8,26 @@ import { FileText, GitBranch, Flag } from 'lucide-react';
 interface StoryNodeData {
     storyNode: StoryNode;
     characters: Character[];
+    i18n?: {
+        start?: string;
+        ending?: string;
+        dialogues?: string;
+        branches?: string;
+        appearingCharacters?: string;
+    };
 }
 
 export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
-    const { storyNode, characters } = data;
+    const { storyNode, characters, i18n } = data;
+    
+    // 多语言文本，带 fallback
+    const t = {
+        start: i18n?.start || '开始',
+        ending: i18n?.ending || '结尾',
+        dialogues: i18n?.dialogues || '段对话',
+        branches: i18n?.branches || '个分支',
+        appearingCharacters: i18n?.appearingCharacters || '出场人物:',
+    };
     
     // ✅ 获取出场角色列表（去重）
     const appearingCharacters = Array.from(
@@ -71,10 +87,10 @@ export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
                         )}
                     </div>
                     {storyNode.isStart && (
-                        <span className="text-xs px-2 py-0.5 bg-green-600 text-white rounded-full">开始</span>
+                        <span className="text-xs px-2 py-0.5 bg-green-600 text-white rounded-full">{t.start}</span>
                     )}
                     {storyNode.isEnding && (
-                        <span className="text-xs px-2 py-0.5 bg-red-600 text-white rounded-full">结尾</span>
+                        <span className="text-xs px-2 py-0.5 bg-red-600 text-white rounded-full">{t.ending}</span>
                     )}
                 </div>
                 
@@ -86,13 +102,13 @@ export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
                 {storyNode.dialogues.length > 0 && (
                     <div className="flex items-center gap-1">
                         <span className="font-medium">{storyNode.dialogues.length}</span>
-                        <span>段对话</span>
+                        <span>{t.dialogues}</span>
                     </div>
                 )}
                 {storyNode.choices && storyNode.choices.length > 0 && (
                     <div className="flex items-center gap-1 text-amber-700">
                         <span className="font-medium">{storyNode.choices.length}</span>
-                        <span>个分支</span>
+                        <span>{t.branches}</span>
                     </div>
                 )}
                 </div>
@@ -100,7 +116,7 @@ export const StoryNodeComponent = memo(({ data }: { data: StoryNodeData }) => {
                 {/* ✅ 出场人物头像 */}
                 {appearingCharacters.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
-                        <div className="text-xs text-gray-500 mb-2">出场人物:</div>
+                        <div className="text-xs text-gray-500 mb-2">{t.appearingCharacters}</div>
                         <div className="flex flex-wrap gap-2">
                             {appearingCharacters.map((char) => (
                                 <div key={char.id} className="group relative">

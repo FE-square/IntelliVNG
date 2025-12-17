@@ -7,7 +7,9 @@
         "dev:web": "turbo run dev --filter=web",
         "dev:serv": "turbo run dev --filter=intelli-services",
         "lint": "turbo run lint",
-        "format": "prettier --write \"**/*.{ts,tsx,md}\""
+        "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+        "i18n:web": "node scripts/check-hardcoded-chinese.js",
+        "i18n:serv": "node scripts/check-backend-chinese.js"
     },
     "devDependencies": {
         "turbo": "^1.10.0",

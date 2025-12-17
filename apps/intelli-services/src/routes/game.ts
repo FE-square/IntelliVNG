@@ -674,6 +674,13 @@ gameRoutes.post(
     }
 );
 
+// =====================================================
+// 错误码定义（用于前端多语言显示）
+// =====================================================
+const IMAGE_GENERATION_ERROR_CODES = {
+  TRANSPARENCY_FAILED_FALLBACK: 'IMAGE_TRANSPARENCY_FAILED_FALLBACK', // 透明背景生成失败，切换到普通模式
+} as const;
+
 // POST /api/game/generate-image-stream - AI生成图片（流式状态返回）
 gameRoutes.post(
     '/generate-image-stream',
@@ -724,7 +731,11 @@ gameRoutes.post(
                             } catch (transparencyError) {
                                 // 抠图失败，回退到普通生成
                                 console.warn('[GameRoute] 透明背景生成失败，回退到普通生成:', transparencyError);
-                                sendEvent({ status: 'RUNNING', message: '透明背景生成失败，切换到普通模式...', progress: 10 });
+                                sendEvent({ 
+                                    status: 'RUNNING', 
+                                    messageCode: IMAGE_GENERATION_ERROR_CODES.TRANSPARENCY_FAILED_FALLBACK,
+                                    progress: 10 
+                                });
                                 result = await imageGenerator.generate(
                                     prompt,
                                     type as ImageType,

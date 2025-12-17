@@ -6,9 +6,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface GamePlayerProps {
     project: GameProject;
     startNodeId?: string;  // ✅ 可选: 指定从哪个节点开始
+    i18n?: {
+        storyEnded?: string;
+        backgroundAlt?: string;
+        spriteAlt?: string;
+        branchSelection?: string;
+        selectChoiceToContinue?: string;
+        makeYourChoice?: string;
+    };
 }
 
-export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) => {
+export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId, i18n = {} }) => {
     const engine = useMemo(() => new GameEngine(project, startNodeId), [project, startNodeId]);  // ✅ 传递 startNodeId
     const [currentNode, setCurrentNode] = useState<StoryNode | undefined>(
         engine.getCurrentNode()
@@ -188,7 +196,7 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
         return (
             <div className="w-full h-full flex items-center justify-center bg-black text-white">
                 <div className="text-center">
-                    <div className="text-2xl font-bold mb-4">故事结束</div>
+                    <div className="text-2xl font-bold mb-4">{i18n.storyEnded || '故事结束'}</div>
                     <div className="text-gray-400">Thank you for playing!</div>
                 </div>
             </div>
@@ -228,7 +236,7 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.8 }}
                     className="absolute inset-0 w-full h-full object-cover"
-                    alt="背景"
+                    alt={i18n.backgroundAlt || '背景'}
                 />
             </AnimatePresence>
 
@@ -251,7 +259,7 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
                                 style={{
                                     filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))',
                                 }}
-                                alt="立绘"
+                                alt={i18n.spriteAlt || '立绘'}
                             />
                         </motion.div>
                     )}
@@ -350,10 +358,10 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
                                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
                                 <div className="relative px-8 py-6 text-center">
                                     <div className="inline-block px-4 py-1 bg-white/20 rounded-full text-white/90 text-xs font-medium mb-2">
-                                        分支选择
+                                        {i18n.branchSelection || '分支选择'}
                                     </div>
                                     <h2 className="text-white text-2xl font-bold drop-shadow-lg">
-                                        {currentNode.title || '做出你的选择'}
+                                        {currentNode.title || (i18n.makeYourChoice || '做出你的选择')}
                                     </h2>
                                 </div>
                             </div>
@@ -404,7 +412,7 @@ export const GamePlayer: React.FC<GamePlayerProps> = ({ project, startNodeId }) 
                             {/* 底部提示 */}
                             <div className="px-8 pb-6 text-center">
                                 <p className="text-sm text-gray-500">
-                                    选择一个选项继续故事
+                                    {i18n.selectChoiceToContinue || '选择一个选项继续故事'}
                                 </p>
                             </div>
                         </motion.div>
