@@ -1141,7 +1141,7 @@ gameRoutes.post(
                         tokenTracker.trackMastraAgent({
                             sessionId: projectId,
                             agentName: 'editor-chat',
-                            model: 'gpt-4o-mini',  // 或从 agent 配置中获取
+                            model: process.env.OPENAI_MODEL || 'gpt-4o-mini',  // 或从 agent 配置中获取
                             response,
                             operation: 'editor-chat',
                             metadata: { messageLength: fullMessage.length },
@@ -1411,9 +1411,23 @@ gameRoutes.get('/editor-chat/history/:projectId', async (c) => {
 
 // ============ Token 使用统计 API ============
 
-// GET /api/game/token-stats - 获取全局 Token 统计
+// GET /api/game/token-stats - 获取全局 Token 统计（支持时间范围查询）
 gameRoutes.get('/token-stats', async (c) => {
-    const summary = tokenTracker.getGlobalSummary();
+    const startTimeStr = c.req.query('startTime');
+    const endTimeStr = c.req.query('endTime');
+    
+    let summary;
+    let imageCostSummary;
+    
+    if (startTimeStr) {
+        const startTime = parseInt(startTimeStr, 10);
+        const endTime = endTimeStr ? parseInt(endTimeStr, 10) : Date.now();
+        summary = tokenTracker.getSummaryByTimeRange(startTime, endTime);
+        imageCostSummary = tokenTracker.getImageCostSummary(startTime, endTime);
+    } else {
+        summary = tokenTracker.getGlobalSummary();
+        imageCostSummary = tokenTracker.getImageCostSummary();
+    }
     
     return c.json({
         success: true,
@@ -1425,6 +1439,8 @@ gameRoutes.get('/token-stats', async (c) => {
             bySource: summary.bySource,
             byModel: summary.byModel,
             byAgent: summary.byAgent,
+            // 图像费用统计
+            imageCost: imageCostSummary,
         },
     });
 });

@@ -5,6 +5,7 @@ import { promptManager } from '../prompts';
 import { DEFAULT_LOCALE, type Locale } from '../utils/locale';
 import { extractAndValidateJson } from '../utils/structured-output-helper';
 import { hasLLMProfile, isRecoverableLLMError, resolveLLMConfig, type LLMProfile } from '../utils/llm-config';
+import { tokenTracker } from './token-tracker';
 
 const createId = () => Math.random().toString(36).substring(2, 12);
 
@@ -156,6 +157,21 @@ export class IdeaDraftGenerator {
         temperature: 0.7,
         max_tokens: 4096,
       });
+
+      // 追踪 Token 使用
+      if (response.usage) {
+        tokenTracker.track({
+          source: 'openai-sdk',
+          model: config.modelName,
+          operation: 'idea-to-draft',
+          usage: {
+            promptTokens: response.usage.prompt_tokens || 0,
+            completionTokens: response.usage.completion_tokens || 0,
+            totalTokens: response.usage.total_tokens || 0,
+          },
+          metadata: { profile, locale },
+        });
+      }
 
       const choice = response.choices[0];
       const content = choice?.message?.content;

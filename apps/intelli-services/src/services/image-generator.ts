@@ -9,6 +9,7 @@
  */
 
 import sharp from 'sharp';
+import { tokenTracker } from './token-tracker';
 
 export type ImageType = 'sprite' | 'avatar' | 'background';
 
@@ -167,6 +168,14 @@ export class ImageGenerator {
                     const imageUrl = resultData.output.results?.[0]?.url;
                     console.log(`[ImageGenerator] 生成成功: ${safeLogUrl(imageUrl)}`);
                     onStatus?.('SUCCEEDED', '图片生成完成！', 100);
+                    
+                    // 追踪图像生成费用
+                    tokenTracker.trackImageGeneration({
+                        model: IMAGE_BASE_MODEL,
+                        imageType: type,
+                        metadata: { prompt: prompt.substring(0, 100), taskId },
+                    });
+                    
                     return {
                         imageUrl,
                         prompt,
@@ -187,6 +196,14 @@ export class ImageGenerator {
         // 同步模式直接返回
         const imageUrl = data.output?.results?.[0]?.url;
         onStatus?.('SUCCEEDED', '图片生成完成！', 100);
+        
+        // 追踪图像生成费用
+        tokenTracker.trackImageGeneration({
+            model: IMAGE_BASE_MODEL,
+            imageType: type,
+            metadata: { prompt: prompt.substring(0, 100) },
+        });
+        
         return {
             imageUrl,
             prompt,
@@ -301,6 +318,14 @@ export class ImageGenerator {
 
         console.log(`[ImageGenerator] 基于参考图生成成功: ${safeLogUrl(imageUrl)}`);
         onStatus?.('SUCCEEDED', '图片生成完成！', 100);
+        
+        // 追踪图像生成费用（图生图模型）
+        tokenTracker.trackImageGeneration({
+            model: IMAGE_EDIT_MODEL,
+            imageType: type,
+            metadata: { prompt: prompt.substring(0, 100), refImageUrl: safeLogUrl(refImageUrl, 50) },
+        });
+        
         return {
             imageUrl,
             prompt,
@@ -366,7 +391,6 @@ export class ImageGenerator {
         }
 
         const data = await apiResponse.json();
-        console.log('[ImageGenerator] Mask API响应:', JSON.stringify(data, null, 2));
 
         // 从响应中提取mask图片URL
         // 根据API返回格式，图片URL可能在不同位置

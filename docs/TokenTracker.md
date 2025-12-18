@@ -297,11 +297,53 @@ TokenTracker 通过以下 API 端点暴露统计数据：
 
 ## 注意事项
 
-1. **内存存储**: 当前实现使用内存存储，服务重启后数据丢失。生产环境建议持久化到数据库。
+1. **文件持久化**: 数据自动保存到 `apps/intelli-services/.cache/token-stats.json`，服务重启后自动恢复。
 
 2. **单例模式**: `tokenTracker` 是全局单例，确保所有调用使用同一实例。
 
 3. **响应格式兼容**: 不同 LLM SDK 的响应格式可能变化，`extractFrom*` 方法已处理常见变体。
 
 4. **会话管理**: 建议在用户会话结束时调用 `clearSession()` 释放内存。
+
+5. **防抖保存**: 写入磁盘操作使用 1 秒防抖，避免频繁 IO 操作。
+
+## 前端 Dashboard
+
+访问 `/token-stats` 页面可查看 Token 用量统计仪表盘，支持：
+
+- 📊 总量概览（总 Token、Prompt Token、Completion Token、调用次数）
+- 🖼️ 图像费用统计（总费用、生成次数、按类型分布）
+- 📅 时间范围筛选（全部、今天、最近7天、最近30天）
+- 📈 分组统计（按来源、按模型、按 Agent）
+- 🗑️ 清除数据功能
+
+## 图像费用追踪
+
+图像生成服务会自动追踪每次生成的费用：
+
+| 模型 | 单价 (元) |
+|------|----------|
+| wan2.2-t2i-flash | 0.04 |
+| wanx-v1 | 0.16 |
+| qwen-image-edit-plus | 0.06 |
+| wanx2.1-imageedit | 0.24 |
+| 默认 | 0.20 |
+
+### 追踪方法
+
+```typescript
+tokenTracker.trackImageGeneration({
+  model: 'wan2.2-t2i-flash',
+  imageType: 'sprite', // 'sprite' | 'avatar' | 'background'
+  metadata: { prompt: '...', taskId: '...' },
+});
+```
+
+### 获取图像费用汇总
+
+```typescript
+const summary = tokenTracker.getImageCostSummary();
+// 或按时间范围
+const summary = tokenTracker.getImageCostSummary(startTime, endTime);
+```
 
