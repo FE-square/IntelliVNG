@@ -17,7 +17,8 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Button, useConfirmDialog, ConfirmDialog, useToast } from '@vng/ui';
-import { ZoomIn, ZoomOut, Maximize2, AlertCircle, Plus, Undo, Redo, Wand2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, AlertCircle, Plus, Undo, Redo, Wand2, Layout } from 'lucide-react';
+import dagre from 'dagre';
 import type { GameProject, StoryNode, Scene } from '@vng/core';
 import { StoryNodeComponent } from './StoryNodeComponent';
 import { NodeEditPanel } from './NodeEditPanel';
@@ -153,7 +154,7 @@ interface FlowEditorProps {
         logicCheckTitle?: string;
         completeAssetsTitle?: string;
         defaultSceneType?: string;
-    };
+    } & Record<string, string>;
 }
 
 // 简单的字符串模板替换函数
@@ -547,6 +548,65 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
         }
     }, [project, onGenerateImage, onUpdate, toast, i18n]);
 
+    // ✅ 自动布局函数
+    const handleAutoLayout = useCallback(() => {
+        const dagreGraph = new dagre.graphlib.Graph();
+        dagreGraph.setDefaultEdgeLabel(() => ({}));
+        dagreGraph.setGraph({ rankdir: 'TB', nodesep: 100, ranksep: 150 });
+
+        // 添加节点到 dagre
+        nodes.forEach((node) => {
+            dagreGraph.setNode(node.id, { width: 280, height: 200 });
+        });
+
+        // 添加边到 dagre
+        edges.forEach((edge) => {
+            dagreGraph.setEdge(edge.source, edge.target);
+        });
+
+        // 计算布局
+        dagre.layout(dagreGraph);
+
+        // 更新节点位置
+        const newNodes = nodes.map((node) => {
+            const nodeWithPosition = dagreGraph.node(node.id);
+            return {
+                ...node,
+                position: {
+                    x: nodeWithPosition.x - 140, // 居中对齐
+                    y: nodeWithPosition.y - 100,
+                },
+            };
+        });
+
+        setNodes(newNodes);
+
+        // 保存到项目数据
+        const updatedScript = storyNodes.map((storyNode) => {
+            const flowNode = newNodes.find((n) => n.id === storyNode.id);
+            if (flowNode) {
+                return {
+                    ...storyNode,
+                    position: flowNode.position,
+                };
+            }
+            return storyNode;
+        });
+
+        onUpdate({ ...project, script: updatedScript });
+        saveHistory(updatedScript);
+
+        toast.success(
+            i18n?.autoLayoutSuccess || '自动布局完成',
+            i18n?.autoLayoutSuccessDesc || '节点位置已重新排列 ✨'
+        );
+
+        // 适应屏幕
+        setTimeout(() => {
+            fitView({ padding: 0.2 });
+        }, 50);
+    }, [nodes, edges, setNodes, storyNodes, project, onUpdate, saveHistory, toast, fitView, i18n]);
+
     const onConnect = useCallback(
         (params: Connection) => {
             const newEdge = {
@@ -773,29 +833,27 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                 <Controls />
                 
                 <Panel position="top-left" className="!top-1/2 -translate-y-1/2">
-                    <div className="bg-white rounded-lg shadow-lg p-3 space-y-2 min-w-[160px]">
-                        <div className="flex gap-2 pb-2 border-b border-gray-200">
+                    <div className="bg-white rounded-lg shadow-lg p-2 space-y-2 min-w-[80px]">
+                        <div className="flex gap-1 pb-2 border-b border-gray-200">
                             <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={handleUndo}
                                 disabled={historyIndex <= 0}
-                                className="flex-1 gap-1"
+                                className="flex-1 gap-1 px-2"
                                 title={i18n?.undoShortcut || '撤销 (Ctrl+Z)'}
                             >
                                 <Undo className="w-4 h-4" />
-                                <span className="text-xs">{i18n?.undo || '撤销'}</span>
                             </Button>
                             <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={handleRedo}
                                 disabled={historyIndex >= history.length - 1}
-                                className="flex-1 gap-1"
+                                className="flex-1 gap-1 px-2"
                                 title={i18n?.redoShortcut || '重做 (Ctrl+Y)'}
                             >
                                 <Redo className="w-4 h-4" />
-                                <span className="text-xs">{i18n?.redo || '重做'}</span>
                             </Button>
                         </div>
                         
@@ -804,10 +862,9 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                                 size="sm"
                                 variant="outline"
                                 onClick={() => setShowAddNodeMenu(!showAddNodeMenu)}
-                                className="w-full gap-2"
+                                className="w-full gap-1 px-2"
                             >
                                 <Plus className="w-4 h-4" />
-                                {i18n?.addNode || '新增节点'}
                             </Button>
                             
                             {showAddNodeMenu && (
@@ -849,31 +906,37 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                                 size="sm"
                                 variant="outline"
                                 onClick={() => zoomIn()}
-                                className="w-full gap-2"
+                                className="w-full gap-1 px-2"
                                 title="放大"
                             >
                                 <ZoomIn className="w-4 h-4" />
-                                {i18n?.zoomIn || '放大'}
                             </Button>
                             <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => zoomOut()}
-                                className="w-full gap-2"
+                                className="w-full gap-1 px-2"
                                 title={i18n?.zoomOutTitle || '缩小'}
                             >
                                 <ZoomOut className="w-4 h-4" />
-                                {i18n?.zoomOut || '缩小'}
                             </Button>
                             <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => fitView({ padding: 0.2 })}
-                                className="w-full gap-2"
+                                className="w-full gap-1 px-2"
                                 title={i18n?.fitViewTitle || '适应屏幕'}
                             >
                                 <Maximize2 className="w-4 h-4" />
-                                {i18n?.fitView || '适应屏幕'}
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleAutoLayout}
+                                className="w-full gap-1 px-2"
+                                title={i18n?.autoLayoutTitle || '自动重新排列节点位置'}
+                            >
+                                <Layout className="w-4 h-4" />
                             </Button>
                         </div>
                         
@@ -882,11 +945,10 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                                 size="sm"
                                 variant={showIssues ? 'default' : 'outline'}
                                 onClick={() => setShowIssues(!showIssues)}
-                                className="w-full gap-2"
+                                className="w-full gap-1 px-2"
                                 title={i18n?.logicCheckTitle || '逻辑检查'}
                             >
                                 <AlertCircle className="w-4 h-4" />
-                                {i18n?.logicCheck || '逻辑检查'}
                             </Button>
                             
                             {showIssues && (
@@ -931,11 +993,11 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                                     variant="outline"
                                     onClick={handleCompleteAssets}
                                     disabled={isGeneratingAssets || missingAvatars === 0}
-                                    className="w-full gap-2 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 hover:from-green-100 hover:to-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed text-green-700"
+                                    className="w-full gap-1 px-2 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 hover:from-green-100 hover:to-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed text-green-700"
                                     title={i18n?.completeAssetsTitle || '自动补全对话角色缺失的头像（游戏播放必需）'}
                                 >
                                     <Wand2 className="w-4 h-4" />
-                                    {isGeneratingAssets ? (i18n?.generating || '生成中...') : missingAvatars > 0 ? `${i18n?.completeAssets || '补全头像'} (${missingAvatars})` : (i18n?.assetsComplete || '素材完整')}
+                                    {missingAvatars > 0 && !isGeneratingAssets && <span className="text-xs font-semibold">{missingAvatars}</span>}
                                 </Button>
                             );
                         })()}

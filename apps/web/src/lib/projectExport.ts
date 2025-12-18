@@ -156,12 +156,17 @@ function injectDataAndHideUpload(template: string, projectData: GameProject): st
 /**
  * 导出项目为独立的可玩 HTML 文件（不含图片资源）
  */
-export async function exportProjectAsPlayableHtml(project: GameProject): Promise<void> {
+export async function exportProjectAsPlayableHtml(
+    project: GameProject,
+    i18n?: {
+        templateLoadError?: string;
+    }
+): Promise<void> {
     try {
         // 1. 获取播放器模板
         const response = await fetch('/standalone-player.html');
         if (!response.ok) {
-            throw new Error('无法加载播放器模板');
+            throw new Error(i18n?.templateLoadError || '无法加载播放器模板');
         }
         let template = await response.text();
 
@@ -194,33 +199,45 @@ export async function exportProjectAsPlayableHtml(project: GameProject): Promise
  */
 export async function exportProjectAsPlayableHtmlWithImages(
     project: GameProject,
-    onProgress?: (current: number, total: number, message: string) => void
+    onProgress?: (current: number, total: number, message: string) => void,
+    i18n?: {
+        loadingTemplate?: string;
+        collectingImages?: string;
+        convertingImage?: string;
+        packaging?: string;
+        generatingFile?: string;
+        complete?: string;
+        templateLoadError?: string;
+    }
 ): Promise<void> {
     try {
-        onProgress?.(0, 100, '正在加载播放器模板...');
+        onProgress?.(0, 100, i18n?.loadingTemplate || '正在加载播放器模板...');
         
         // 1. 获取播放器模板
         const response = await fetch('/standalone-player.html');
         if (!response.ok) {
-            throw new Error('无法加载播放器模板');
+            throw new Error(i18n?.templateLoadError || '无法加载播放器模板');
         }
         let template = await response.text();
         
-        onProgress?.(10, 100, '正在收集图片资源...');
+        onProgress?.(10, 100, i18n?.collectingImages || '正在收集图片资源...');
         
         // 2. 将所有图片转换为 Base64
         const projectData = await embedImagesAsBase64(project, (current, total, url) => {
             const progress = 10 + Math.floor((current / total) * 70); // 10-80%
             const fileName = url.split('/').pop()?.substring(0, 30) || 'unknown';
-            onProgress?.(progress, 100, `正在转换图片 ${current}/${total}: ${fileName}...`);
+            const message = i18n?.convertingImage 
+                ? i18n.convertingImage.replace('{current}', String(current)).replace('{total}', String(total)).replace('{fileName}', fileName)
+                : `正在转换图片 ${current}/${total}: ${fileName}...`;
+            onProgress?.(progress, 100, message);
         });
         
-        onProgress?.(85, 100, '正在打包数据...');
+        onProgress?.(85, 100, i18n?.packaging || '正在打包数据...');
 
         // 3. 注入数据并处理 HTML
         template = injectDataAndHideUpload(template, projectData);
         
-        onProgress?.(95, 100, '正在生成文件...');
+        onProgress?.(95, 100, i18n?.generatingFile || '正在生成文件...');
 
         // 4. 下载文件
         const blob = new Blob([template], { type: 'text/html' });
@@ -234,7 +251,7 @@ export async function exportProjectAsPlayableHtmlWithImages(
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         
-        onProgress?.(100, 100, '导出完成！');
+        onProgress?.(100, 100, i18n?.complete || '导出完成！');
 
     } catch (error) {
         console.error('导出失败:', error);

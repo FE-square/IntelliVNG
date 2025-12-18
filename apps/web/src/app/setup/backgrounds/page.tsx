@@ -7,8 +7,10 @@ import { Plus, Trash2, Save, ArrowLeft, Image } from 'lucide-react';
 import { useSetupStore } from '@/stores/setupStore';
 import { createId } from '@vng/core';
 import type { Background } from '@vng/core';
+import { useI18N } from '@/components/I18nProvider';
 
 export default function BackgroundsPage() {
+    const { I18N } = useI18N();
     const router = useRouter();
     const toast = useToast();
     const { confirm, DialogComponent } = useConfirmDialog();
@@ -48,7 +50,7 @@ export default function BackgroundsPage() {
 
     const handleSave = () => {
         if (!formData.name) {
-            toast.warning('请至少填写背景名称');
+            toast.warning(I18N['key.backgrounds.nameRequired'] || '请至少填写背景名称');
             return;
         }
 
@@ -77,15 +79,15 @@ export default function BackgroundsPage() {
 
     const handleDelete = async (id: string) => {
         const confirmed = await confirm({
-            title: '删除背景',
-            message: '确定要删除这个背景吗？此操作不可恢复。',
-            confirmText: '删除',
-            cancelText: '取消',
+            title: I18N['key.backgrounds.deleteTitle'] || '删除背景',
+            message: I18N['key.backgrounds.deleteMessage'] || '确定要删除这个背景吗？此操作不可恢复。',
+            confirmText: I18N['key.common.delete'] || '删除',
+            cancelText: I18N['key.common.cancel'] || '取消',
             variant: 'danger',
         });
         if (confirmed) {
             deleteBackground(id);
-            toast.success('背景已删除');
+            toast.success(I18N['key.backgrounds.deleteSuccess'] || '背景已删除');
         }
     };
 
@@ -95,8 +97,8 @@ export default function BackgroundsPage() {
                 {/* 标题栏 */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-4xl font-bold text-white mb-2">🎨 背景定义</h1>
-                        <p className="text-white/80">设置游戏世界观与场景细节</p>
+                        <h1 className="text-4xl font-bold text-white mb-2">{I18N['key.backgrounds.title'] || '🎨 背景定义'}</h1>
+                        <p className="text-white/80">{I18N['key.backgrounds.subtitle'] || '设置游戏世界观与场景细节'}</p>
                     </div>
                     <Button
                         variant="outline"
@@ -104,7 +106,7 @@ export default function BackgroundsPage() {
                         onClick={() => router.push('/setup')}
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        返回
+                        {I18N['key.common.back'] || '返回'}
                     </Button>
                 </div>
 
@@ -114,17 +116,17 @@ export default function BackgroundsPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between">
-                                    <span>背景列表 ({backgrounds.length})</span>
+                                    <span>{(I18N['key.backgrounds.list'] || '背景列表 ({count})').replace('{count}', backgrounds.length.toString())}</span>
                                     <Button size="sm" onClick={handleNewBackground}>
                                         <Plus className="w-4 h-4 mr-1" />
-                                        新增
+                                        {I18N['key.common.add'] || '新增'}
                                     </Button>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2">
                                 {backgrounds.length === 0 && (
                                     <p className="text-gray-500 text-sm text-center py-4">
-                                        还没有背景，点击「新增」创建第一个背景
+                                        {I18N['key.backgrounds.empty'] || '还没有背景，点击「新增」创建第一个背景'}
                                     </p>
                                 )}
                                 {backgrounds.map((bg) => (

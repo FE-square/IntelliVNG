@@ -102,6 +102,16 @@ const i18nMap = {
     nodeAppearingCharacters: 'key.storyNode.appearingCharacters',
     exportDialogTitle: 'key.editor.exportDialogTitle',
     exportDialogDesc: 'key.editor.exportDialogDesc',
+    exportDialogComplete: 'key.editor.exportDialogComplete',
+    exportLoadingTemplate: 'key.editor.exportLoadingTemplate',
+    exportCollectingImages: 'key.editor.exportCollectingImages',
+    exportConvertingImage: 'key.editor.exportConvertingImage',
+    exportPackaging: 'key.editor.exportPackaging',
+    exportGeneratingFile: 'key.editor.exportGeneratingFile',
+    exportComplete: 'key.editor.exportComplete',
+    exportTemplateLoadError: 'key.editor.exportTemplateLoadError',
+    previewButtonFromStart: 'key.editor.previewButtonFromStart',
+    previewButtonFromCurrent: 'key.editor.previewButtonFromCurrent',
     notSaved: 'key.editor.notSaved',
     secondsAgo: 'key.editor.secondsAgo',
     minutesAgo: 'key.editor.minutesAgo',
@@ -853,7 +863,9 @@ function EditorPageContent() {
                                 onClick={() => {
                                     if (project) {
                                         toast.info(I18N[i18nMap.packaging] || '正在打包', I18N[i18nMap.generatingHtml] || '正在生成独立可玩 HTML 文件...');
-                                        exportProjectAsPlayableHtml(project)
+                                        exportProjectAsPlayableHtml(project, {
+                                            templateLoadError: I18N[i18nMap.exportTemplateLoadError] || '无法加载播放器模板'
+                                        })
                                             .then(() => toast.success(I18N[i18nMap.exportSuccess] || '导出成功', I18N[i18nMap.exportHtmlSuccess] || '独立游戏文件已下载'))
                                             .catch(() => toast.error(I18N[i18nMap.exportFailed] || '导出失败', I18N[i18nMap.exportRetry] || '请重试'));
                                     }
@@ -875,6 +887,15 @@ function EditorPageContent() {
                                                 project,
                                                 (current, total, message) => {
                                                     setExportProgress({ show: true, current, total, message });
+                                                },
+                                                {
+                                                    loadingTemplate: I18N[i18nMap.exportLoadingTemplate] || '正在加载播放器模板...',
+                                                    collectingImages: I18N[i18nMap.exportCollectingImages] || '正在收集图片资源...',
+                                                    convertingImage: I18N[i18nMap.exportConvertingImage] || '正在转换图片 {current}/{total}: {fileName}...',
+                                                    packaging: I18N[i18nMap.exportPackaging] || '正在打包数据...',
+                                                    generatingFile: I18N[i18nMap.exportGeneratingFile] || '正在生成文件...',
+                                                    complete: I18N[i18nMap.exportComplete] || '导出完成！',
+                                                    templateLoadError: I18N[i18nMap.exportTemplateLoadError] || '无法加载播放器模板'
                                                 }
                                             );
                                             toast.success(I18N[i18nMap.exportSuccess] || '导出成功', I18N[i18nMap.exportHtmlWithImagesSuccess] || '完全离线的游戏文件已下载');
@@ -1130,6 +1151,10 @@ function EditorPageContent() {
                                 zoomIn: I18N['key.flowEditor.zoomIn'] || '放大',
                                 zoomOut: I18N['key.flowEditor.zoomOut'] || '缩小',
                                 fitView: I18N['key.flowEditor.fitView'] || '适应屏幕',
+                                autoLayout: I18N['key.flowEditor.autoLayout'] || '自动布局',
+                                autoLayoutTitle: I18N['key.flowEditor.autoLayoutTitle'] || '自动重新排列节点位置',
+                                autoLayoutSuccess: I18N['key.flowEditor.autoLayoutSuccess'] || '自动布局完成',
+                                autoLayoutSuccessDesc: I18N['key.flowEditor.autoLayoutSuccessDesc'] || '节点位置已重新排列 ✨',
                                 logicCheck: I18N['key.flowEditor.logicCheck'] || '逻辑检查',
                                 logicCheckResult: I18N['key.flowEditor.logicCheckResult'] || '逻辑检查结果',
                                 noIssues: I18N['key.flowEditor.noIssues'] || '✔ 没有发现问题',
@@ -1203,6 +1228,34 @@ function EditorPageContent() {
                                 newNodeSceneTitle: I18N['key.flowEditor.newNodeSceneTitle'] || '新场景',
                                 newNodeBranchTitle: I18N['key.flowEditor.newNodeBranchTitle'] || '新分支',
                                 newNodeEndingTitle: I18N['key.flowEditor.newNodeEndingTitle'] || '新结局',
+                                // 删除节点相关
+                                deleteNodeConfirm: I18N['key.flowEditor.deleteNodeConfirm'] || '确定要删除节点「{title}」吗？',
+                                deleteNodeWithConnections: I18N['key.flowEditor.deleteNodeWithConnections'] || '⚠️ 有 {count} 个节点连接到此节点，删除后这些连接将断开。',
+                                deleteNodeTitle: I18N['key.flowEditor.deleteNodeTitle'] || '删除节点',
+                                delete: I18N['key.common.delete'] || '删除',
+                                cancel: I18N['key.common.cancel'] || '取消',
+                                cannotDelete: I18N['key.flowEditor.cannotDelete'] || '无法删除',
+                                cannotDeleteStartNode: I18N['key.flowEditor.cannotDeleteStartNode'] || '不能删除唯一的开始节点！',
+                                gotIt: I18N['key.common.gotIt'] || '知道了',
+                                // 逻辑检查相关
+                                issueNoStartNode: I18N['key.flowEditor.issueNoStartNode'] || '❌ 缺少开始节点（游戏无法启动）',
+                                issueMultipleStartNodes: I18N['key.flowEditor.issueMultipleStartNodes'] || '⚠️ 存在多个开始节点 ({count}个)',
+                                issueNoEndingNode: I18N['key.flowEditor.issueNoEndingNode'] || '⚠️ 缺少结尾节点（玩家可能无法正常结束游戏）',
+                                issueCharactersWithoutAvatar: I18N['key.flowEditor.issueCharactersWithoutAvatar'] || '⚠️ {count}个对话角色缺少头像: {characters}',
+                                // 素材补全相关
+                                generateNotConfigured: I18N['key.flowEditor.generateNotConfigured'] || '未配置生成功能',
+                                generateNotConfiguredDesc: I18N['key.flowEditor.generateNotConfiguredDesc'] || '请检查配置',
+                                generatingAvatar: I18N['key.flowEditor.generatingAvatar'] || '生成中',
+                                generatingAvatarDesc: I18N['key.flowEditor.generatingAvatarDesc'] || '正在生成 {name} 的头像...',
+                                avatarPrompt: I18N['key.flowEditor.avatarPrompt'] || '头像特写, {name}, {description}, 头像, 肖像',
+                                completeSuccess: I18N['key.flowEditor.completeSuccess'] || '补全完成',
+                                completeSuccessDesc: I18N['key.flowEditor.completeSuccessDesc'] || '成功生成 {count} 个头像 ✨',
+                                noNeedToComplete: I18N['key.flowEditor.noNeedToComplete'] || '无需补全',
+                                noNeedToCompleteDesc: I18N['key.flowEditor.noNeedToCompleteDesc'] || '游戏播放所需素材都已完整',
+                                completeFailed: I18N['key.flowEditor.completeFailed'] || '补全失败',
+                                completeFailedDesc: I18N['key.flowEditor.completeFailedDesc'] || '请重试',
+                                startNodeAlreadyExists: I18N['key.flowEditor.startNodeAlreadyExists'] || '⚠️ 已存在开始节点，不能创建多个开始节点!',
+                                defaultSceneType: I18N['key.flowEditor.defaultSceneType'] || '室内',
                             }}
                         />
                     </ReactFlowProvider>
@@ -1233,8 +1286,9 @@ function EditorPageContent() {
                                                 ? 'bg-blue-500 text-white'
                                                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                                                 }`}
+                                            suppressHydrationWarning
                                         >
-                                            🏁 从头
+                                            🏁 {I18N[i18nMap.previewButtonFromStart] || '从头'}
                                         </button>
                                         <button
                                             onClick={() => {
@@ -1250,8 +1304,9 @@ function EditorPageContent() {
                                                 ? 'bg-green-500 text-white'
                                                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                                                 }`}
+                                            suppressHydrationWarning
                                         >
-                                            ▶️ 从当前
+                                            ▶️ {I18N[i18nMap.previewButtonFromCurrent] || '从当前'}
                                         </button>
                                     </div>
                                 </div>

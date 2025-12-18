@@ -7,11 +7,13 @@
         "lint": "eslint \"src/**/*.ts*\""
     },
     "dependencies": {
+        "@types/dagre": "^0.7.53",
         "@vng/core": "workspace:*",
         "@vng/ui": "workspace:*",
+        "dagre": "^0.8.5",
+        "lucide-react": "^0.290.0",
         "reactflow": "^11.10.0",
-        "zustand": "^4.4.0",
-        "lucide-react": "^0.290.0"
+        "zustand": "^4.4.0"
     },
     "devDependencies": {
         "@types/react": "^18.2.0",
