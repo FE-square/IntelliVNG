@@ -593,8 +593,9 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
             return storyNode;
         });
 
-        onUpdate({ ...project, script: updatedScript });
-        saveHistory(updatedScript);
+        const updatedProject = { ...project, script: updatedScript };
+        onUpdate?.(updatedProject);
+        saveHistory(updatedProject);
 
         toast.success(
             i18n?.autoLayoutSuccess || '自动布局完成',
@@ -648,7 +649,7 @@ export function FlowEditor({ project, onUpdate, onSelectNode, onGenerateImage, i
                 return node;
             });
             
-            onUpdate({
+            onUpdate?.({
                 ...project,
                 script: newScript,
             });

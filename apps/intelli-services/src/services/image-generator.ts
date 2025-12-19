@@ -368,7 +368,7 @@ export class ImageGenerator {
                                     image: imageUrl,
                                 },
                                 {
-                                    text: 'Saliency Segmentation: 生成图片中间主体角色的 Mask Image。中间主体区域必须纯白色。周边区域必须纯黑色',
+                                    text: 'Saliency Segmentation: 生成图中间主体角色的二值图 Mask Image。中间主体区域人物必须转为纯白色，面部头发区域必须转为纯白色，周边背景区域必须转为纯黑色；你只能输出两种颜色区域'
                                 },
                             ],
                         },
