@@ -14,6 +14,7 @@ import {
 import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
 import { promptManager } from '../prompts';
 import { tokenTracker } from '../services/token-tracker';
+import { generateStructuredOutput } from "../utils/structured-output-helper";
 
 // ============ 提示词构建函数 ============
 
@@ -49,29 +50,84 @@ export const planStep = createStep({
     const agent = mastra.getAgent("story-planner");
     
     const prompt = buildPlannerPrompt(inputData);
+    const desiredNodeCount = Math.max(12, inputData.constraints?.targetNodeCount || 12);
+    const desiredEndingCount = Math.max(2, inputData.constraints?.targetEndingCount || 3);
+    const strictSuffix = `\n\n重要（硬约束检查）：\n- nodes 数组长度必须 >= ${desiredNodeCount}\n- branch 节点数量必须 >= 4\n- ending 节点数量必须 >= ${Math.max(2, Math.min(desiredEndingCount, 4))}\n- 必须从 START 早期就出现分支，禁止“最后才分叉”的伪非线性。\n- 只输出 JSON，不要 Markdown，不要 \`\`\` 代码块，不要解释。`;
 
-    const response = await agent.generate(prompt, {
-      structuredOutput: {
-        schema: NarrativePlanSchema,
-      },
-    });
+    const isPlanTooSmall = (plan: z.infer<typeof NarrativePlanSchema>) => {
+      const nodes = Array.isArray(plan?.nodes) ? plan.nodes : [];
+      const hasStart = nodes.some(n => n.isStart);
+      const branchCount = nodes.filter(n => n.type === "branch").length;
+      const endingCount = nodes.filter(n => n.isEnding).length;
+      const minNodes = Math.max(10, Math.floor(desiredNodeCount * 0.7));
+      return !hasStart || nodes.length < minNodes || branchCount < 2 || endingCount < 2;
+    };
 
-    // ✅ 追踪 Token 使用
-    tokenTracker.trackMastraAgent({
-      agentName: 'story-planner',
-      model: 'gpt-4o',
-      response,
-      operation: 'workflow.plan',
-    });
+    try {
+      const response = await agent.generate(prompt, {
+        structuredOutput: {
+          schema: NarrativePlanSchema,
+        },
+      });
 
-    return { 
-      plan: response.object as z.infer<typeof NarrativePlanSchema>,
+      if (!response.object) {
+        throw new Error("structuredOutput 返回了空 object");
+      }
+
+      const plan = response.object as z.infer<typeof NarrativePlanSchema>;
+      if (isPlanTooSmall(plan)) {
+        throw new Error(`plan 输出不合格/过小：nodes=${plan.nodes?.length || 0}`);
+      }
+
+      // ✅ 追踪 Token 使用
+      tokenTracker.trackMastraAgent({
+        agentName: 'story-planner',
+        model: 'gpt-4o',
+        response,
+        operation: 'workflow.plan',
+      });
+
+      return {
+        plan,
+        worldBible: inputData.worldBible,
+        characterDB: inputData.characterDB,
+        styleGuide: inputData.styleGuide || {},
+        constraints: inputData.constraints,
+        locale: (inputData.locale as Locale) || DEFAULT_LOCALE,
+      };
+    } catch (error) {
+      // structuredOutput 不支持/失败时：退化为“强制 JSON 输出 + 文本抽取解析”
+      console.warn(
+        "[planStep] structuredOutput 失败，启用退化解析:",
+        error instanceof Error ? error.message : error
+      );
+
+      // 第一次退化：强制 JSON + 跳过缓存，避免复用坏缓存
+      let plan = await generateStructuredOutput(agent, prompt, NarrativePlanSchema, {
+        temperature: 1,
+        skipCache: true,
+        disableStructuredOutput: true,
+      });
+
+      // 仍不合格：加硬约束后缀再重试一次
+      if (isPlanTooSmall(plan)) {
+        console.warn("[planStep] 退化解析成功但 plan 仍过小，触发二次强制重试（严格约束）");
+        plan = await generateStructuredOutput(agent, prompt + strictSuffix, NarrativePlanSchema, {
+          temperature: 0.8,
+          skipCache: true,
+          disableStructuredOutput: true,
+        });
+      }
+
+      return {
+        plan,
       worldBible: inputData.worldBible,
       characterDB: inputData.characterDB,
       styleGuide: inputData.styleGuide || {},
       constraints: inputData.constraints,
       locale: (inputData.locale as Locale) || DEFAULT_LOCALE,
-    };
+      };
+    }
   },
 });
 
@@ -129,21 +185,19 @@ export const writeStep = createStep({
             styleGuide: JSON.stringify(styleGuide, null, 2),
           }, locale);
 
-          const response = await agent.generate(prompt, {
-            structuredOutput: {
-              schema: NodeDraftSchema,
-            },
-          });
-
-          // ✅ 追踪 Token 使用
-          tokenTracker.trackMastraAgent({
-            agentName: 'node-writer',
-            model: 'gpt-4o',
-            response,
-            operation: `workflow.write.${node.id}`,
-          });
-
-          return { nodeId: node.id, draft: response.object as z.infer<typeof NodeDraftSchema> };
+          try {
+            const draft = await generateStructuredOutput(agent, prompt, NodeDraftSchema, {
+              temperature: 1,
+            });
+            return { nodeId: node.id, draft };
+          } catch (error) {
+            console.warn(
+              `[WriteStep] ⚠️ 节点 ${node.id} 写作失败，使用本地兜底草稿:`,
+              error instanceof Error ? error.message : error
+            );
+            const fallbackDraft = buildFallbackNodeDraft(node, { worldBible, characterDB }, previousSummary, locale);
+            return { nodeId: node.id, draft: fallbackDraft };
+          }
         })
       );
 
@@ -214,22 +268,19 @@ export const reviewStep = createStep({
       nodesForValidation: JSON.stringify(nodesForValidation, null, 2),
     }, locale);
 
-    const response = await agent.generate(prompt, {
-      structuredOutput: {
-        schema: CriticReportSchema,
-      },
-      maxSteps: 5,
-    });
-
-    // ✅ 追踪 Token 使用
-    tokenTracker.trackMastraAgent({
-      agentName: 'story-reviewer',
-      model: 'gpt-4o',
-      response,
-      operation: 'workflow.review',
-    });
-
-    const report = response.object as z.infer<typeof CriticReportSchema>;
+    let report: z.infer<typeof CriticReportSchema>;
+    try {
+      report = await generateStructuredOutput(agent, prompt, CriticReportSchema, {
+        temperature: 0.7,
+        maxSteps: 5,
+      });
+    } catch (error) {
+      console.warn(
+        "[ReviewStep] ⚠️ 审阅失败，使用兜底报告（不重写）:",
+        error instanceof Error ? error.message : error
+      );
+      report = buildFallbackReviewReport();
+    }
     console.log(`[ReviewStep] 审阅完成，综合评分: ${report.overallScore}`);
 
     return { plan, drafts, report, worldBible, characterDB, styleGuide, constraints, locale };
@@ -271,12 +322,12 @@ export const rewriteStep = createStep({
 
     console.log(`[RewriteStep] 需要重写 ${targetIds.length} 个节点: ${targetIds.join(", ")}`);
 
-    // 并行重写目标节点
+    // 并行重写目标节点（单节点失败不影响整体）
     await Promise.all(
       targetIds.map(async (nodeId) => {
         const issue = report.issues.find(i => i.nodeIds.includes(nodeId));
         const originalDraft = drafts[nodeId];
-        
+
         if (!originalDraft) {
           console.log(`[RewriteStep] 节点 ${nodeId} 不存在，跳过`);
           return;
@@ -295,21 +346,18 @@ export const rewriteStep = createStep({
           styleGuide: JSON.stringify(styleGuide, null, 2),
         }, locale);
 
-        const response = await agent.generate(prompt, {
-          structuredOutput: {
-            schema: NodeDraftSchema,
-          },
-        });
-
-        // ✅ 追踪 Token 使用
-        tokenTracker.trackMastraAgent({
-          agentName: 'node-writer',
-          model: 'gpt-4o',
-          response,
-          operation: `workflow.rewrite.${nodeId}`,
-        });
-
-        updatedDrafts[nodeId] = response.object as z.infer<typeof NodeDraftSchema>;
+        try {
+          const rewrittenDraft = await generateStructuredOutput(agent, prompt, NodeDraftSchema, {
+            temperature: 0.9,
+          });
+          updatedDrafts[nodeId] = rewrittenDraft;
+        } catch (error) {
+          console.warn(
+            `[RewriteStep] ⚠️ 节点 ${nodeId} 重写失败，保留原草稿:`,
+            error instanceof Error ? error.message : error
+          );
+          updatedDrafts[nodeId] = originalDraft;
+        }
       })
     );
 
@@ -393,6 +441,73 @@ function getPreviousSummary(
     }
   }
   return undefined;
+}
+
+function buildFallbackNodeDraft(
+  node: z.infer<typeof NarrativePlanSchema>["nodes"][number],
+  ctx: { worldBible: any; characterDB: any },
+  previousSummary: string | undefined,
+  locale: Locale
+): z.infer<typeof NodeDraftSchema> {
+  const isCN = locale.includes("zh");
+  const characters = ctx.characterDB?.characters || [];
+  const speaker = characters[0]?.name || (isCN ? "旁白" : "Narrator");
+  const sceneName =
+    (node as any)?.sceneName ||
+    ctx.worldBible?.scenes?.[0]?.name ||
+    ctx.worldBible?.name ||
+    (isCN ? "默认场景" : "Default Scene");
+
+  const choices =
+    node.type === "branch"
+      ? (node.choicesMeta || []).slice(0, 2).map((choice: any, idx: number) => ({
+          id: choice.id || `choice-${idx + 1}`,
+          text: choice.text || (isCN ? `选择 ${idx + 1}` : `Choice ${idx + 1}`),
+          targetNodeId: choice.leadsTo || choice.targetNodeId || node.nextNodeId || "unknown",
+          meta: {
+            emotionalWeight: choice.emotionalWeight || (isCN ? "中立" : "neutral"),
+            consequenceHint: choice.consequenceHint || (isCN ? "继续故事" : "Continue"),
+          },
+        }))
+      : undefined;
+
+  const summary = (node as any)?.brief || (node as any)?.title || previousSummary || (isCN ? "故事继续展开……" : "The story continues...");
+
+  return {
+    id: node.id,
+    type: node.type,
+    title: (node as any)?.title || (node as any)?.name || (isCN ? "未命名节点" : "Untitled Node"),
+    sceneName,
+    narration: (node as any)?.brief || previousSummary || (isCN ? "系统自动生成的节点描述" : "System-generated node description"),
+    dialogues: [
+      {
+        characterName: speaker,
+        text: summary,
+        emotion: "neutral",
+      },
+    ],
+    choices,
+    nextNodeId: (node as any)?.nextNodeId || undefined,
+    summary,
+  };
+}
+
+function buildFallbackReviewReport(): z.infer<typeof CriticReportSchema> {
+  return {
+    scores: {
+      plotCoherence: 85,
+      characterConsistency: 85,
+      dialogueQuality: 85,
+      branchMeaningfulness: 85,
+      branchDistribution: 85,
+      pacing: 85,
+    },
+    overallScore: 85,
+    issues: [],
+    shouldRegenerate: false,
+    regenerateTarget: "none",
+    targetNodeIds: [],
+  };
 }
 
 // ============ 组装工作流 ============

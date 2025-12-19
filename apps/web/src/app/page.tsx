@@ -22,6 +22,10 @@ import {
   Globe2,
   Loader2,
   BrainCircuit,
+  Edit3,
+  X,
+  Check,
+  StopCircle,
 } from "lucide-react";
 import type { Character, Scene, ThemeSetting, WorldSetting } from "@vng/core";
 import { useI18N } from "@/components/I18nProvider";
@@ -115,7 +119,17 @@ export default function Home() {
   const progressListRef = useRef<HTMLDivElement | null>(null);
   const agentsSectionVisibleRef = useRef(false);
   const [lastLocale, setLastLocale] = useState("zh-CN");
+  const [thinkingContent, setThinkingContent] = useState<string>("");
+  const thinkingContentRef = useRef<HTMLDivElement | null>(null);
   const { t } = useI18N();
+
+  // 编辑对话框状态
+  const [editingField, setEditingField] = useState<{
+    path: string;
+    label: string;
+    value: string;
+    multiline?: boolean;
+  } | null>(null);
 
   const stageLabels: Record<ProgressStage, string> = {
     init: t("key.home.agent.stage.init"),
@@ -199,6 +213,49 @@ export default function Home() {
     router.push(`/generate-assets?projectId=${finalProjectRef.current.id}`);
   };
 
+  /**
+   * 中断当前生成流程
+   * 向后端发送中断请求，同时中止本地 SSE 连接
+   */
+  const handleAbortGeneration = async () => {
+    const sessionId = sessionInfo.sessionId;
+    
+    // 中止本地 SSE 连接
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+      controllerRef.current = null;
+    }
+    
+    // 更新状态
+    setIsQuickGenerating(false);
+    setIsAgentGenerating(false);
+    setIsDraftGenerating(false);
+    setSessionStatus("idle");
+    
+    // 向后端发送中断请求
+    if (sessionId) {
+      try {
+        await fetch("/api/game/abort-generation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
+        toast.info(t("key.home.toast.generationAborted") || "生成已中断");
+      } catch (error) {
+        console.warn("中断请求失败:", error);
+      }
+    }
+    
+    // 添加一个中断的进度事件
+    setProgressEvents(prev => [...prev, {
+      stage: "failed" as ProgressStage,
+      action: "用户中断",
+      status: "failed",
+      message: "生成流程已被用户中断",
+      timestamp: Date.now(),
+    }]);
+  };
+
   const resetAgentFlow = (options?: { keepDraft?: boolean }) => {
     controllerRef.current?.abort();
     controllerRef.current = null;
@@ -267,6 +324,13 @@ export default function Home() {
       progressListRef.current.scrollTop = progressListRef.current.scrollHeight;
     }
   }, [recentProgressEvents]);
+
+  // 思考内容自动滚动到底部
+  useEffect(() => {
+    if (thinkingContentRef.current && thinkingContent) {
+      thinkingContentRef.current.scrollTop = thinkingContentRef.current.scrollHeight;
+    }
+  }, [thinkingContent]);
 
   /**
    * ============================================================
@@ -556,28 +620,88 @@ export default function Home() {
 
     // ========== 成功响应处理 ==========
     if (mode === "fast") {
-      // --- 快速模式：JSON 响应，一次性返回完整剧本 ---
-      const result = await response.json();
+      // --- 快速模式：SSE 流式响应，带 thinking 输出 ---
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("无法建立流式连接");
+      }
+
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+      let scriptResult: any = null;
+
+      // 清空之前的 thinking 内容
+      setThinkingContent("");
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // 按 '\n\n' 分割事件
+        let boundary = buffer.indexOf("\n\n");
+        while (boundary !== -1) {
+          const chunk = buffer.slice(0, boundary).trim();
+          buffer = buffer.slice(boundary + 2);
+
+          if (chunk.startsWith("data:")) {
+            const dataStr = chunk.replace(/^data:\s*/, "");
+            if (dataStr) {
+              try {
+                const payload = JSON.parse(dataStr);
+
+                // 处理 thinking 事件
+                if (payload.event === "thinking" && payload.content) {
+                  setThinkingContent((prev) => prev + payload.content);
+                }
+
+                // 处理 content 事件（思考完成）
+                if (payload.event === "content") {
+                  console.log("[Script] ✅ 思考完成，开始生成剧本...");
+                }
+
+                // 处理 result 事件
+                if (payload.event === "result") {
+                  scriptResult = payload;
+                }
+
+                // 处理 error 事件
+                if (payload.event === "error") {
+                  throw new Error(payload.error || "剧本生成失败");
+                }
+              } catch (parseError) {
+                if ((parseError as Error).message !== "剧本生成失败") {
+                  console.warn("解析 SSE 事件失败:", parseError);
+                } else {
+                  throw parseError;
+                }
+              }
+            }
+          }
+          boundary = buffer.indexOf("\n\n");
+        }
+      }
+
+      // 清空 thinking 内容
+      setThinkingContent("");
       setIsQuickGenerating(false);
       setShowFastScriptLoading(false);
 
-      if (result.success) {
+      if (scriptResult?.success) {
         // 生成成功，跳转到视觉素材生成页面
         toast.success(
           t("key.home.toast.scriptSuccess"),
           t("key.home.toast.redirecting"),
         );
         setTimeout(() => {
-          router.push(`/generate-assets?projectId=${result.data.id}`);
+          router.push(`/generate-assets?projectId=${scriptResult.data.id}`);
         }, 2000);
       } else {
-        // result.success === false，业务层失败（非HTTP错误）
-        // 重置加载状态，显示错误提示，不抛出错误（让调用方 finally 统一清理）
-        setIsQuickGenerating(false);
-        setShowFastScriptLoading(false);
+        // 生成失败
         toast.error(
           t("key.home.toast.generateFailed"),
-          result.error || t("key.home.toast.retryPrompt"),
+          scriptResult?.error || t("key.home.toast.retryPrompt"),
         );
       }
     } else {
@@ -647,48 +771,107 @@ export default function Home() {
         });
       }, 500);
 
-      // ========== 阶段1：生成设定草稿 (带重试机制) ==========
-      let draftResult;
-      let lastError;
+      // ========== 阶段1：生成设定草稿 (使用流式 API) ==========
+      let draftResult: { success: boolean; cached?: boolean; data?: DraftData } | null = null;
+      let lastError: Error | null = null;
 
-      // 最多重试 3 次
-      for (let i = 0; i < 3; i++) {
-        try {
-          // 非首次尝试增加延迟
-          if (i > 0) {
-            console.log(`[Draft] 准备第 ${i + 1} 次重试...`);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
+      // 清空之前的 thinking 内容
+      setThinkingContent("");
 
-          const draftResponse = await fetch("/api/game/idea-to-draft", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              idea: quickPrompt,
-              locale,
-            }),
-          });
+      // 使用流式 API 获取草稿（带 thinking 输出）
+      try {
+        const draftResponse = await fetch("/api/game/idea-to-draft-stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            idea: quickPrompt,
+            locale,
+          }),
+        });
 
-          const result = await draftResponse.json().catch(() => ({}));
-
-          if (draftResponse.ok && result.success) {
-            draftResult = result;
-            break;
-          }
-
-          lastError = new Error(
-            result.error || `请求失败 (Status: ${draftResponse.status})`,
-          );
-        } catch (err) {
-          lastError = err instanceof Error ? err : new Error("网络请求异常");
+        if (!draftResponse.ok) {
+          throw new Error(`请求失败 (Status: ${draftResponse.status})`);
         }
 
-        console.warn(`[Draft] 第 ${i + 1} 次生成尝试失败:`, lastError);
+        // 处理 SSE 流
+        const reader = draftResponse.body?.getReader();
+        if (!reader) {
+          throw new Error("无法建立流式连接");
+        }
+
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // 按 '\n\n' 分割事件
+          let boundary = buffer.indexOf("\n\n");
+          while (boundary !== -1) {
+            const chunk = buffer.slice(0, boundary).trim();
+            buffer = buffer.slice(boundary + 2);
+
+            if (chunk.startsWith("data:")) {
+              const dataStr = chunk.replace(/^data:\s*/, "");
+              if (dataStr) {
+                try {
+                  const payload = JSON.parse(dataStr);
+                  
+                  // 调试日志：打印所有收到的事件
+                  console.log("[Draft] 收到事件:", payload.event, payload);
+                  
+                  // 处理 thinking 事件
+                  if (payload.event === "thinking" && payload.content) {
+                    console.log("[Draft] 🧠 思考内容:", payload.content.slice(0, 50) + "...");
+                    setThinkingContent(prev => prev + payload.content);
+                  }
+                  
+                  // 处理 content 事件（思考完成）
+                  if (payload.event === "content") {
+                    console.log("[Draft] ✅ 思考完成，开始生成草稿...");
+                  }
+                  
+                  // 处理 result 事件
+                  if (payload.event === "result" && payload.success) {
+                    draftResult = payload;
+                  }
+                  
+                  // 处理 cached 事件
+                  if (payload.event === "cached") {
+                    console.log("[Draft] 命中缓存");
+                  }
+                  
+                  // 处理 error 事件
+                  if (payload.event === "error") {
+                    throw new Error(payload.error || "草稿生成失败");
+                  }
+                } catch (parseError) {
+                  // 跳过解析错误
+                  if ((parseError as Error).message !== "草稿生成失败") {
+                    console.warn("解析 SSE 事件失败:", parseError);
+                  } else {
+                    throw parseError;
+                  }
+                }
+              }
+            }
+            boundary = buffer.indexOf("\n\n");
+          }
+        }
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error("网络请求异常");
+        console.error("[Draft] 流式生成失败:", lastError);
       }
 
-      // 3次全部失败后抛出
-      if (!draftResult?.success) {
-        throw lastError || new Error("设定草稿生成失败 (已重试3次)");
+      // 清空 thinking 内容（已完成）
+      setThinkingContent("");
+
+      // 检查结果
+      if (!draftResult?.success || !draftResult.data) {
+        throw lastError || new Error("设定草稿生成失败");
       }
 
       // 保存草稿数据到状态
@@ -831,6 +1014,64 @@ export default function Home() {
     handleRetryScripts(mode);
   };
 
+  /**
+   * ============================================================
+   * 字段编辑功能
+   * ============================================================
+   */
+  const handleEditField = (path: string, label: string, currentValue: string, multiline = false) => {
+    setEditingField({ path, label, value: currentValue, multiline });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingField || !draftData) return;
+    
+    const { path, value } = editingField;
+    const newData = JSON.parse(JSON.stringify(draftData)); // 深拷贝
+    
+    // 根据路径设置值
+    const pathParts = path.split('.');
+    let target: any = newData;
+    
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      const part = pathParts[i];
+      // 处理数组索引
+      const arrayMatch = part.match(/^(.+)\[(\d+)\]$/);
+      if (arrayMatch) {
+        target = target[arrayMatch[1]][parseInt(arrayMatch[2])];
+      } else {
+        target = target[part];
+      }
+    }
+    
+    const lastPart = pathParts[pathParts.length - 1];
+    const arrayMatch = lastPart.match(/^(.+)\[(\d+)\]$/);
+    if (arrayMatch) {
+      target[arrayMatch[1]][parseInt(arrayMatch[2])] = value;
+    } else {
+      target[lastPart] = value;
+    }
+    
+    setDraftData(newData);
+    setEditingField(null);
+    toast.success(t("key.home.draft.edit.success"));
+  };
+
+  const handleCancelEdit = () => {
+    setEditingField(null);
+  };
+
+  // 编辑按钮组件
+  const EditButton = ({ onClick }: { onClick: () => void }) => (
+    <button
+      onClick={onClick}
+      className="ml-2 inline-flex items-center justify-center w-6 h-6 rounded hover:bg-slate-200 transition-colors"
+      title="Edit"
+    >
+      <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+    </button>
+  );
+
   return (
     <>
       <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
@@ -972,15 +1213,38 @@ export default function Home() {
                   </div>
                   {draftData ? (
                     <>
-                      <p className="text-sm text-slate-600 mt-1">
-                        {draftData.worldSetting.name} ·{" "}
-                        {draftData.worldSetting.era} ·{" "}
-                        {draftData.worldSetting.location}
-                      </p>
-                      {draftData.worldSetting.rules && (
-                        <p className="text-sm text-slate-600 mt-1">
-                          {draftData.worldSetting.rules}
+                      <div className="flex items-center mt-1">
+                        <p className="text-sm text-slate-600">
+                          {draftData.worldSetting.name} ·{" "}
+                          {draftData.worldSetting.era} ·{" "}
+                          {draftData.worldSetting.location}
                         </p>
+                        <EditButton
+                          onClick={() =>
+                            handleEditField(
+                              "worldSetting.name",
+                              t("key.home.draft.edit.worldName"),
+                              draftData.worldSetting.name
+                            )
+                          }
+                        />
+                      </div>
+                      {draftData.worldSetting.rules && (
+                        <div className="flex items-start mt-1">
+                          <p className="text-sm text-slate-600 flex-1">
+                            {draftData.worldSetting.rules}
+                          </p>
+                          <EditButton
+                            onClick={() =>
+                              handleEditField(
+                                "worldSetting.rules",
+                                t("key.home.draft.edit.worldRules"),
+                                draftData.worldSetting.rules || "",
+                                true
+                              )
+                            }
+                          />
+                        </div>
                       )}
                     </>
                   ) : (
@@ -998,24 +1262,47 @@ export default function Home() {
                   </div>
                   {draftData ? (
                     <div className="mt-2 grid gap-3 md:grid-cols-2">
-                      {draftData.characters.map((character) => (
+                      {draftData.characters.map((character, charIndex) => (
                         <div
                           key={character.id}
                           className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
                         >
                           <div className="flex items-center justify-between">
-                            <p className="font-semibold text-slate-900">
-                              {character.displayName || character.name}
-                            </p>
+                            <div className="flex items-center gap-1 flex-1">
+                              <p className="font-semibold text-slate-900">
+                                {character.displayName || character.name}
+                              </p>
+                            <EditButton
+                              onClick={() =>
+                                handleEditField(
+                                  `characters[${charIndex}].name`,
+                                  t("key.home.draft.edit.characterName"),
+                                  character.displayName || character.name
+                                )
+                              }
+                            />
+                            </div>
                             {character.identity && (
                               <span className="text-xs text-slate-500">
                                 {character.identity}
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-slate-600 mt-1">
-                            {character.description}
-                          </p>
+                          <div className="flex items-start mt-1">
+                            <p className="text-sm text-slate-600 flex-1">
+                              {character.description}
+                            </p>
+                            <EditButton
+                              onClick={() =>
+                                handleEditField(
+                                  `characters[${charIndex}].description`,
+                                  t("key.home.draft.edit.characterDesc"),
+                                  character.description,
+                                  true
+                                )
+                              }
+                            />
+                          </div>
                           {character.personality?.traits &&
                             character.personality?.traits.length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1">
@@ -1057,15 +1344,38 @@ export default function Home() {
                           key={scene.id}
                           className="border-l-4 border-indigo-200 pl-3"
                         >
-                          <p className="text-sm font-semibold text-slate-800">
-                            {t("key.home.draft.sceneNo", { no: index + 1 })} ·{" "}
-                            {scene.name} ({scene.atmosphere})
-                          </p>
-                          <p className="text-sm text-slate-600">
-                            {scene.description ||
-                              scene.details ||
-                              t("key.home.draft.sceneNoDesc")}
-                          </p>
+                          <div className="flex items-start">
+                            <p className="text-sm font-semibold text-slate-800 flex-1">
+                              {t("key.home.draft.sceneNo", { no: index + 1 })} ·{" "}
+                              {scene.name} ({scene.atmosphere})
+                            </p>
+                            <EditButton
+                              onClick={() =>
+                                handleEditField(
+                                  `scenes[${index}].name`,
+                                  t("key.home.draft.edit.sceneName") + ` ${index + 1}`,
+                                  scene.name
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="flex items-start">
+                            <p className="text-sm text-slate-600 flex-1">
+                              {scene.description ||
+                                scene.details ||
+                                t("key.home.draft.sceneNoDesc")}
+                            </p>
+                            <EditButton
+                              onClick={() =>
+                                handleEditField(
+                                  `scenes[${index}].description`,
+                                  t("key.home.draft.edit.sceneDesc") + ` ${index + 1}`,
+                                  scene.description || scene.details || "",
+                                  true
+                                )
+                              }
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1134,11 +1444,25 @@ export default function Home() {
                     <Sparkles className="w-6 h-6 text-indigo-500" />
                     {t("key.home.agent.progress.title")}
                   </CardTitle>
-                  <span
-                    className={`px-3 py-1 text-xs font-semibold rounded-full ${agentStatusMeta.className}`}
-                  >
-                    {agentStatusMeta.label}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {/* 暂停按钮 - 仅在生成中时显示 */}
+                    {(isAgentGenerating || isQuickGenerating) && sessionStatus === "running" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-3 text-rose-600 border-rose-300 hover:bg-rose-50 hover:text-rose-700"
+                        onClick={handleAbortGeneration}
+                      >
+                        <StopCircle className="w-4 h-4 mr-1" />
+                        {t("key.home.agent.progress.abort")}
+                      </Button>
+                    )}
+                    <span
+                      className={`px-3 py-1 text-xs font-semibold rounded-full ${agentStatusMeta.className}`}
+                    >
+                      {agentStatusMeta.label}
+                    </span>
+                  </div>
                 </div>
                 {sessionInfo.message && (
                   <CardDescription className="text-slate-600">
@@ -1163,6 +1487,9 @@ export default function Home() {
                       >
                         <div className="flex items-center text-sm font-semibold text-slate-800">
                           <span>{stageLabels[event.stage] || event.stage}</span>
+                          {event.status === "completed" && event.action && (
+                            <span className="ml-1 text-slate-500">· {event.action}</span>
+                          )}
                           <div className="ml-auto flex items-center gap-2">
                             {typeof event.progress === "number" && (
                               <span className="text-xs text-slate-500">
@@ -1181,9 +1508,11 @@ export default function Home() {
                             )}
                           </div>
                         </div>
-                        <p className="text-sm text-slate-600 mt-1">
-                          {event.message || event.action}
-                        </p>
+                        {event.message && (
+                          <p className="text-sm text-slate-600 mt-1">
+                            {event.message}
+                          </p>
+                        )}
                         {event.details && (
                           <p className="text-xs text-slate-400 mt-1">
                             {event.details.nodeCount
@@ -1284,9 +1613,63 @@ export default function Home() {
         {/* 页脚 */}
         <p className="text-slate-600 mt-8 text-sm">{t("key.home.footer")}</p>
       </main>
+      
+      {/* 编辑对话框 */}
+      {editingField && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
+          <div className="w-full max-w-lg mx-4 rounded-xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-indigo-500" />
+                {t("key.home.draft.edit.title")}: {editingField.label}
+              </h3>
+              <button
+                onClick={handleCancelEdit}
+                className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            
+            {editingField.multiline ? (
+              <textarea
+                className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                rows={6}
+                value={editingField.value}
+                onChange={(e) =>
+                  setEditingField({ ...editingField, value: e.target.value })
+                }
+                autoFocus
+              />
+            ) : (
+              <input
+                type="text"
+                className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                value={editingField.value}
+                onChange={(e) =>
+                  setEditingField({ ...editingField, value: e.target.value })
+                }
+                autoFocus
+              />
+            )}
+            
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={handleCancelEdit}>
+                <X className="w-4 h-4 mr-1" />
+                {t("key.home.draft.edit.cancel")}
+              </Button>
+              <Button onClick={handleSaveEdit}>
+                <Check className="w-4 h-4 mr-1" />
+                {t("key.home.draft.edit.confirm")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {showDraftLoading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/10 ">
-          <div className="w-80 rounded-2xl border border-white/30 bg-white/90 p-6 shadow-2xl">
+          <div className={`rounded-2xl border border-white/30 bg-white/95 p-6 shadow-2xl transition-all duration-300 ${thinkingContent ? 'w-[480px] max-w-[90vw]' : 'w-80'}`}>
             <div
               className="flex flex-col items-center text-center space-y-4"
               aria-live="polite"
@@ -1297,33 +1680,58 @@ export default function Home() {
               </div>
               <div>
                 <p className="text-lg font-semibold text-slate-900">
-                  {t("key.home.loading.draftTitle")}
+                  {thinkingContent 
+                    ? t("key.home.loading.aiThinking")
+                    : t("key.home.loading.draftTitle")}
                 </p>
                 <p className="text-sm text-slate-500 mt-1">
-                  {t("key.home.loading.draftSubtitle")}
+                  {thinkingContent
+                    ? t("key.home.loading.thinkingHint")
+                    : t("key.home.loading.draftSubtitle")}
                 </p>
               </div>
-              <div className="w-full space-y-2 text-left text-sm text-slate-500">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-                  {t("key.home.loading.draftStep1")}
+              
+              {/* Thinking 内容展示区域 */}
+              {thinkingContent ? (
+                <div className="w-full">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BrainCircuit className="w-4 h-4 text-indigo-500" />
+                    <span className="text-xs font-medium text-indigo-600">
+                      {t("key.home.loading.thinkingProcess")}
+                    </span>
+                  </div>
+                  <div 
+                    ref={thinkingContentRef}
+                    className="w-full max-h-48 overflow-y-auto rounded-lg bg-slate-50 border border-slate-200 p-3 text-left"
+                  >
+                    <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+                      {thinkingContent}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse delay-200" />
-                  {t("key.home.loading.draftStep2")}
+              ) : (
+                <div className="w-full space-y-2 text-left text-sm text-slate-500">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                    {t("key.home.loading.draftStep1")}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse delay-200" />
+                    {t("key.home.loading.draftStep2")}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse delay-500" />
+                    {t("key.home.loading.draftStep3")}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse delay-500" />
-                  {t("key.home.loading.draftStep3")}
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
       )}
       {showFastScriptLoading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/10 ">
-          <div className="w-80 rounded-2xl border border-white/30 bg-white/90 p-6 shadow-2xl">
+          <div className={`rounded-2xl border border-white/30 bg-white/90 p-6 shadow-2xl ${thinkingContent ? 'w-[480px]' : 'w-80'}`}>
             <div
               className="flex flex-col items-center text-center space-y-4"
               aria-live="polite"
@@ -1334,26 +1742,51 @@ export default function Home() {
               </div>
               <div>
                 <p className="text-lg font-semibold text-slate-900">
-                  {t("key.home.loading.scriptTitle")}
+                  {thinkingContent 
+                    ? t("key.home.loading.aiThinking")
+                    : t("key.home.loading.scriptTitle")}
                 </p>
                 <p className="text-sm text-slate-500 mt-1">
-                  {t("key.home.loading.scriptSubtitle")}
+                  {thinkingContent
+                    ? t("key.home.loading.thinkingHint")
+                    : t("key.home.loading.scriptSubtitle")}
                 </p>
               </div>
-              <div className="w-full space-y-2 text-left text-sm text-slate-500">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-                  {t("key.home.loading.scriptStep1")}
+              
+              {/* Thinking 内容展示区域 */}
+              {thinkingContent ? (
+                <div className="w-full">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BrainCircuit className="w-4 h-4 text-indigo-500" />
+                    <span className="text-xs font-medium text-indigo-600">
+                      {t("key.home.loading.thinkingProcess")}
+                    </span>
+                  </div>
+                  <div 
+                    ref={thinkingContentRef}
+                    className="w-full max-h-48 overflow-y-auto rounded-lg bg-slate-50 border border-slate-200 p-3 text-left"
+                  >
+                    <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+                      {thinkingContent}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse delay-200" />
-                  {t("key.home.loading.scriptStep2")}
+              ) : (
+                <div className="w-full space-y-2 text-left text-sm text-slate-500">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                    {t("key.home.loading.scriptStep1")}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse delay-200" />
+                    {t("key.home.loading.scriptStep2")}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse delay-500" />
+                    {t("key.home.loading.scriptStep3")}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse delay-500" />
-                  {t("key.home.loading.scriptStep3")}
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

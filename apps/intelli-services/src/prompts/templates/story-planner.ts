@@ -200,14 +200,14 @@ start → scene1 → branch1 → [选择A → scene2a → branch2 → [scene3a �
 ### 场景选择规则
 ⚠️ **重要**: 每个节点的 sceneName 字段必须使用场景的 **name** 值(不是 id):
 
-可用场景列表(来自 worldBible.scenes):
-{{worldBible}}
+可用场景名称列表(来自 worldBible.scenes[].name，仅供选择)：
+{{sceneNames}}
 
 例如:
 - 如果场景是 { "id": "SC01", "name": "咖啡店", ... },则 sceneName 应该是 "咖啡店"
 - 如果场景是 { "id": "SC02", "name": "学校教室", ... },则 sceneName 应该是 "学校教室"
 - **绝对不要使用场景的 id (如 "SC01", "SC02"),必须使用 name 字段**`,
-    variables: ['selectedPathName', 'selectedPathPremise', 'selectedPathConflict', 'selectedPathEndings', 'worldBible', 'characterDB', 'styleGuide', 'targetNodeCount', 'targetEndingCount'],
+    variables: ['selectedPathName', 'selectedPathPremise', 'selectedPathConflict', 'selectedPathEndings', 'worldBible', 'characterDB', 'styleGuide', 'targetNodeCount', 'targetEndingCount', 'sceneNames'],
   },
 };
 

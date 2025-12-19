@@ -8,8 +8,18 @@ import { createProgressEmitter, removeProgressEmitter, type ProgressEvent } from
 import { ImageGenerator, ImageType } from '../services/image-generator';
 import { FormAutocomplete, FormType } from '../services/form-autocomplete';
 import { getCacheKey, getFromCache, saveToCache, saveProject, getProject, listProjects, deleteProject } from '../services/cache';
-import { getLocaleFromRequest, type Locale } from '../utils/locale';
+import { getLocaleFromRequest, getProgressMessage, type Locale } from '../utils/locale';
 import { tokenTracker } from '../services/token-tracker';
+import { safeStringifyForLog } from '../utils/log-sanitize';
+import { 
+    createGenerationSession, 
+    abortGenerationSession, 
+    completeGenerationSession, 
+    failGenerationSession, 
+    removeGenerationSession,
+    isSessionAborted,
+    GenerationAbortedError 
+} from '../services/generation-session-manager';
 
 export const gameRoutes = new Hono();
 
@@ -230,33 +240,81 @@ gameRoutes.post(
         // 未命中缓存，正常生成流程
         // ============================================================
         
-        // Fast 模式：使用单次 LLM 调用（非 SSE）
+        // Fast 模式：使用单次 LLM 调用（SSE 流式返回，带 thinking 输出）
         if (mode === 'fast') {
-            try {
-                const generator = new GameGenerator();
-                const result = await generator.generateFromSetup(characters, worldSetting, scenes, themeSetting, userLocale);
-                
-                saveProject(result);
-                
-                // 如果有 idea，将生成的项目保存到缓存
-                if (idea && idea.trim()) {
-                    const cacheKey = getCacheKey(`idea-script:${userLocale}:${idea}`);
-                    saveToCache(cacheKey, result);
-                    console.log(`[GameRoute] 已将生成的项目保存到缓存: idea="${idea.slice(0, 30)}..."`);
+            return new Response(
+                new ReadableStream({
+                    async start(controller) {
+                        const encoder = new TextEncoder();
+                        let isStreamClosed = false;
+                        
+                        const sendEvent = (event: string, data: any): boolean => {
+                            if (isStreamClosed) return false;
+                            try {
+                                const payload = JSON.stringify({ event, ...data });
+                                controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+                                return true;
+                            } catch (err) {
+                                isStreamClosed = true;
+                                return false;
+                            }
+                        };
+                        
+                        const safeCloseStream = () => {
+                            if (!isStreamClosed) {
+                                try {
+                                    controller.close();
+                                } catch (err) {
+                                    // ignore
+                                }
+                                isStreamClosed = true;
+                            }
+                        };
+
+                        try {
+                            const generator = new GameGenerator();
+                            const result = await generator.generateFromSetupStream(
+                                characters,
+                                worldSetting,
+                                scenes,
+                                themeSetting,
+                                userLocale,
+                                (streamEvent) => {
+                                    // 转发流式事件到客户端
+                                    sendEvent(streamEvent.event, streamEvent.data);
+                                }
+                            );
+                            
+                            saveProject(result);
+                            
+                            // 如果有 idea，将生成的项目保存到缓存
+                            if (idea && idea.trim()) {
+                                const cacheKey = getCacheKey(`idea-script:${userLocale}:${idea}`);
+                                saveToCache(cacheKey, result);
+                                console.log(`[GameRoute] 已将生成的项目保存到缓存: idea="${idea.slice(0, 30)}..."`);
+                            }
+                            
+                            // 发送最终结果
+                            sendEvent('result', { success: true, mode: 'fast', data: result });
+                            
+                        } catch (error) {
+                            const message = error instanceof Error ? error.message : '未知错误';
+                            console.error('[GameRoute] Fast mode generation error:', message);
+                            sendEvent('error', { success: false, error: message });
+                        } finally {
+                            safeCloseStream();
+                        }
+                    }
+                }),
+                {
+                    headers: {
+                        'Content-Type': 'text/event-stream',
+                        'Cache-Control': 'no-cache',
+                        'Connection': 'keep-alive',
+                        'X-Accel-Buffering': 'no',
+                    },
                 }
-                
-                return c.json({
-                    success: true,
-                    mode: 'fast',
-                    data: result,
-                });
-            } catch (error) {
-                const message = error instanceof Error ? error.message : '未知错误';
-                return c.json({
-                    success: false,
-                    error: message,
-                }, 500);
-            }
+            );
         }
         
         // Agent 模式：使用多智能体系统（SSE 实时进度）
@@ -336,6 +394,9 @@ gameRoutes.post(
                         }
                     }, 25000);
                     
+                    // 创建会话中断控制器
+                    const abortController = createGenerationSession(sessionId);
+                    
                     // 监听进度事件
                     progressEmitter.on('progress', (progressEvent: ProgressEvent) => {
                         sendEvent('progress', progressEvent);
@@ -346,7 +407,7 @@ gameRoutes.post(
                         sendEvent('session', { 
                             sessionId, 
                             status: 'started',
-                            message: '多智能体剧本生成系统已启动',
+                            message: getProgressMessage('system_started', userLocale),
                         });
                         
                         const agent = new GameGeneratorAgent({
@@ -360,7 +421,9 @@ gameRoutes.post(
                             scenes,
                             themeSetting,
                             progressEmitter,
-                            userLocale
+                            userLocale,
+                            true, // allowFallback
+                            abortController.signal // abortSignal
                         );
                         
                         // 检查流是否仍然打开
@@ -385,6 +448,9 @@ gameRoutes.post(
                             console.log(`[GameRoute] 已将生成的项目保存到缓存 (Agent模式): idea="${idea.slice(0, 30)}..."`);
                         }
                         
+                        // 标记会话完成
+                        completeGenerationSession(sessionId);
+                        
                         // 发送最终结果
                         sendEvent('result', {
                             success: true,
@@ -395,11 +461,29 @@ gameRoutes.post(
                     } catch (error) {
                         const message = error instanceof Error ? error.message : '未知错误';
                         
+                        // 检查是否是用户中断
+                        if (error instanceof GenerationAbortedError || isSessionAborted(sessionId)) {
+                            console.log(`[GameRoute] 生成已被用户中断 (sessionId: ${sessionId})`);
+                            sendEvent('progress', {
+                                stage: 'failed',
+                                action: getProgressMessage('generation_aborted', userLocale),
+                                status: 'failed',
+                                message: getProgressMessage('generation_aborted_detail', userLocale),
+                                timestamp: Date.now(),
+                            });
+                            sendEvent('error', {
+                                success: false,
+                                error: getProgressMessage('generation_aborted_detail', userLocale),
+                                aborted: true,
+                            });
+                        }
                         // 检查是否是流关闭导致的错误
-                        if (message.includes('Controller is already closed') || isStreamClosed) {
+                        else if (message.includes('Controller is already closed') || isStreamClosed) {
                             console.log(`[GameRoute] Agent 模式：客户端已断开连接 (sessionId: ${sessionId})`);
+                            failGenerationSession(sessionId);
                         } else {
                             console.error('[GameRoute] Agent 模式生成失败:', message);
+                            failGenerationSession(sessionId);
                             
                             // 尝试发送错误给前端
                             sendEvent('error', {
@@ -413,6 +497,9 @@ gameRoutes.post(
                         
                         // 清理进度发射器
                         removeProgressEmitter(sessionId);
+                        
+                        // 清理会话
+                        removeGenerationSession(sessionId);
                         
                         // 尝试发送结束事件（如果流仍然打开）
                         sendEvent('session', { 
@@ -435,6 +522,37 @@ gameRoutes.post(
                 },
             }
         );
+    }
+);
+
+// POST /api/game/abort-generation - 中断剧本生成
+const abortGenerationSchema = z.object({
+    sessionId: z.string().min(1, 'sessionId is required'),
+});
+
+gameRoutes.post(
+    '/abort-generation',
+    zValidator('json', abortGenerationSchema),
+    async (c) => {
+        const { sessionId } = c.req.valid('json');
+        
+        console.log(`[GameRoute] 收到中断请求: sessionId=${sessionId}`);
+        
+        const aborted = abortGenerationSession(sessionId);
+        
+        if (aborted) {
+            return c.json({
+                success: true,
+                message: '已发送中断信号',
+                sessionId,
+            });
+        } else {
+            return c.json({
+                success: false,
+                error: '会话不存在或已结束',
+                sessionId,
+            }, 404);
+        }
     }
 );
 
@@ -462,11 +580,13 @@ gameRoutes.get('/projects/:id', async (c) => {
         return c.json({ success: false, error: 'Project not found' }, 404);
     }
     
-    // 详细日志：原始数据
-    console.log(`[GameRoute] GET原始数据 - projectId: ${projectId}`);
-    console.log(`[GameRoute] characters类型:`, typeof (project as any).characters);
-    console.log(`[GameRoute] characters[0]:`, JSON.stringify((project as any).characters?.[0]));
-    console.log(`[GameRoute] backgrounds[0]:`, JSON.stringify((project as any).backgrounds?.[0]));
+    // 详细日志：原始数据（默认关闭，避免把 base64/dataUrl 打进终端）
+    if (process.env.DEBUG_LOG_RAW_PROJECT === 'true') {
+        console.log(`[GameRoute] GET原始数据 - projectId: ${projectId}`);
+        console.log(`[GameRoute] characters类型:`, typeof (project as any).characters);
+        console.log(`[GameRoute] characters[0]:`, safeStringifyForLog((project as any).characters?.[0]));
+        console.log(`[GameRoute] backgrounds[0]:`, safeStringifyForLog((project as any).backgrounds?.[0]));
+    }
     
     console.log(`[GameRoute] 返回项目: ${projectId}`, {
         characters: (project as any).characters?.map((c: any) => ({
@@ -483,7 +603,11 @@ gameRoutes.get('/projects/:id', async (c) => {
         }))
     });
     
-    console.log(`[GameRoute] 完整项目数据:`, JSON.stringify(project, null, 2).substring(0, 500));
+    // 仅打印脱敏后的摘要，避免超长字符串（如 base64）污染终端
+    console.log(
+        `[GameRoute] 完整项目数据摘要:`,
+        safeStringifyForLog(project, { maxStringLength: 120 }).substring(0, 800)
+    );
     
     return c.json({
         success: true,
@@ -974,6 +1098,117 @@ gameRoutes.post(
     }
 );
 
+// POST /api/game/idea-to-draft-stream - 流式生成设定草稿（带 thinking 输出）
+gameRoutes.post(
+    '/idea-to-draft-stream',
+    zValidator('json', ideaToDraftSchema),
+    async (c) => {
+        const { idea, locale } = c.req.valid('json');
+        const userLocale = getLocaleFromRequest(locale);
+
+        console.log(`[GameRoute] Idea to draft (stream): locale=${userLocale}, idea="${idea.slice(0, 40)}..."`);
+        
+        // 检查缓存
+        const cacheKey = getCacheKey(`idea-draft:${userLocale}:${idea}`);
+        const cachedDraft = getFromCache<any>(cacheKey);
+        
+        if (cachedDraft) {
+            // 缓存命中，返回 SSE 格式的缓存响应
+            return new Response(
+                new ReadableStream({
+                    async start(controller) {
+                        const encoder = new TextEncoder();
+                        const sendEvent = (event: string, data: any) => {
+                            const payload = JSON.stringify({ event, ...data });
+                            controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+                        };
+                        
+                        sendEvent('cached', { message: '命中缓存，跳过生成' });
+                        sendEvent('result', { success: true, cached: true, data: cachedDraft });
+                        controller.close();
+                    }
+                }),
+                {
+                    headers: {
+                        'Content-Type': 'text/event-stream',
+                        'Cache-Control': 'no-cache',
+                        'Connection': 'keep-alive',
+                    },
+                }
+            );
+        }
+
+        // 未命中缓存，流式生成
+        return new Response(
+            new ReadableStream({
+                async start(controller) {
+                    const encoder = new TextEncoder();
+                    let isStreamClosed = false;
+                    
+                    const sendEvent = (event: string, data: any): boolean => {
+                        if (isStreamClosed) return false;
+                        try {
+                            const payload = JSON.stringify({ event, ...data });
+                            controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+                            return true;
+                        } catch (err) {
+                            isStreamClosed = true;
+                            return false;
+                        }
+                    };
+                    
+                    const safeCloseStream = () => {
+                        if (!isStreamClosed) {
+                            try {
+                                controller.close();
+                            } catch (err) {
+                                // ignore
+                            }
+                            isStreamClosed = true;
+                        }
+                    };
+                    
+                    try {
+                        // 发送开始事件
+                        sendEvent('start', { message: 'AI 正在分析创意...' });
+                        
+                        // 调用流式生成
+                        const result = await ideaDraftGenerator.generateDraftStream(
+                            idea,
+                            userLocale,
+                            (streamEvent) => {
+                                // 转发流式事件到客户端
+                                sendEvent(streamEvent.event, streamEvent.data);
+                            }
+                        );
+                        
+                        // 保存到缓存
+                        saveToCache(cacheKey, result);
+                        
+                        // 发送最终结果
+                        sendEvent('result', { success: true, cached: false, data: result });
+                        
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : '未知错误';
+                        console.error('[GameRoute] Idea to draft stream error:', errorMessage);
+                        sendEvent('error', { success: false, error: errorMessage });
+                    } finally {
+                        safeCloseStream();
+                    }
+                }
+            }),
+            {
+                headers: {
+                    'Content-Type': 'text/event-stream',
+                    'Cache-Control': 'no-cache',
+                    'Connection': 'keep-alive',
+                    'X-Accel-Buffering': 'no',
+                },
+            }
+        );
+    }
+);
+
 // =====================================================
 // 编辑器 AI 对话 API
 // =====================================================
@@ -1169,26 +1404,37 @@ gameRoutes.post(
                             });
                         }
                         
-                        // 调试：打印详细的工具调用信息
-                        // 先打印第一个 toolCall 的完整结构来了解格式
-                        if (response.toolCalls && response.toolCalls.length > 0) {
-                            console.log('[EditorChat] toolCalls[0] 结构:', JSON.stringify(response.toolCalls[0], null, 2).slice(0, 500));
-                        }
-                        // 从 steps 中提取工具调用信息（更可靠）
-                        if (response.steps && response.steps.length > 0) {
-                            response.steps.forEach((step: any, i: number) => {
-                                if (step.toolCalls && step.toolCalls.length > 0) {
-                                    step.toolCalls.forEach((tc: any) => {
-                                        console.log(`[EditorChat] Step ${i + 1} 工具: ${tc.toolName}`, JSON.stringify(tc.args || {}).slice(0, 200));
-                                    });
-                                }
-                            });
+                        // 调试：打印详细的工具调用信息（默认关闭，避免把 base64/dataUrl 打进终端）
+                        if (process.env.DEBUG_EDITOR_CHAT_TOOLS === 'true') {
+                            // 先打印第一个 toolCall 的完整结构来了解格式
+                            if (response.toolCalls && response.toolCalls.length > 0) {
+                                console.log(
+                                    '[EditorChat] toolCalls[0] 结构:',
+                                    safeStringifyForLog(response.toolCalls[0], { maxStringLength: 120 }).slice(0, 500)
+                                );
+                            }
+                            // 从 steps 中提取工具调用信息（更可靠）
+                            if (response.steps && response.steps.length > 0) {
+                                response.steps.forEach((step: any, i: number) => {
+                                    if (step.toolCalls && step.toolCalls.length > 0) {
+                                        step.toolCalls.forEach((tc: any) => {
+                                            console.log(
+                                                `[EditorChat] Step ${i + 1} 工具: ${tc.toolName}`,
+                                                safeStringifyForLog(tc.args || {}, { maxStringLength: 120 }).slice(0, 200)
+                                            );
+                                        });
+                                    }
+                                });
+                            }
                         }
                         
                         const toolResults = response.toolResults || [];
-                        // ✅ 调试：打印 toolResults 结构
-                        if (toolResults.length > 0) {
-                            console.log('[EditorChat] toolResults[0] 结构:', JSON.stringify(toolResults[0], null, 2).slice(0, 800));
+                        // ✅ 调试：打印 toolResults 结构（默认关闭）
+                        if (process.env.DEBUG_EDITOR_CHAT_TOOLS === 'true' && toolResults.length > 0) {
+                            console.log(
+                                '[EditorChat] toolResults[0] 结构:',
+                                safeStringifyForLog(toolResults[0], { maxStringLength: 120 }).slice(0, 800)
+                            );
                         }
                         const actions = extractActions(toolResults);
                         console.log('[EditorChat] 提取到的动作:', actions.length, actions.map(a => a.action));
@@ -1240,7 +1486,10 @@ gameRoutes.post(
                                         });
                                     }
                                     
-                                    console.log('[EditorChat] MCP 分析结果:', JSON.stringify(analysisResult).slice(0, 500));
+                                    console.log(
+                                        '[EditorChat] MCP 分析结果:',
+                                        safeStringifyForLog(analysisResult, { maxStringLength: 200 }).slice(0, 500)
+                                    );
                                     processedActions.push({
                                         type: 'analysis',
                                         payload: analysisResult,

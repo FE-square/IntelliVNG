@@ -103,6 +103,14 @@ export interface IdeaDraftResult {
   scenes: Scene[];
 }
 
+/**
+ * 流式生成事件类型
+ */
+export interface DraftStreamEvent {
+  event: 'thinking' | 'content' | 'result' | 'error';
+  data: any;
+}
+
 export class IdeaDraftGenerator {
   private readonly maxAttempts = Number(process.env.IDEA_DRAFT_MAX_ATTEMPTS || 2);
 
@@ -128,6 +136,170 @@ export class IdeaDraftGenerator {
     }
 
     throw lastError instanceof Error ? lastError : new Error('Idea draft generation failed');
+  }
+
+  /**
+   * 流式生成草稿，实时推送 thinking 内容
+   * 
+   * @param idea 用户输入的故事创意
+   * @param locale 用户语言
+   * @param onEvent 事件回调函数，用于接收流式事件
+   */
+  async generateDraftStream(
+    idea: string,
+    locale: Locale = DEFAULT_LOCALE,
+    onEvent: (event: DraftStreamEvent) => void
+  ): Promise<IdeaDraftResult> {
+    if (!idea?.trim()) {
+      throw new Error('idea is required');
+    }
+
+    const config = resolveLLMConfig('primary');
+    console.log(`[IdeaDraftGenerator] (streaming) Generating draft via ${config.modelName}`);
+
+    const client = new OpenAI({
+      apiKey: config.apiKey,
+      baseURL: config.baseURL,
+    });
+
+    const { system, user } = promptManager.build('game-generator.idea-to-draft', { idea }, locale);
+
+    try {
+      // 检查模型是否支持深度思考（Qwen 模型）
+      const isQwenModel = config.modelName.toLowerCase().includes('qwen');
+      
+      console.log(`[IdeaDraftGenerator] (streaming) 模型: ${config.modelName}, 启用思考模式: ${isQwenModel}`);
+      
+      // 使用流式API
+      // 参考：https://help.aliyun.com/zh/model-studio/deep-thinking
+      // enable_thinking 非 OpenAI 标准参数，需要通过额外参数传入
+      const requestBody: any = {
+        model: config.modelName,
+        messages: [
+          ...(system ? [{ role: 'system' as const, content: system }] : []),
+          { role: 'user' as const, content: user },
+        ],
+        temperature: 0.7,
+        max_tokens: 4096,
+        stream: true, // 启用流式输出
+        // 启用流式返回的最后一个数据包包含Token消耗信息
+        stream_options: {
+          include_usage: true,
+        },
+      };
+      
+      // 对于 Qwen 模型，启用深度思考模式
+      // 参考文档：https://help.aliyun.com/zh/model-studio/deep-thinking
+      if (isQwenModel) {
+        requestBody.enable_thinking = true;
+        console.log('[IdeaDraftGenerator] 已启用 Qwen 深度思考模式 (enable_thinking: true)');
+      }
+      
+      // 强制使用 stream 类型，因为 enable_thinking 是非标准参数
+      const stream = await client.chat.completions.create(requestBody) as unknown as AsyncIterable<any>;
+
+      let fullContent = '';
+      let thinkingContent = '';
+      let isInThinking = false;
+      let usageInfo: any = null;
+
+      // 处理流式响应
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta;
+        
+        // 保存 usage 信息（在最后一个 chunk 中）
+        if ((chunk as any).usage) {
+          usageInfo = (chunk as any).usage;
+        }
+        
+        // 检查 Qwen 的 reasoning_content（思考过程）
+        // 参考文档：思考内容通过 reasoning_content 字段返回
+        const reasoningDelta = (delta as any)?.reasoning_content;
+        if (reasoningDelta) {
+          thinkingContent += reasoningDelta;
+          onEvent({
+            event: 'thinking',
+            data: { content: reasoningDelta, full: thinkingContent },
+          });
+          isInThinking = true;
+        }
+
+        // 检查常规 content（回复内容通过 content 字段返回）
+        if (delta?.content) {
+          // 如果之前在 thinking 阶段，现在切换到 content 阶段
+          if (isInThinking) {
+            isInThinking = false;
+            console.log('\n[IdeaDraftGenerator] 思考完成，开始生成草稿...');
+            onEvent({
+              event: 'content',
+              data: { message: '思考完成，正在生成设定草稿...' },
+            });
+          }
+          fullContent += delta.content;
+        }
+      }
+      
+      // 如果有思考内容，输出换行
+      if (thinkingContent) {
+        console.log(`\n[IdeaDraftGenerator] 思考内容总长度: ${thinkingContent.length} 字符`);
+      }
+
+      // 如果没有收到任何 content
+      if (!fullContent) {
+        throw new Error('Idea draft generator did not return any content');
+      }
+
+      // 追踪 Token 使用
+      if (usageInfo) {
+        // 使用实际的 usage 信息
+        tokenTracker.track({
+          source: 'openai-sdk',
+          model: config.modelName,
+          operation: 'idea-to-draft-stream',
+          usage: {
+            promptTokens: usageInfo.prompt_tokens || 0,
+            completionTokens: usageInfo.completion_tokens || 0,
+            totalTokens: usageInfo.total_tokens || 0,
+          },
+          metadata: { locale, streaming: true, hasThinking: thinkingContent.length > 0 },
+        });
+      } else {
+        // 回退到估算
+        const estimatedTokens = Math.ceil((fullContent.length + thinkingContent.length) / 2);
+        tokenTracker.track({
+          source: 'openai-sdk',
+          model: config.modelName,
+          operation: 'idea-to-draft-stream',
+          usage: {
+            promptTokens: Math.ceil(user.length / 4),
+            completionTokens: estimatedTokens,
+            totalTokens: Math.ceil(user.length / 4) + estimatedTokens,
+          },
+          metadata: { locale, streaming: true, estimated: true },
+        });
+      }
+
+      // 解析最终结果
+      const parsed = extractAndValidateJson(fullContent, IdeaDraftSchema);
+      const result = this.normalizeDraft(parsed);
+      
+      onEvent({
+        event: 'result',
+        data: { success: true, draft: result },
+      });
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[IdeaDraftGenerator] (streaming) 调用失败:', errorMessage);
+      
+      onEvent({
+        event: 'error',
+        data: { error: errorMessage },
+      });
+
+      throw error;
+    }
   }
 
   private async tryGenerateDraft(

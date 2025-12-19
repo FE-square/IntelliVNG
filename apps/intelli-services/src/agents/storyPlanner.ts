@@ -131,6 +131,8 @@ export async function generateNarrativePlanWithToT(
   callbacks?: ToTProgressCallbacks
 ): Promise<NarrativePlan> {
   console.log("[ToT] 🌳 开始 Tree-of-Thoughts 规划...");
+  const desiredNodeCount = Math.max(12, input.constraints?.targetNodeCount || 12);
+  const desiredEndingCount = Math.max(2, input.constraints?.targetEndingCount || 3);
 
   // ============ Round 1: 生成候选叙事方向 ============
   console.log("[ToT] Round 1: 生成候选叙事方向...");
@@ -246,6 +248,12 @@ function createFallbackEvaluation(paths: any[], locale: Locale = DEFAULT_LOCALE)
 }
 
 function createFallbackPlan(input: WorkflowInput, selectedPath: any, locale: Locale = DEFAULT_LOCALE): NarrativePlan {
+  /**
+   * 重要：旧版本 fallback 只有 4 个节点（start → branch → 2 endings），会导致“伪非线性”的灾难产出。
+   * 这里升级为：即使 LLM 完全失败，也至少生成一个具备早期分支、多条路线、多个结局的安全骨架，
+   * 并尽量满足 constraints.targetNodeCount/targetEndingCount。
+   */
+
   // 判断是否为中文
   const isCN = locale.includes('zh');
 
@@ -257,79 +265,215 @@ function createFallbackPlan(input: WorkflowInput, selectedPath: any, locale: Loc
   const conflict = selectedPath?.centralConflict || 
     (isCN ? '角色与系统之间的冲突' : 'Conflict between characters and the system');
   
-  const sceneName = input.worldBible?.scenes?.[0]?.name || 
-    (isCN ? '默认场景' : 'Default Scene');
+  const scenes: string[] = (input.worldBible?.scenes || [])
+    .map((s: any) => s?.name)
+    .filter(Boolean);
 
-  const startId = 'node-start';
-  const branchId = 'node-branch';
-  const endingA = 'node-ending-a';
-  const endingB = 'node-ending-b';
-
-  return {
-    outline: {
-      premise,
-      centralConflict: conflict,
-      thematicArc: selectedPath?.description || 
-        (isCN ? '自我觉醒与成长' : 'Self-awakening and growth'),
-    },
-    nodes: [
-      {
-        id: startId,
-        type: 'scene',
-        isStart: true,
-        isEnding: false,
-        title: isCN ? '故事开端' : 'Story Beginning',
-        brief: isCN ? '主角接触到世界规则的裂缝' : 'The protagonist touches upon a crack in the world\'s rules',
-        functionTag: 'setup',
-        sceneName,
-        nextNodeId: branchId,
-        choicesMeta: [],
-        position: { x: 0, y: 0 },
-      },
-      {
-        id: branchId,
-        type: 'branch',
-        isStart: false,
-        isEnding: false,
-        title: isCN ? '关键抉择' : 'Critical Choice',
-        brief: isCN ? '主角面临选择，决定故事走向' : 'The protagonist faces a choice that determines the story\'s direction',
-        functionTag: 'conflict',
-        sceneName,
-        nextNodeId: undefined,
-        choicesMeta: [
-          { id: 'choice-a', leadsTo: endingA, text: isCN ? '接受规则' : 'Accept the rules' },
-          { id: 'choice-b', leadsTo: endingB, text: isCN ? '冲破规则' : 'Break the rules' },
-        ],
-        position: { x: 0, y: 200 },
-      },
-      {
-        id: endingA,
-        type: 'ending',
-        isStart: false,
-        isEnding: true,
-        title: isCN ? '顺从结局' : 'Acceptance Ending',
-        brief: isCN ? '主角选择守护现状，付出自我' : 'The protagonist chooses to protect the status quo at great personal cost',
-        functionTag: 'resolution',
-        sceneName,
-        choicesMeta: [],
-        nextNodeId: undefined,
-        position: { x: -150, y: 350 },
-      },
-      {
-        id: endingB,
-        type: 'ending',
-        isStart: false,
-        isEnding: true,
-        title: isCN ? '反抗结局' : 'Rebellion Ending',
-        brief: isCN ? '主角冲破系统，开启新的秩序' : 'The protagonist breaks through the system and establishes a new order',
-        functionTag: 'resolution',
-        sceneName,
-        choicesMeta: [],
-        nextNodeId: undefined,
-        position: { x: 150, y: 350 },
-      },
-    ],
+  const pickScene = (idx: number) => {
+    if (scenes.length > 0) return scenes[idx % scenes.length];
+    return input.worldBible?.name || (isCN ? '默认场景' : 'Default Scene');
   };
+
+  const targetNodeCount = Math.max(12, input.constraints?.targetNodeCount || 12);
+  const targetEndingCount = Math.min(4, Math.max(2, input.constraints?.targetEndingCount || 3));
+
+  const outline = {
+    premise,
+    centralConflict: conflict,
+    thematicArc: selectedPath?.description || (isCN ? '在压抑中寻找救赎与共存' : 'Seeking redemption and coexistence under oppression'),
+  };
+
+  // 基础骨架（11 + endings），可按 targetNodeCount 追加若干“过渡 scene”
+  const startId = 'node-start';
+  const b1 = 'node-branch-1';
+  const a1 = 'node-a-1';
+  const b1s = 'node-b-1';
+  const b2a = 'node-branch-2a';
+  const b2b = 'node-branch-2b';
+  const a2 = 'node-a-2';
+  const a3 = 'node-a-3';
+  const b2 = 'node-b-2';
+  const b3 = 'node-b-3';
+  const bFinal = 'node-branch-final';
+
+  const endings = Array.from({ length: targetEndingCount }).map((_, i) => `node-ending-${i + 1}`);
+
+  const nodes: any[] = [
+    {
+      id: startId,
+      type: 'scene',
+      isStart: true,
+      isEnding: false,
+      title: isCN ? '故事开端' : 'Story Beginning',
+      brief: isCN ? '主角被迫直面世界规则的裂缝与代价' : "The protagonist confronts a crack in the world's rules—and its cost",
+      functionTag: 'setup',
+      sceneName: pickScene(0),
+      nextNodeId: b1,
+      choicesMeta: [],
+      position: { x: 400, y: 50 },
+    },
+    {
+      id: b1,
+      type: 'branch',
+      isStart: false,
+      isEnding: false,
+      title: isCN ? '第一幕分支：选择路线' : 'Act 1 Branch: Choose a Route',
+      brief: isCN ? '早期选择将导向不同路线，并影响后续信息/关系走向' : 'An early choice splits routes and shapes info/relationships later',
+      functionTag: 'rising',
+      sceneName: pickScene(0),
+      choicesMeta: [
+        { id: 'choice-route-a', leadsTo: a1, emotionalWeight: isCN ? '沉重' : 'heavy', consequenceHint: isCN ? '你将更快接触真相，但风险更高' : 'Faster truth, higher risk', branchType: 'route', impactDescription: isCN ? '开启“直面真相”路线' : 'Opens the “truth-forward” route' },
+        { id: 'choice-route-b', leadsTo: b1s, emotionalWeight: isCN ? '痛苦抉择' : 'hard choice', consequenceHint: isCN ? '你将更安全，但可能错失关键线索' : 'Safer, but may miss key clues', branchType: 'route', impactDescription: isCN ? '开启“稳健生存”路线' : 'Opens the “survival-first” route' },
+      ],
+      position: { x: 400, y: 200 },
+    },
+    {
+      id: a1,
+      type: 'scene',
+      title: isCN ? '路线A：追索线索' : 'Route A: Pursue Leads',
+      brief: isCN ? '主角选择主动追索线索，触发更高压的对抗' : 'Proactively pursuing leads escalates confrontation early',
+      functionTag: 'rising',
+      sceneName: pickScene(1),
+      nextNodeId: b2a,
+      position: { x: 150, y: 350 },
+    },
+    {
+      id: b1s,
+      type: 'scene',
+      title: isCN ? '路线B：寻找盟友' : 'Route B: Seek Allies',
+      brief: isCN ? '主角选择稳妥结盟，优先建立关系与资源' : 'Building alliances first shapes relationships and resources',
+      functionTag: 'rising',
+      sceneName: pickScene(2),
+      nextNodeId: b2b,
+      position: { x: 650, y: 350 },
+    },
+    {
+      id: b2a,
+      type: 'branch',
+      title: isCN ? '第二幕分支：信息抉择' : 'Act 2 Branch: Information Choice',
+      brief: isCN ? '选择公开/隐匿信息，将改变敌我对抗节奏' : 'Reveal vs conceal changes pacing and threats',
+      functionTag: 'conflict',
+      sceneName: pickScene(1),
+      choicesMeta: [
+        { id: 'choice-info-reveal', leadsTo: a2, emotionalWeight: isCN ? '沉重' : 'heavy', consequenceHint: isCN ? '曝光会引发冲突升级' : 'Revealing escalates conflict', branchType: 'information', impactDescription: isCN ? '获得更快推进，但带来更大追捕压力' : 'Faster progress, higher pursuit pressure' },
+        { id: 'choice-info-hide', leadsTo: a3, emotionalWeight: isCN ? '痛苦抉择' : 'hard choice', consequenceHint: isCN ? '隐匿更安全，但真相可能被扭曲' : 'Safer, but truth may be distorted', branchType: 'information', impactDescription: isCN ? '延后真相揭示，换取资源积累' : 'Delay truth for resource buildup' },
+      ],
+      position: { x: 150, y: 500 },
+    },
+    {
+      id: b2b,
+      type: 'branch',
+      title: isCN ? '第二幕分支：关系抉择' : 'Act 2 Branch: Relationship Choice',
+      brief: isCN ? '选择信任谁，将决定团队结构与关键支援' : 'Who you trust determines the team and key support',
+      functionTag: 'conflict',
+      sceneName: pickScene(2),
+      choicesMeta: [
+        { id: 'choice-rel-trust', leadsTo: b2, emotionalWeight: isCN ? '沉重' : 'heavy', consequenceHint: isCN ? '信任会带来力量，也可能被背叛' : 'Trust brings strength and risk', branchType: 'relationship', impactDescription: isCN ? '强化团队协作线' : 'Strengthens cooperation route' },
+        { id: 'choice-rel-distance', leadsTo: b3, emotionalWeight: isCN ? '轻松' : 'light', consequenceHint: isCN ? '保持距离更安全，但缺少支援' : 'Safer distance, less support', branchType: 'relationship', impactDescription: isCN ? '走向更独行的对抗路线' : 'Leans into lone-wolf conflict route' },
+      ],
+      position: { x: 650, y: 500 },
+    },
+    {
+      id: a2,
+      type: 'scene',
+      title: isCN ? '路线A：冲突升级' : 'Route A: Escalation',
+      brief: isCN ? '公开信息引发对抗升级，主角被迫付出代价' : 'Revealing triggers escalation; the protagonist pays a price',
+      functionTag: 'twist',
+      sceneName: pickScene(3),
+      nextNodeId: bFinal,
+      position: { x: 0, y: 650 },
+    },
+    {
+      id: a3,
+      type: 'scene',
+      title: isCN ? '路线A：暗线推进' : 'Route A: Shadow Progression',
+      brief: isCN ? '隐匿信息换取资源，但真相被更深埋藏' : 'Conceal for resources; truth gets buried deeper',
+      functionTag: 'twist',
+      sceneName: pickScene(3),
+      nextNodeId: bFinal,
+      position: { x: 250, y: 650 },
+    },
+    {
+      id: b2,
+      type: 'scene',
+      title: isCN ? '路线B：盟友之力' : "Route B: Allies' Strength",
+      brief: isCN ? '信任带来关键支援，关系推动剧情发生质变' : 'Trust unlocks crucial support; relationships reshape the plot',
+      functionTag: 'twist',
+      sceneName: pickScene(4),
+      nextNodeId: bFinal,
+      position: { x: 550, y: 650 },
+    },
+    {
+      id: b3,
+      type: 'scene',
+      title: isCN ? '路线B：孤注一掷' : 'Route B: Going Alone',
+      brief: isCN ? '保持距离让主角更孤独，但也更自由' : 'Distance makes the protagonist lonelier—but freer',
+      functionTag: 'twist',
+      sceneName: pickScene(4),
+      nextNodeId: bFinal,
+      position: { x: 800, y: 650 },
+    },
+    {
+      id: bFinal,
+      type: 'branch',
+      title: isCN ? '第三幕分支：最终选择' : 'Act 3 Branch: Final Choice',
+      brief: isCN ? '多条路线汇合，基于之前选择导向不同结局' : 'Routes converge; endings reflect earlier choices',
+      functionTag: 'climax',
+      sceneName: pickScene(5),
+      choicesMeta: endings.map((eid, i) => ({
+        id: `choice-ending-${i + 1}`,
+        leadsTo: eid,
+        emotionalWeight: isCN ? '痛苦抉择' : 'hard choice',
+        consequenceHint: isCN ? '代价将落在某个不可逆的地方' : 'The cost will be irreversible',
+        branchType: 'ending',
+        impactDescription: isCN ? `导向结局 ${i + 1}` : `Leads to ending ${i + 1}`,
+      })),
+      position: { x: 400, y: 800 },
+    },
+    ...endings.map((eid, i) => ({
+      id: eid,
+      type: 'ending',
+      isStart: false,
+      isEnding: true,
+      title: isCN ? `结局 ${i + 1}` : `Ending ${i + 1}`,
+      brief: isCN
+        ? `路线的自然结果之一：在“真相/共存/牺牲”的张力中收束。`
+        : `A natural resolution: closure under tension of truth/coexistence/sacrifice.`,
+      functionTag: 'resolution',
+      sceneName: pickScene(6 + i),
+      position: { x: 150 + i * 250, y: 950 },
+    })),
+  ];
+
+  // 追加过渡 scene 以尽量满足 targetNodeCount（插在 a2/a3/b2/b3 → bFinal 之间）
+  let currentCount = nodes.length;
+  const bridgeTargets = [a2, a3, b2, b3];
+  let bridgeIdx = 0;
+  while (currentCount < targetNodeCount) {
+    const fromId = bridgeTargets[bridgeIdx % bridgeTargets.length];
+    const bridgeId = `node-bridge-${bridgeIdx + 1}`;
+    const fromNode = nodes.find(n => n.id === fromId);
+    if (!fromNode) break;
+
+    const oldNext = fromNode.nextNodeId;
+    fromNode.nextNodeId = bridgeId;
+
+    const bridgeNode = {
+      id: bridgeId,
+      type: 'scene',
+      title: isCN ? `过渡事件 ${bridgeIdx + 1}` : `Bridge Event ${bridgeIdx + 1}`,
+      brief: isCN ? '补充推进与铺垫，用于稳定节奏与因果链' : 'Adds pacing and causality to stabilize progression',
+      functionTag: 'falling',
+      sceneName: pickScene(7 + bridgeIdx),
+      nextNodeId: oldNext || bFinal,
+      position: { x: (fromNode.position?.x ?? 400), y: (fromNode.position?.y ?? 650) + 120 },
+    };
+    nodes.push(bridgeNode);
+    currentCount++;
+    bridgeIdx++;
+  }
+
+  return { outline, nodes };
 }
   callbacks?.onRoundComplete?.('round2', { evaluation });
   
@@ -349,6 +493,11 @@ function createFallbackPlan(input: WorkflowInput, selectedPath: any, locale: Loc
   console.log("[ToT] Round 3: 展开节点骨架...");
   callbacks?.onRoundStart?.('round3', { selectedPath });
   
+  const sceneNames =
+    Array.isArray(input.worldBible?.scenes) && input.worldBible.scenes.length > 0
+      ? JSON.stringify(input.worldBible.scenes.map((s: any) => s?.name).filter(Boolean), null, 2)
+      : JSON.stringify([input.worldBible?.name || (locale.includes('zh') ? '默认场景' : 'Default Scene')], null, 2);
+
   const { user: expandPrompt } = promptManager.build('story-planner.expand', {
     selectedPathName: selectedPath.name,
     selectedPathPremise: selectedPath.premise,
@@ -357,21 +506,50 @@ function createFallbackPlan(input: WorkflowInput, selectedPath: any, locale: Loc
     worldBible: JSON.stringify(input.worldBible, null, 2),
     characterDB: JSON.stringify(input.characterDB, null, 2),
     styleGuide: JSON.stringify(input.styleGuide || {}, null, 2),
-    targetNodeCount: String(input.constraints?.targetNodeCount || 12),
-    targetEndingCount: String(input.constraints?.targetEndingCount || 3),
+    targetNodeCount: String(desiredNodeCount),
+    targetEndingCount: String(desiredEndingCount),
+    sceneNames,
   }, locale);
 
   let plan: NarrativePlan;
+  const isPlanTooSmall = (p: NarrativePlan) => {
+    const nodes = Array.isArray(p?.nodes) ? p.nodes : [];
+    const branchCount = nodes.filter(n => n.type === 'branch').length;
+    const endingCount = nodes.filter(n => n.isEnding).length;
+    const hasStart = nodes.some(n => n.isStart);
+
+    // 允许略小于目标，但绝不能回退到“4节点伪非线性”
+    const minNodes = Math.max(10, Math.floor(desiredNodeCount * 0.7));
+    const minBranches = 2;
+    const minEndings = Math.max(2, Math.min(desiredEndingCount, 4));
+
+    return !hasStart || nodes.length < minNodes || branchCount < minBranches || endingCount < minEndings;
+  };
+
+  const strictSuffix = `\n\n重要（硬约束检查）：\n- nodes 数组长度必须 >= ${Math.max(12, desiredNodeCount)}\n- branch 节点数量必须 >= 4\n- ending 节点数量必须 >= ${Math.max(2, Math.min(desiredEndingCount, 4))}\n- 必须从 START 早期就出现分支，禁止“最后才分叉”的伪非线性。\n- 只输出 JSON，不要 Markdown，不要 \`\`\` 代码块，不要解释。`;
+
   try {
-    plan = await generateStructuredOutput(
-      agent,
-      expandPrompt,
-      NarrativePlanSchema,
-      { temperature: 1 }
-    );
+    plan = await generateStructuredOutput(agent, expandPrompt, NarrativePlanSchema, { temperature: 1 });
+    if (isPlanTooSmall(plan)) {
+      console.warn("[ToT] ⚠️ Round 3 输出过小/结构不合格，触发强制重试（skipCache + fallbackOnly）");
+      plan = await generateStructuredOutput(agent, expandPrompt + strictSuffix, NarrativePlanSchema, {
+        temperature: 0.8,
+        skipCache: true,
+        disableStructuredOutput: true,
+      });
+    }
   } catch (error) {
-    console.warn("[ToT] ⚠️ Round 3 解析失败，回退到默认故事骨架:", error instanceof Error ? error.message : error);
-    plan = createFallbackPlan(input, selectedPath, locale);
+    console.warn("[ToT] ⚠️ Round 3 解析失败，尝试强制重试（skipCache + fallbackOnly）:", error instanceof Error ? error.message : error);
+    try {
+      plan = await generateStructuredOutput(agent, expandPrompt + strictSuffix, NarrativePlanSchema, {
+        temperature: 0.8,
+        skipCache: true,
+        disableStructuredOutput: true,
+      });
+    } catch (error2) {
+      console.warn("[ToT] ❌ Round 3 重试仍失败，回退到本地安全骨架:", error2 instanceof Error ? error2.message : error2);
+      plan = createFallbackPlan(input, selectedPath, locale);
+    }
   }
   callbacks?.onRoundComplete?.('round3', { plan });
   

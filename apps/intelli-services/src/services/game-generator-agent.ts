@@ -13,7 +13,7 @@ import type { NarrativePlan, NodeDraft, CriticReport, WorkflowInput } from "../a
 import { NarrativePlanSchema, NodeDraftSchema, CriticReportSchema } from "../agents/schemas";
 import { generateNarrativePlanWithToT, storyPlannerAgent, ToTRound } from "../agents/storyPlanner";
 import { reviewStory, storyReviewerAgent } from "../agents/storyReviewer";
-import { type Locale, DEFAULT_LOCALE } from '../utils/locale';
+import { type Locale, DEFAULT_LOCALE, getProgressMessage, getProgressMessageF } from '../utils/locale';
 import { ProgressEmitter, createProgressEmitter, type ProgressStage } from "./progress-emitter";
 import { promptManager } from '../prompts';
 import { generateStructuredOutput } from '../utils/structured-output-helper';
@@ -271,7 +271,9 @@ export class GameGeneratorAgent {
           characters,
           scenes || [],
           worldSetting,
-          themeSetting
+          themeSetting,
+          undefined,
+          locale
         );
 
         console.log(`[GameGeneratorAgent] ✅ 剧本生成完成: "${gameProject.title}"`);
@@ -311,7 +313,8 @@ export class GameGeneratorAgent {
     userScenes: any[],
     worldSetting: any,
     themeSetting?: any,
-    progressEmitter?: ProgressEmitter
+    progressEmitter?: ProgressEmitter,
+    locale: Locale = DEFAULT_LOCALE
   ): GameProject {
     const now = new Date().toISOString();
     const projectId = createId();
@@ -450,7 +453,11 @@ export class GameGeneratorAgent {
     });
 
     // 6️⃣ 验证节点连接
-    progressEmitter?.stageProgress("finalizing", "验证节点连接", 40, "正在检查节点连通性...");
+    progressEmitter?.stageProgress("finalizing", 
+      getProgressMessage('finalizing_validate', locale), 
+      40, 
+      getProgressMessage('finalizing_validate_detail', locale)
+    );
     const validationStats = this.validateNodeConnections(script);
     progressEmitter?.stageProgress("finalizing", "节点验证完成", 60, `可达节点 ${validationStats.reachableCount}/${validationStats.totalCount}`, {
       reachableCount: validationStats.reachableCount,
@@ -581,6 +588,8 @@ export class GameGeneratorAgent {
    * 
    * 这个方法直接调用各个 Agent，而不是通过 Workflow，
    * 以便在每个阶段发射进度事件。
+   * 
+   * @param abortSignal - 可选的中断信号，用于支持用户取消生成
    */
   async generateFromSetupWithProgress(
     characters: any[],
@@ -589,12 +598,24 @@ export class GameGeneratorAgent {
     themeSetting: any | undefined,
     progressEmitter: ProgressEmitter,
     locale: Locale = DEFAULT_LOCALE,
-    allowFallback = true
+    allowFallback = true,
+    abortSignal?: AbortSignal
   ): Promise<GameProject> {
     const startTime = Date.now();
     
+    // 检查是否已中断的辅助函数
+    const checkAborted = () => {
+      if (abortSignal?.aborted) {
+        throw new Error('生成已被用户中断');
+      }
+    };
+    
     // ============ 初始化阶段 ============
-    progressEmitter.stageStart("init", "初始化智能体系统", "正在初始化多智能体剧本生成系统...");
+    checkAborted();
+    progressEmitter.stageStart("init", 
+      getProgressMessage('init_system', locale), 
+      getProgressMessage('init_system_detail', locale)
+    );
     
     // 构建工作流输入
     const workflowInput: WorkflowInput = {
@@ -635,9 +656,13 @@ export class GameGeneratorAgent {
       locale: locale,
     };
 
-    progressEmitter.stageComplete("init", "初始化完成", `已加载 ${characters.length} 个角色, ${scenes?.length || 0} 个场景`, {
-      nodeCount: characters.length,
-    });
+    progressEmitter.stageComplete("init", 
+      getProgressMessage('init_complete', locale), 
+      `${getProgressMessage('init_loaded', locale)} ${characters.length} ${getProgressMessage('characters_count', locale)}, ${scenes?.length || 0} ${getProgressMessage('scenes_count', locale)}`, 
+      {
+        nodeCount: characters.length,
+      }
+    );
 
     let plan: NarrativePlan | null = null;
     let drafts: Record<string, NodeDraft> = {};
@@ -646,20 +671,33 @@ export class GameGeneratorAgent {
 
     try {
       // ============ 规划阶段（真正的 Tree-of-Thoughts） ============
-      progressEmitter.stageStart("planning", "Story Planner 规划故事结构", "正在启动 Tree-of-Thoughts 规划流程...");
+      checkAborted();
+      progressEmitter.stageStart("planning", 
+        getProgressMessage('planning_start', locale), 
+        getProgressMessage('planning_detail', locale)
+      );
       
       const plannerAgent = this.getMastra().getAgent("story-planner") as typeof storyPlannerAgent;
       plan = await this.runTotWithProgress(plannerAgent, workflowInput, locale, progressEmitter);
 
-      progressEmitter.stageComplete("planning", "故事骨架规划完成 (ToT 3轮)", 
-        `探索了多条叙事路径，最终生成 ${plan.nodes.length} 个节点`, {
-        nodeCount: plan.nodes.length,
-        endingCount: plan.nodes.filter(n => n.isEnding).length,
-      });
+      progressEmitter.stageComplete("planning", 
+        getProgressMessage('planning_complete', locale), 
+        `${getProgressMessage('planning_explored', locale)} ${plan.nodes.length} ${getProgressMessage('planning_round3_nodes', locale)}`, 
+        {
+          nodeCount: plan.nodes.length,
+          endingCount: plan.nodes.filter(n => n.isEnding).length,
+        }
+      );
 
       // ============ 规划验证阶段 ============
-      progressEmitter.stageStart("plan_validate", "验证故事结构", "检查节点连通性和结构完整性...");
-      progressEmitter.stageProgress("plan_validate", "连通性分析", 40, "正在检查节点引用和路径...");
+      checkAborted();
+      progressEmitter.stageStart("plan_validate", 
+        getProgressMessage('plan_validate_start', locale), 
+        getProgressMessage('plan_validate_detail', locale)
+      );
+      progressEmitter.stageProgress("plan_validate", "连通性分析", 40, 
+        getProgressMessage('plan_validate_checking', locale)
+      );
       
       const validationResult = this.quickValidatePlan(plan);
       if (!validationResult.valid) {
@@ -668,10 +706,17 @@ export class GameGeneratorAgent {
         throw new Error(`规划验证失败: ${validationResult.errors.join('; ')}`);
       }
 
-      progressEmitter.stageComplete("plan_validate", "结构验证通过", "所有节点连接正确");
+      progressEmitter.stageComplete("plan_validate", 
+        getProgressMessage('plan_validate_complete', locale), 
+        getProgressMessage('plan_validate_all_correct', locale)
+      );
 
       // ============ 写作阶段 ============
-      progressEmitter.stageStart("writing", "Node Writer 开始写作", "Few-Shot CoT 正在为每个节点生成对话...");
+      checkAborted();
+      progressEmitter.stageStart("writing", 
+        getProgressMessage('writing_start', locale), 
+        getProgressMessage('writing_detail', locale)
+      );
       
       const writerAgent = this.getMastra().getAgent("node-writer");
       const layers = this.topologicalSort(plan.nodes);
@@ -682,11 +727,19 @@ export class GameGeneratorAgent {
       });
 
       for (let layerIdx = 0; layerIdx < layers.length; layerIdx++) {
+        // 在每层写作前检查是否中断
+        checkAborted();
+        
         const layer = layers[layerIdx];
         const layerProgress = Math.round(10 + (layerIdx / layers.length) * 80);
         
         progressEmitter.stageProgress("writing", `写作第 ${layerIdx + 1}/${layers.length} 层`, 
-          layerProgress, `正在并行写作第 ${layerIdx + 1} 层的 ${layer.length} 个节点...`, {
+          layerProgress, 
+          getProgressMessageF('writing_layer', locale, { 
+            layer: layerIdx + 1, 
+            total: layers.length, 
+            count: layer.length 
+          }), {
           layer: layerIdx + 1,
           totalLayers: layers.length,
           currentNode: layer.map(n => n.id).join(', '),
@@ -736,13 +789,20 @@ export class GameGeneratorAgent {
         });
       }
 
-      progressEmitter.stageComplete("writing", "所有节点写作完成", 
-        `共完成 ${Object.keys(drafts).length} 个节点的对话写作`, {
-        nodeCount: Object.keys(drafts).length,
-      });
+      progressEmitter.stageComplete("writing", 
+        getProgressMessage('writing_complete', locale), 
+        `${getProgressMessage('writing_completed_count', locale)} ${Object.keys(drafts).length} ${getProgressMessage('writing_completed_suffix', locale)}`, 
+        {
+          nodeCount: Object.keys(drafts).length,
+        }
+      );
 
       // ============ 审阅阶段 ============
-      progressEmitter.stageStart("reviewing", "Story Reviewer 审阅故事", "ReAct 模式正在使用工具分析故事质量...");
+      checkAborted();
+      progressEmitter.stageStart("reviewing", 
+        getProgressMessage('reviewing_start', locale), 
+        getProgressMessage('reviewing_detail', locale)
+      );
 
       const reviewerAgent = this.getMastra().getAgent("story-reviewer") as typeof storyReviewerAgent;
       try {
@@ -768,11 +828,14 @@ export class GameGeneratorAgent {
           throw new Error("Reviewer 报告生成失败");
         }
 
-        progressEmitter.stageComplete("reviewing", "审阅完成", 
-          `综合评分: ${report.overallScore}，发现 ${report.issues.length} 个问题`, {
-          score: report.overallScore,
-          issues: report.issues.length,
-        });
+        progressEmitter.stageComplete("reviewing", 
+          getProgressMessage('reviewing_complete', locale), 
+          `${getProgressMessage('reviewing_score', locale)}: ${report.overallScore}，${getProgressMessage('reviewing_issues', locale)} ${report.issues.length} ${getProgressMessage('reviewing_issues_suffix', locale)}`, 
+          {
+            score: report.overallScore,
+            issues: report.issues.length,
+          }
+        );
       } catch (error) {
         console.warn("[GameGeneratorAgent] 审阅阶段失败，自动视为通过:", error instanceof Error ? error.message : error);
         report = this.buildFallbackReviewReport();
@@ -784,6 +847,7 @@ export class GameGeneratorAgent {
 
       // ============ 重写阶段（如需） ============
       if (report.shouldRegenerate && report.regenerateTarget === "specific_nodes" && report.targetNodeIds) {
+        checkAborted();
         progressEmitter.stageStart("rewriting", "重写问题节点", 
           `根据审阅建议重写 ${report.targetNodeIds.length} 个节点...`, {
           rewriteNodes: report.targetNodeIds,
@@ -795,7 +859,11 @@ export class GameGeneratorAgent {
           targetIds.map(async (nodeId, idx) => {
             progressEmitter.stageProgress("rewriting", `重写节点 ${nodeId}`, 
               Math.round((idx / targetIds.length) * 100), 
-              `正在重写第 ${idx + 1}/${targetIds.length} 个节点...`);
+              getProgressMessageF('rewriting_node', locale, { 
+                index: idx + 1, 
+                total: targetIds.length 
+              })
+            );
 
             const issue = report!.issues.find(i => i.nodeIds.includes(nodeId));
             const originalDraft = drafts[nodeId];
@@ -850,36 +918,51 @@ export class GameGeneratorAgent {
           })
         );
 
-        progressEmitter.stageComplete("rewriting", "重写完成", 
-          `已重写 ${rewritten.length} 个节点`, {
-          rewriteNodes: rewritten,
-        });
+        progressEmitter.stageComplete("rewriting", 
+          getProgressMessage('rewriting_complete', locale), 
+          `${getProgressMessage('rewriting_count', locale)} ${rewritten.length} ${getProgressMessage('rewriting_count_suffix', locale)}`, 
+          {
+            rewriteNodes: rewritten,
+          }
+        );
       }
 
       // ============ 最终化阶段 ============
-      progressEmitter.stageStart("finalizing", "构建最终剧本", "正在将故事转换为 GameProject 格式...");
+      progressEmitter.stageStart("finalizing", 
+        getProgressMessage('finalizing_start', locale), 
+        getProgressMessage('finalizing_detail', locale)
+      );
 
-      progressEmitter.stageProgress("finalizing", "整理节点草稿", 20, "正在整合节点与对话数据...");
+      progressEmitter.stageProgress("finalizing", "整理节点草稿", 20, 
+        getProgressMessage('finalizing_integrate', locale)
+      );
       const gameProject = this.transformToGameProject(
         { plan, drafts, report },
         characters,
         scenes || [],
         worldSetting,
         themeSetting,
-        progressEmitter
+        progressEmitter,
+        locale
       );
 
       const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-      progressEmitter.stageComplete("finalizing", "剧本生成完成", 
-        `用时 ${totalTime}s，生成了 ${gameProject.script.length} 个场景节点`, {
-        nodeCount: gameProject.script.length,
-        score: report.overallScore,
-      });
+      progressEmitter.stageComplete("finalizing", 
+        getProgressMessage('finalizing_complete', locale), 
+        `${getProgressMessage('finalizing_time', locale)} ${totalTime}s，${getProgressMessage('finalizing_generated', locale)} ${gameProject.script.length} ${getProgressMessage('finalizing_scenes', locale)}`, 
+        {
+          nodeCount: gameProject.script.length,
+          score: report.overallScore,
+        }
+      );
 
-      progressEmitter.stageComplete("completed", "全部完成", 
-        `剧本 "${gameProject.title}" 生成成功！评分: ${report.overallScore}`, {
-        score: report.overallScore,
-      });
+      progressEmitter.stageComplete("completed", 
+        getProgressMessage('all_complete', locale), 
+        `${getProgressMessage('script_generated', locale)} "${gameProject.title}" ${getProgressMessage('script_success', locale)}: ${report.overallScore}`, 
+        {
+          score: report.overallScore,
+        }
+      );
 
       return gameProject;
 
@@ -887,7 +970,10 @@ export class GameGeneratorAgent {
       const errorMessage = error instanceof Error ? error.message : '未知错误';
 
       if (this.shouldAttemptFallback(error, allowFallback)) {
-        progressEmitter.stageStart("fallback", "切换备用模型", "检测到主模型不可用，正在启用备用模型重试...");
+        progressEmitter.stageStart("fallback", 
+          getProgressMessage('fallback_start', locale), 
+          getProgressMessage('fallback_detail', locale)
+        );
         const backupAgent = new GameGeneratorAgent({
           maxRetries: this.maxRetries,
           minAcceptableScore: this.minAcceptableScore,
@@ -900,7 +986,8 @@ export class GameGeneratorAgent {
           themeSetting,
           progressEmitter,
           locale,
-          false
+          false,
+          abortSignal // 传递中断信号给 backup agent
         );
         progressEmitter.stageComplete("fallback", "备用模型生成完成", "已成功切换到备用模型并继续生成");
         return result;
@@ -1006,12 +1093,12 @@ export class GameGeneratorAgent {
     }>> = {
       round1: {
         stage: "planning_round1" as ProgressStage,
-        startAction: "Round 1：生成候选方向",
-        startMessage: "正在探索不同的故事走向...",
-        completeAction: "候选方向生成完成",
+        startAction: getProgressMessage('planning_round1_start', locale),
+        startMessage: getProgressMessage('planning_round1_detail', locale),
+        completeAction: getProgressMessage('planning_round1_complete', locale),
         formatMessage: (payload: any) => {
           const count = getCandidatePaths(payload).length;
-          return `共生成 ${count} 个候选方向`;
+          return `${getProgressMessage('planning_round1_count', locale)} ${count} ${getProgressMessage('planning_round1_count_suffix', locale)}`;
         },
         formatDetails: (payload: any) => ({
           candidateCount: getCandidatePaths(payload).length,
@@ -1020,20 +1107,20 @@ export class GameGeneratorAgent {
       },
       round2: {
         stage: "planning_round2" as ProgressStage,
-        startAction: "Round 2：评估候选方向",
-        startMessage: "正在评估每条路径的优劣...",
-        completeAction: "最佳方向已选定",
-        formatMessage: (payload: any) => `选择 ${payload?.evaluation?.selectedPathId || '未知路径'}`,
+        startAction: getProgressMessage('planning_round2_start', locale),
+        startMessage: getProgressMessage('planning_round2_detail', locale),
+        completeAction: getProgressMessage('planning_round2_complete', locale),
+        formatMessage: (payload: any) => `${getProgressMessage('planning_round2_selected', locale)} ${payload?.evaluation?.selectedPathId || '未知路径'}`,
         formatDetails: (payload: any) => ({
           selectedPathId: payload?.evaluation?.selectedPathId,
         }),
       },
       round3: {
         stage: "planning_round3" as ProgressStage,
-        startAction: "Round 3：扩展故事骨架",
-        startMessage: "正在将最佳路径展开为完整节点...",
-        completeAction: "故事骨架构建完成",
-        formatMessage: (payload: any) => `生成 ${Array.isArray(payload?.plan?.nodes) ? payload.plan.nodes.length : 0} 个节点`,
+        startAction: getProgressMessage('planning_round3_start', locale),
+        startMessage: getProgressMessage('planning_round3_detail', locale),
+        completeAction: getProgressMessage('planning_round3_complete', locale),
+        formatMessage: (payload: any) => `${getProgressMessage('planning_round3_generated', locale)} ${Array.isArray(payload?.plan?.nodes) ? payload.plan.nodes.length : 0} ${getProgressMessage('planning_round3_nodes', locale)}`,
         formatDetails: (payload: any) => {
           const nodes = Array.isArray(payload?.plan?.nodes) ? payload.plan.nodes : [];
           return {

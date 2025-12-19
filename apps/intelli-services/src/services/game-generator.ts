@@ -261,6 +261,9 @@ export class GameGenerator {
         // 获取系统prompt
         const { system: directorSystem } = promptManager.build('game-generator.director-system', {}, locale);
         
+        console.log(`[GameGenerator] ⏳ 开始调用 AI 生成剧本...（此过程可能需要 30-90 秒）`);
+        const startTime = Date.now();
+        
         const response = await this.openai.chat.completions.create({
             model: this.modelName,
             messages: [
@@ -271,6 +274,9 @@ export class GameGenerator {
             max_tokens: 10000,
         });
 
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[GameGenerator] ✅ AI 响应完成，耗时 ${elapsed}s`);
+        
         // ✅ 追踪 Token 使用
         tokenTracker.trackOpenAI({
             model: this.modelName,
@@ -286,13 +292,15 @@ export class GameGenerator {
         }
 
         if (choice.finish_reason === 'length') {
-            console.warn('[GameGenerator] Response was truncated due to max_tokens limit');
+            console.warn('[GameGenerator] ⚠️ 响应被截断（达到 max_tokens 限制）');
         }
 
-        console.log(`[GameGenerator] Received response (${content.length} chars, finish_reason: ${choice.finish_reason})`);
+        console.log(`[GameGenerator] 📊 响应信息: ${content.length} 字符, finish_reason: ${choice.finish_reason}`);
 
         // Parse the JSON response
+        console.log(`[GameGenerator] 🔄 解析 AI 响应 JSON...`);
         const generated = this.parseResponse(content);
+        console.log(`[GameGenerator] ✅ JSON 解析成功, 节点数: ${generated.storyNodes?.length || 0}`);
 
         // 将新模式的数据转换为旧格式的 backgrounds 数组
         let finalBackgrounds = backgrounds;
@@ -309,7 +317,220 @@ export class GameGenerator {
         }
 
         // Transform with user-provided characters and backgrounds
-        return this.transformToGameProjectWithSetup(generated, characters, finalBackgrounds);
+        console.log(`[GameGenerator] 🔄 转换为 GameProject 格式...`);
+        const result = this.transformToGameProjectWithSetup(generated, characters, finalBackgrounds);
+        console.log(`[GameGenerator] 🎉 剧本生成完成！共 ${result.script.length} 个场景节点`);
+        return result;
+    }
+
+    /**
+     * 流式生成剧本（带 thinking 输出）
+     * 用于 fast 模式，支持实时输出 AI 思考过程
+     */
+    async generateFromSetupStream(
+        characters: any[],
+        worldSettingOrBackgrounds: any,
+        scenes?: any[],
+        themeSetting?: any,
+        locale: Locale = DEFAULT_LOCALE,
+        onEvent?: (event: { event: string; data: any }) => void
+    ): Promise<GameProject> {
+        // 兼容旧模式：如果没有 scenes，说明是旧模式 (characters + backgrounds)
+        const isLegacyMode = !scenes || !Array.isArray(scenes);
+        const backgrounds = isLegacyMode ? worldSettingOrBackgrounds : [];
+        const worldSetting = isLegacyMode ? null : worldSettingOrBackgrounds;
+        const actualScenes = scenes || [];
+        
+        console.log(`[GameGenerator] (Stream) Starting generation with ${characters.length} characters`);
+        if (isLegacyMode) {
+            console.log(`[GameGenerator] Legacy mode: ${backgrounds.length} backgrounds`);
+        } else {
+            console.log(`[GameGenerator] New mode: world setting "${worldSetting?.name}" and ${actualScenes.length} scenes`);
+        }
+        console.log(`[GameGenerator] Using model: ${this.modelName}`);
+        console.log(`[GameGenerator] User locale: ${locale}`);
+
+        // 构建角色信息
+        const charactersInfo = characters.map((char, i) => {
+            const traits = char.personality?.traits?.join(', ') || '未知';
+            const skills = char.coreTraits?.specialSkills?.join(', ') || '无';
+            return `${i + 1}. ${char.displayName || char.name} (性别: ${char.gender || '未知'}, 身份: ${char.identity || '未知'})
+   - 性格: ${traits}
+   - 特殊技能: ${skills}
+   - 描述: ${char.description || '无'}
+   - 执念: ${char.coreTraits?.obsession || '无'}`;
+        }).join('\n\n');
+
+        // 构建背景/场景信息
+        let backgroundsInfo = '';
+        if (isLegacyMode) {
+            backgroundsInfo = backgrounds.map((bg: any, i: number) => {
+                return `${i + 1}. ${bg.name}
+   - 世界观: ${bg.worldSetting || '未知'}
+   - 场景描述: ${bg.sceneDetails || bg.description || '无'}`;
+            }).join('\n\n');
+        } else {
+            const worldInfo = `世界观：${worldSetting.name}
+- 时代: ${worldSetting.era}
+- 地域: ${worldSetting.location}
+- 规则: ${worldSetting.rules || '无'}
+- 社会结构: ${worldSetting.socialStructure || '无'}`;
+            
+            const scenesInfo = actualScenes.map((scene: any, i: number) => {
+                return `${i + 1}. ${scene.name} (类型: ${scene.type}, 氛围: ${scene.atmosphere})
+   - 细节: ${scene.details || '无'}
+   - 功能: ${scene.function || '无'}`;
+            }).join('\n');
+            
+            let themeInfo = '';
+            if (themeSetting) {
+                const themes = themeSetting.themes?.join('、') || '无';
+                const styles = themeSetting.styles?.join('、') || '无';
+                const tone = themeSetting.tone || '无';
+                themeInfo = `\n\n故事主题风格：
+- 核心主题: ${themes}
+- 剧情风格: ${styles}
+- 整体基调: ${tone}`;
+            }
+            
+            backgroundsInfo = `${worldInfo}\n\n场景设定：\n${scenesInfo}${themeInfo}`;
+        }
+
+        // 使用统一的prompt管理器
+        const { user } = promptManager.build('game-generator.setup', {
+            charactersInfo,
+            backgroundsInfo,
+        }, locale);
+        
+        // 获取系统prompt
+        const { system: directorSystem } = promptManager.build('game-generator.director-system', {}, locale);
+        
+        console.log(`[GameGenerator] ⏳ 开始流式调用 AI 生成剧本...`);
+        const startTime = Date.now();
+
+        // 检测是否是 Qwen 模型
+        const isQwenModel = this.modelName.toLowerCase().includes('qwen');
+        
+        // 构建请求参数
+        const requestBody: any = {
+            model: this.modelName,
+            messages: [
+                ...(directorSystem ? [{ role: 'system' as const, content: directorSystem }] : []),
+                { role: 'user' as const, content: user },
+            ],
+            temperature: 0.8,
+            max_tokens: 10000,
+            stream: true,
+            stream_options: { include_usage: true },
+        };
+        
+        // 对于 Qwen 模型，启用深度思考模式
+        if (isQwenModel) {
+            requestBody.enable_thinking = true;
+            console.log('[GameGenerator] 已启用 Qwen 深度思考模式');
+        }
+
+        // 发送开始事件
+        onEvent?.({ event: 'start', data: { message: '开始生成剧本...' } });
+
+        // 流式调用
+        const stream = await this.openai.chat.completions.create(requestBody) as unknown as AsyncIterable<any>;
+
+        let fullContent = '';
+        let thinkingContent = '';
+        let isInThinking = false;
+        let usageInfo: any = null;
+
+        // 处理流式响应
+        for await (const chunk of stream) {
+            const delta = chunk.choices?.[0]?.delta;
+            
+            // 保存 usage 信息（在最后一个 chunk 中）
+            if (chunk.usage) {
+                usageInfo = chunk.usage;
+            }
+            
+            // 检查 Qwen 的 reasoning_content（思考过程）
+            const reasoningDelta = delta?.reasoning_content;
+            if (reasoningDelta) {
+                thinkingContent += reasoningDelta;
+                onEvent?.({
+                    event: 'thinking',
+                    data: { content: reasoningDelta, full: thinkingContent },
+                });
+                isInThinking = true;
+            }
+
+            // 检查常规 content
+            if (delta?.content) {
+                if (isInThinking) {
+                    isInThinking = false;
+                    console.log(`[GameGenerator] 思考完成，共 ${thinkingContent.length} 字符，开始生成剧本内容...`);
+                    onEvent?.({
+                        event: 'content',
+                        data: { message: '思考完成，正在生成剧本...' },
+                    });
+                }
+                fullContent += delta.content;
+            }
+        }
+
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[GameGenerator] ✅ AI 流式响应完成，耗时 ${elapsed}s`);
+        
+        if (thinkingContent) {
+            console.log(`[GameGenerator] 思考内容总长度: ${thinkingContent.length} 字符`);
+        }
+
+        // 追踪 Token 使用
+        if (usageInfo) {
+            tokenTracker.track({
+                source: 'openai-sdk',
+                model: this.modelName,
+                operation: 'game-generator.setup-stream',
+                usage: {
+                    promptTokens: usageInfo.prompt_tokens || 0,
+                    completionTokens: usageInfo.completion_tokens || 0,
+                    totalTokens: usageInfo.total_tokens || 0,
+                },
+                metadata: { locale, streaming: true, hasThinking: thinkingContent.length > 0 },
+            });
+        }
+
+        if (!fullContent) {
+            throw new Error('AI 未返回任何剧本内容');
+        }
+
+        console.log(`[GameGenerator] 📊 响应信息: ${fullContent.length} 字符`);
+
+        // Parse the JSON response
+        console.log(`[GameGenerator] 🔄 解析 AI 响应 JSON...`);
+        onEvent?.({ event: 'parsing', data: { message: '正在解析剧本数据...' } });
+        
+        const generated = this.parseResponse(fullContent);
+        console.log(`[GameGenerator] ✅ JSON 解析成功, 节点数: ${generated.storyNodes?.length || 0}`);
+
+        // 将新模式的数据转换为旧格式的 backgrounds 数组
+        let finalBackgrounds = backgrounds;
+        if (!isLegacyMode && worldSetting && actualScenes.length > 0) {
+            finalBackgrounds = actualScenes.map((scene: any) => ({
+                id: scene.id,
+                name: scene.name,
+                description: scene.description || '',
+                imageUrl: scene.imageUrl || '',
+                worldSetting: `${worldSetting.era} · ${worldSetting.location}`,
+                sceneDetails: `${scene.type} · ${scene.atmosphere}${scene.details ? ' · ' + scene.details : ''}`,
+            }));
+        }
+
+        // Transform with user-provided characters and backgrounds
+        console.log(`[GameGenerator] 🔄 转换为 GameProject 格式...`);
+        const result = this.transformToGameProjectWithSetup(generated, characters, finalBackgrounds);
+        console.log(`[GameGenerator] 🎉 剧本生成完成！共 ${result.script.length} 个场景节点`);
+        
+        onEvent?.({ event: 'complete', data: { message: '剧本生成完成', nodeCount: result.script.length } });
+        
+        return result;
     }
 
     private parseResponse(content: string): GeneratedContent {

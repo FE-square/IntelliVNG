@@ -210,61 +210,69 @@ function normalizeEnumValues(data: any): any {
 }
 
 export function extractAndValidateJson<T>(text: string, schema: z.ZodType<T, any, any>): T {
-  // 尝试多种 JSON 提取方式
-  const jsonPatterns = [
-    // 完整的 JSON 代码块
-    /```(?:json)?\s*([\s\S]*?)```/,
-    // 以 { 开始的 JSON 对象
-    /(\{[\s\S]*\})/,
-    // 以 [ 开始的 JSON 数组
-    /(\[[\s\S]*\])/,
-  ];
+  /**
+   * 说明：
+   * LLM 经常输出多段 ```...``` 代码块、示例、解释文本等。
+   * 如果我们“只取第一个代码块”很容易误抓到示例而非最终 JSON。
+   * 这里改为：收集候选片段 -> 逐个尝试 JSON.parse + schema.parse，选第一个能通过的。
+   */
 
-  let jsonStr: string | null = null;
+  const candidates: string[] = [];
 
-  for (const pattern of jsonPatterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      jsonStr = match[1].trim();
-      break;
-    }
+  // 1) 收集所有 ```json ... ``` 或 ``` ... ``` 代码块内容（可能有多个）
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/g;
+  let m: RegExpExecArray | null = null;
+  while ((m = fenced.exec(text)) !== null) {
+    if (m[1]) candidates.push(m[1].trim());
   }
 
-  if (!jsonStr) {
+  // 2) 追加“看起来像 JSON 对象/数组”的最大跨度候选（贪婪匹配可能跨越过多文本，因此放后面尝试）
+  const objectMatch = text.match(/(\{[\s\S]*\})/);
+  if (objectMatch?.[1]) candidates.push(objectMatch[1].trim());
+  const arrayMatch = text.match(/(\[[\s\S]*\])/);
+  if (arrayMatch?.[1]) candidates.push(arrayMatch[1].trim());
+
+  if (candidates.length === 0) {
     throw new Error('无法从响应中提取 JSON');
   }
 
-  // 清理 JSON 字符串（处理常见问题）
-  jsonStr = sanitizeControlCharacters(
-    jsonStr
-    // 移除尾部逗号
-    .replace(/,(\s*[}\]])/g, '$1')
-    // 移除注释
-    .replace(/\/\/.*$/gm, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-  );
+  const normalizeAndParse = (raw: string): T => {
+    // 清理 JSON 字符串（处理常见问题）
+    const cleaned = sanitizeControlCharacters(
+      raw
+        // 移除尾部逗号
+        .replace(/,(\s*[}\]])/g, '$1')
+        // 移除注释
+        .replace(/\/\/.*$/gm, '')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+    );
 
-  try {
-    const parsed = JSON.parse(jsonStr);
-    // 预处理：修复 LLM 返回的大小写问题
-    const normalized = normalizeEnumValues(parsed);
-    return schema.parse(normalized);
-  } catch (parseError) {
-    // 尝试修复常见的 JSON 问题
+    // 先严格解析
     try {
-      // 尝试使用更宽松的解析
-      const relaxedJson = sanitizeControlCharacters(jsonStr)
-        .replace(/'/g, '"')  // 单引号替换为双引号
-        .replace(/(\w+):/g, '"$1":');  // 未引用的键名
-      
-      const parsed = JSON.parse(relaxedJson);
-      // 预处理：修复 LLM 返回的大小写问题
+      const parsed = JSON.parse(cleaned);
       const normalized = normalizeEnumValues(parsed);
       return schema.parse(normalized);
-    } catch {
-      throw new Error(`JSON 解析失败: ${parseError}`);
+    } catch (parseError) {
+      // 再尝试宽松修复
+      const relaxedJson = sanitizeControlCharacters(cleaned)
+        .replace(/'/g, '"')
+        .replace(/(\w+):/g, '"$1":');
+      const parsed = JSON.parse(relaxedJson);
+      const normalized = normalizeEnumValues(parsed);
+      return schema.parse(normalized);
+    }
+  };
+
+  const errors: string[] = [];
+  for (const candidate of candidates) {
+    try {
+      return normalizeAndParse(candidate);
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
     }
   }
+
+  throw new Error(`JSON 解析失败: ${errors[0] || '未知错误'}`);
 }
 
 /**
@@ -301,8 +309,12 @@ ${schemaDescription}
  * - 默认启用缓存（设置 LLM_CACHE_ENABLED=false 禁用）
  * - 缓存基于 agent name + prompt + schema 生成唯一键
  * - 成功解析后自动保存缓存
+ * 
+ * 对于 Qwen 模型：
+ * - 使用 jsonPromptInjection 模式通过 system prompt 注入 JSON 输出要求
+ * - 参考：https://help.aliyun.com/zh/model-studio/qwen-structured-output
  */
-function shouldDisableStructuredOutput(modelId?: string): boolean {
+function isQwenModel(modelId?: string): boolean {
   if (!modelId) {
     const envModel = process.env.OPENAI_MODEL_NAME || '';
     return envModel.toLowerCase().includes('qwen');
@@ -316,7 +328,7 @@ export async function generateStructuredOutput<T>(
   schema: z.ZodType<T, any, any>,
   options?: {
     maxSteps?: number;
-    fallbackOnly?: boolean; // 是否只使用回退模式
+    fallbackOnly?: boolean; // 是否只使用回退模式（完全跳过 structuredOutput）
     temperature?: number; // 模型温度参数
     cacheKey?: string; // 自定义缓存键（用于更细粒度的控制）
     skipCache?: boolean; // 跳过缓存（强制重新生成）
@@ -339,7 +351,7 @@ export async function generateStructuredOutput<T>(
   // 生成缓存键
   const cacheKey = customCacheKey || generateCacheKey(agentName, prompt, schemaName);
   
-    // 检查缓存（除非明确跳过）
+  // 检查缓存（除非明确跳过）
   if (!skipCache) {
     const cached = readFromCache<T>(cacheKey);
     if (cached !== null) {
@@ -347,23 +359,21 @@ export async function generateStructuredOutput<T>(
     }
   }
 
-  console.log(`[StructuredOutput] 🤖 调用 Agent: ${agentName}, Schema: ${schemaName}`);
+  // 检测模型类型
+  const agentModelId = agent?.model?.id || agent?.modelId || '';
+  const useQwenMode = isQwenModel(agentModelId);
+  const fallbackOnly = fallbackOnlyOption || disableStructuredOutput === true;
+
+  console.log(`[StructuredOutput] 🤖 调用 Agent: ${agentName}, Schema: ${schemaName}, QwenMode: ${useQwenMode}`);
 
   // 模型设置，用于支持 o1 等不支持 temperature=0 的模型
   const modelSettings = { temperature };
   
   let result: T;
 
-  // 如果指定只使用回退模式，直接使用 JSON 解析
-  const agentModelId = agent?.model?.id || agent?.modelId || '';
-  const disableStructured = disableStructuredOutput ?? shouldDisableStructuredOutput(agentModelId);
-  const fallbackOnly = fallbackOnlyOption || disableStructured;
-
-  if (disableStructured) {
-    console.warn('[StructuredOutput] 非 structuredOutput 模型，直接使用 JSON 解析模式');
-  }
-
+  // 如果明确指定 fallbackOnly，使用老的纯 JSON 解析模式
   if (fallbackOnly) {
+    console.warn('[StructuredOutput] 使用纯文本 JSON 解析模式（fallbackOnly）');
     const enhancedPrompt = enhancePromptForJson(prompt, schema);
     const response = await agent.generate(enhancedPrompt, { modelSettings });
     
@@ -383,9 +393,21 @@ export async function generateStructuredOutput<T>(
   }
 
   try {
-    // 首先尝试 structuredOutput
+    // 构建 structuredOutput 选项
+    // 对于 Qwen 模型，使用 jsonPromptInjection 模式
+    // 参考：https://help.aliyun.com/zh/model-studio/qwen-structured-output
+    const structuredOutputOptions: { schema: z.ZodType<T, any, any>; jsonPromptInjection?: boolean } = { schema };
+    
+    if (useQwenMode) {
+      // Qwen 模型不支持原生 response_format schema，使用 jsonPromptInjection
+      // 这会让 Mastra 在 system prompt 中注入 JSON 输出要求
+      structuredOutputOptions.jsonPromptInjection = true;
+      console.log('[StructuredOutput] 🔄 Qwen 模型：使用 jsonPromptInjection 模式');
+    }
+    
+    // 使用 structuredOutput
     const response = await agent.generate(prompt, {
-      structuredOutput: { schema },
+      structuredOutput: structuredOutputOptions,
       modelSettings,
       ...(maxSteps && { maxSteps }),
     });
