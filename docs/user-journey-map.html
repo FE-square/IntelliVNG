@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliVNG Studio - 用户旅程图</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 主色调 - 灵感来自渐变紫粉 */
+            --color-primary: #6366f1;
+            --color-primary-light: #818cf8;
+            --color-primary-dark: #4f46e5;
+            --color-secondary: #ec4899;
+            --color-secondary-light: #f472b6;
+            --color-accent: #14b8a6;
+            --color-accent-light: #2dd4bf;
+            
+            /* 阶段色彩 */
+            --stage-1: #6366f1; /* 创意输入 - 紫罗兰 */
+            --stage-2: #8b5cf6; /* 草稿设定 - 紫色 */
+            --stage-3: #ec4899; /* 剧本创作 - 粉色 */
+            --stage-4: #f97316; /* 资产生成 - 橙色 */
+            --stage-5: #14b8a6; /* 交互编辑 - 青色 */
+            --stage-6: #22c55e; /* 试玩导出 - 绿色 */
+            
+            /* 情绪色彩 */
+            --emotion-high: #22c55e;
+            --emotion-mid: #eab308;
+            --emotion-low: #ef4444;
+            
+            /* 中性色 */
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            
+            /* 布局 */
+            --container-max: 1600px;
+            --stage-width: 240px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            color: var(--gray-900);
+            overflow-x: auto;
+        }
+
+        /* 背景装饰 */
+        .bg-decoration {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+            display: none; /* Slide 版本：纯白背景 */
+        }
+        
+        .bg-decoration::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+            animation: bgPulse 20s ease-in-out infinite;
+        }
+        
+        @keyframes bgPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+
+        /* 网格背景 */
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+            display: none; /* Slide 版本：纯白背景 */
+        }
+
+        /* 主容器 */
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            margin: 0 auto;
+            padding: 40px 40px 80px;
+            min-width: 1000px; /* 保证在小屏幕上不乱序，出现滚动条 */
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 100px;
+            font-size: 14px;
+            color: var(--gray-600);
+            margin-bottom: 20px;
+        }
+        
+        .header-badge svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .header h1 {
+            font-size: 56px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #111827 0%, #4f46e5 45%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            font-size: 20px;
+            color: var(--gray-600);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .header-meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 24px;
+        }
+        
+        .header-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+        
+        .header-meta-item svg {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+        }
+
+        /* 旅程地图主体 */
+        .journey-map {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+            animation: fadeIn 1s ease-out 0.3s both;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 阶段头部行 */
+        .stage-header-row {
+            display: grid;
+            grid-template-columns: 100px repeat(6, 1fr);
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .row-label-cell {
+            padding: 8px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: var(--gray-600);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stage-header {
+            padding: 8px;
+
+            text-align: center;
+            position: relative;
+            border-left: 1px solid #eef2f7;
+            background: #ffffff;
+        }
+        
+        .stage-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+        
+        .stage-header:nth-child(2)::before { background: var(--stage-1); }
+        .stage-header:nth-child(3)::before { background: var(--stage-2); }
+        .stage-header:nth-child(4)::before { background: var(--stage-3); }
+        .stage-header:nth-child(5)::before { background: var(--stage-4); }
+        .stage-header:nth-child(6)::before { background: var(--stage-5); }
+        .stage-header:nth-child(7)::before { background: var(--stage-6); }
+
+        .stage-number {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 auto 12px;
+            color: white;
+            position: relative;
+        }
+        
+        .stage-header:nth-child(2) .stage-number { background: linear-gradient(135deg, var(--stage-1), #818cf8); }
+        .stage-header:nth-child(3) .stage-number { background: linear-gradient(135deg, var(--stage-2), #a78bfa); }
+        .stage-header:nth-child(4) .stage-number { background: linear-gradient(135deg, var(--stage-3), #f472b6); }
+        .stage-header:nth-child(5) .stage-number { background: linear-gradient(135deg, var(--stage-4), #fb923c); }
+        .stage-header:nth-child(6) .stage-number { background: linear-gradient(135deg, var(--stage-5), #2dd4bf); }
+        .stage-header:nth-child(7) .stage-number { background: linear-gradient(135deg, var(--stage-6), #4ade80); }
+
+        .stage-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .stage-subtitle {
+            font-size: 12px;
+            color: var(--gray-500);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* 数据行 */
+        .data-row {
+            display: grid;
+            grid-template-columns: 100px repeat(6, 1fr);
+            border-bottom: 1px solid #eef2f7;
+        }
+        
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-cell {
+            padding: 8px;
+            border-left: 1px solid #eef2f7;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--gray-700);
+        }
+        
+        .data-cell:first-child {
+            border-left: none;
+        }
+
+        /* 用户行为 */
+        .action-list {
+            list-style: none;
+        }
+        
+        .action-list li {
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 4px;
+            color: var(--gray-700);
+        }
+        
+        .action-list li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--color-primary-dark);
+            font-weight: bold;
+        }
+
+        /* 体验标签（Slide 版） */
+        .touchpoint-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        
+        .touchpoint-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 4px;
+            font-size: 10px;
+            color: #3730a3;
+        }
+        
+        .touchpoint-tag.ai {
+            background: #fce7f3;
+            border-color: #fbcfe8;
+            color: #9d174d;
+        }
+        
+        .touchpoint-tag.tool {
+            background: #ecfeff;
+            border-color: #a5f3fc;
+            color: #155e75;
+        }
+
+        /* 路演版：亮点卡片（正向表达） */
+        .highlight {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 4px;
+            margin-bottom: 8px;
+            color: var(--gray-700);
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+            font-size: 12px;
+        }
+        .highlight strong {
+            color: var(--gray-900);
+        }
+
+        /* 1 分钟讲稿 */
+        .talk-track {
+            margin-top: 28px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+            padding: 8px;
+        }
+        .talk-track h2 {
+            font-size: 18px;
+            color: var(--gray-900);
+            margin-bottom: 10px;
+        }
+        .talk-track .hint {
+            color: var(--gray-600);
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+        .talk-track ol {
+            padding-left: 8px;
+            color: var(--gray-700);
+            font-size: 13px;
+            line-height: 1.75;
+        }
+        .talk-track li { margin: 6px 0; }
+        .talk-track code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+
+        /* 情绪曲线行 */
+        .emotion-row {
+            background: #f8fafc;
+        }
+        
+        .emotion-chart {
+            height: 100px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .emotion-point {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            position: absolute;
+            z-index: 2;
+            box-shadow: 0 0 20px currentColor;
+        }
+        
+        .emotion-label {
+            position: absolute;
+            font-size: 11px;
+            white-space: nowrap;
+            color: var(--gray-400);
+        }
+
+        /* 情绪 SVG 图表 */
+        .emotion-svg-container {
+            grid-column: 2 / -1;
+            position: relative;
+            height: 100px;
+            padding: 0;
+            overflow: visible;
+        }
+        
+        .emotion-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .emotion-overlay {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            pointer-events: none;
+        }
+
+        .emotion-item {
+            position: relative;
+            height: 100%;
+            width: 100%;
+            /* 辅助对齐线 */
+            border-left: 1px dashed rgba(0,0,0,0.03); 
+        }
+        .emotion-item:first-child {
+            border-left: none;
+        }
+
+        .emotion-dot-html {
+            position: absolute;
+            left: 50%;
+            top: var(--y);
+            width: 14px;
+            height: 14px;
+            background: white;
+            border: 3px solid; 
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+            z-index: 2;
+        }
+
+        .emotion-label-html {
+            position: absolute;
+            left: 50%;
+            top: calc(var(--y) + 12px);
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: var(--gray-500);
+            white-space: nowrap;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+        
+        .emotion-path {
+            fill: none;
+            stroke: url(#emotionGradient);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.12));
+        }
+        
+        .emotion-area {
+            fill: url(#emotionAreaGradient);
+        }
+        
+        .emotion-dot {
+            fill: white;
+            stroke: var(--emotion-high);
+            stroke-width: 3;
+            filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.12));
+        }
+        
+        .emotion-text {
+            font-size: 10px;
+            fill: var(--gray-600);
+            text-anchor: middle;
+        }
+        
+        .emotion-value {
+            font-size: 12px;
+            font-weight: 600;
+            fill: white;
+            text-anchor: middle;
+        }
+
+        /* 痛点和机会 */
+        .pain-point {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid var(--emotion-low);
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 0 8px 8px 0;
+            font-size: 12px;
+            color: #fca5a5;
+        }
+        
+        .opportunity {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 3px solid var(--emotion-high);
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 0 8px 8px 0;
+            font-size: 12px;
+            color: #86efac;
+        }
+
+        /* 想法气泡 */
+        .thought-bubble {
+            background: #ffffff;
+            font-size: 10px;
+            color: var(--gray-700);
+            font-style: italic;
+            position: relative;
+        }
+        
+        .thought-bubble::before {
+            content: '"';
+            font-size: 24px;
+            color: var(--color-primary-dark);
+            opacity: 0.5;
+            line-height: 1;
+        }
+
+        /* Slide 版：不展示实现细节（组件/代码） */
+
+        /* 图例 */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 30px;
+            margin-top: 40px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--gray-600);
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+        }
+
+        /* AI 特性高亮 */
+        .ai-feature {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(236, 72, 153, 0.12));
+            border: 1px solid rgba(99, 102, 241, 0.18);
+            border-radius: 4px;
+            font-size: 10px;
+            color: var(--gray-900);
+            margin-left: 4px;
+            margin-bottom: 4px;
+        }
+        
+        .ai-feature svg {
+            width: 11px;
+            height: 11px;
+        }
+
+        /* 时间线箭头 */
+        .timeline-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 0;
+            background: transparent;
+        }
+        
+        .timeline-arrow-inner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--gray-600);
+            font-size: 12px;
+        }
+        
+        .timeline-arrow-line {
+            width: 600px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--stage-1), var(--stage-3), var(--stage-6));
+            position: relative;
+        }
+        
+        .timeline-arrow-line::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: -4px;
+            border: 5px solid transparent;
+            border-left-color: var(--stage-6);
+        }
+
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray-600);
+            font-size: 13px;
+        }
+        
+        .footer a {
+            color: var(--color-primary-dark);
+            text-decoration: none;
+        }
+
+        /* 1min 讲稿卡片 */
+        .talk-track {
+            margin-top: 28px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+            padding: 22px 24px;
+        }
+        .talk-track h2 {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--gray-900);
+            margin-bottom: 10px;
+        }
+        .talk-track p {
+            color: var(--gray-700);
+            font-size: 13px;
+            line-height: 1.75;
+            margin-bottom: 8px;
+        }
+        .talk-track .hint {
+            color: var(--gray-600);
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* 动画 */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* 响应式提示 */
+        @media (max-width: 1400px) {
+            .container {
+                padding: 0px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-decoration"></div>
+    <div class="grid-bg"></div>
+
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="header-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                IntelliVNG Studio · Roadshow User Journey
+            </div>
+            <h1>用户旅程图</h1>
+            <p>从一句话创意出发：多智能体协作生成 → 可视化精修 → 一键导出可玩成品</p>
+            <div class="header-meta">
+                <div class="header-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                    </svg>
+                    端到端：0→1 可玩 demo
+                </div>
+                <div class="header-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    目标用户：创作者 / 教学课件 / 游戏原型
+                </div>
+                <div class="header-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    </svg>
+                    导出：单 HTML · 完全离线 · JSON DSL
+                </div>
+            </div>
+        </header>
+
+        <!-- 旅程地图 -->
+        <div class="journey-map">
+            <!-- 阶段头部 -->
+            <div class="stage-header-row">
+                <div class="row-label-cell">
+                    <svg width="16" height="16" viewBox="0 0 24 24" style="margin-right: 8px;" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                    </svg>
+                    用户旅程
+                </div>
+                <div class="stage-header">
+                    <div class="stage-number">1</div>
+                    <div class="stage-title">创意输入</div>
+                    <div class="stage-subtitle">Idea Input</div>
+                </div>
+                <div class="stage-header">
+                    <div class="stage-number">2</div>
+                    <div class="stage-title">草稿设定</div>
+                    <div class="stage-subtitle">Draft Setting</div>
+                </div>
+                <div class="stage-header">
+                    <div class="stage-number">3</div>
+                    <div class="stage-title">剧本创作</div>
+                    <div class="stage-subtitle">Script Generation</div>
+                </div>
+                <div class="stage-header">
+                    <div class="stage-number">4</div>
+                    <div class="stage-title">资产生成</div>
+                    <div class="stage-subtitle">Asset Generation</div>
+                </div>
+                <div class="stage-header">
+                    <div class="stage-number">5</div>
+                    <div class="stage-title">交互编辑</div>
+                    <div class="stage-subtitle">Interactive Editing</div>
+                </div>
+                <div class="stage-header">
+                    <div class="stage-number">6</div>
+                    <div class="stage-title">试玩导出</div>
+                    <div class="stage-subtitle">Preview & Export</div>
+                </div>
+            </div>
+
+            <!-- 用户行为 -->
+            <div class="data-row">
+                <div class="row-label-cell">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    用户行为
+                </div>
+                <div class="data-cell">
+                    <ul class="action-list">
+                        <li>输入一句话故事创意</li>
+                        <li>选择创作模式</li>
+                        <li>点击开始生成</li>
+                    </ul>
+                </div>
+                <div class="data-cell">
+                    <ul class="action-list">
+                        <li>浏览 AI 生成的设定</li>
+                        <li>查看世界观/角色/场景</li>
+                        <li>等待设定完成</li>
+                    </ul>
+                </div>
+                <div class="data-cell">
+                    <ul class="action-list">
+                        <li>观察智能体协作过程</li>
+                        <li>查看实时进度日志</li>
+                        <li>等待剧本完成或重试</li>
+                    </ul>
+                </div>
+                <div class="data-cell">
+                    <ul class="action-list">
+                        <li>确认待生成素材清单</li>
+                        <li>点击一键生成按钮</li>
+                        <li>查看生成进度/预览</li>
+                    </ul>
+                </div>
+                <div class="data-cell">
+                    <ul class="action-list">
+                        <li>拖拽编辑剧情</li>
+                        <li>对话选项/素材资产</li>
+                        <li>AI 助手指令编辑</li>
+                    </ul>
+                </div>
+                <div class="data-cell">
+                    <ul class="action-list">
+                        <li>从头/从节点开始</li>
+                        <li>分支剧情体验</li>
+                        <li>多模式导出下载</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 阶段产出（路演重点：每一步都“可见、可用、可交付”） -->
+            <div class="data-row">
+                <div class="row-label-cell">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                        <path d="M20 7h-9"/><path d="M14 17H5"/><path d="M20 17h-2"/><path d="M20 12h-9"/><path d="M14 7h6"/><path d="M5 7h2"/><path d="M5 12h2"/><path d="M5 17h6"/>
+                    </svg>
+                    阶段产出
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>输入</strong>：一句话创意 / 主题关键词</div>
+                    <div class="touchpoint-tags">
+                        <span class="touchpoint-tag">快速模式</span>
+                        <span class="touchpoint-tag ai">智能体模式</span>
+                        <span class="touchpoint-tag tool">专业模式</span>
+                    </div>
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>设定草稿</strong>：世界观 · 角色 · 场景 · 主题风格</div>
+                    <div class="touchpoint-tags">
+                        <span class="touchpoint-tag tool">分步向导</span>
+                        <span class="touchpoint-tag ai">AI 自动补全</span>
+                    </div>
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>结构化剧本</strong>：多分支节点图谱（可视化编辑）</div>
+                    <div class="touchpoint-tags">
+                        <span class="touchpoint-tag ai">多智能体协作</span>
+                        <span class="touchpoint-tag">过程可视化</span>
+                        <span class="touchpoint-tag tool">SSE 实时流</span>
+                    </div>
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>素材资产</strong>：头像 · 透明立绘 · 背景（批量生成）</div>
+                    <div class="touchpoint-tags">
+                        <span class="touchpoint-tag ai">一键生成</span>
+                        <span class="touchpoint-tag">进度可追踪</span>
+                        <span class="touchpoint-tag tool">素材仓库</span>
+                    </div>
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>可控编辑</strong>：拖拽改分支 · 精修台词 · 自然语言编辑</div>
+                    <div class="touchpoint-tags">
+                        <span class="touchpoint-tag tool">可视化 Flow</span>
+                        <span class="touchpoint-tag ai">AI 助手 Agent</span>
+                        <span class="touchpoint-tag">自动保存</span>
+                    </div>
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>可交付成品</strong>：离线可玩 HTML · 项目 DSL</div>
+                    <div class="touchpoint-tags">
+                        <span class="touchpoint-tag tool">即下即玩</span>
+                        <span class="touchpoint-tag">离线内嵌图片</span>
+                        <span class="touchpoint-tag ai">成本可观测</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 情绪曲线 -->
+            <div class="data-row emotion-row">
+                <div class="row-label-cell">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                        <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
+                    </svg>
+                    情绪曲线
+                </div>
+                <div class="emotion-svg-container">
+                    <svg class="emotion-svg" viewBox="0 0 600 100" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="emotionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#4f46e5"/>
+                                <stop offset="35%" style="stop-color:#db2777"/>
+                                <stop offset="70%" style="stop-color:#0ea5e9"/>
+                                <stop offset="100%" style="stop-color:#16a34a"/>
+                            </linearGradient>
+                            <linearGradient id="emotionAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:rgba(79, 70, 229, 0.08)"/>
+                                <stop offset="100%" style="stop-color:rgba(79, 70, 229, 0)"/>
+                            </linearGradient>
+                        </defs>
+                        <!-- 背景横线 -->
+                        <line x1="0" y1="25" x2="600" y2="25" stroke="rgba(0,0,0,0.03)" stroke-dasharray="4,4"/>
+                        <line x1="0" y1="50" x2="600" y2="50" stroke="rgba(0,0,0,0.03)" stroke-dasharray="4,4"/>
+                        <line x1="0" y1="75" x2="600" y2="75" stroke="rgba(0,0,0,0.03)" stroke-dasharray="4,4"/>
+
+                        <!-- 区域填充 -->
+                        <path class="emotion-area" d="M50,25 C100,25 100,45 150,45 C200,45 200,60 250,60 C300,60 300,20 350,20 C400,20 400,15 450,15 C500,15 500,10 550,10 V100 H50 Z" />
+                        
+                        <!-- 曲线路径 -->
+                        <path class="emotion-path" d="M50,25 C100,25 100,45 150,45 C200,45 200,60 250,60 C300,60 300,20 350,20 C400,20 400,15 450,15 C500,15 500,10 550,10" />
+                    </svg>
+
+                    <!-- HTML 覆盖层（解决对齐与文字拉伸问题） -->
+                    <div class="emotion-overlay">
+                        <div class="emotion-item" style="--y: 25%">
+                            <div class="emotion-dot-html" style="border-color: #4f46e5;"></div>
+                            <div class="emotion-label-html">上手快</div>
+                        </div>
+                        <div class="emotion-item" style="--y: 45%">
+                            <div class="emotion-dot-html" style="border-color: #8b5cf6;"></div>
+                            <div class="emotion-label-html">设定成形</div>
+                        </div>
+                        <div class="emotion-item" style="--y: 60%">
+                            <div class="emotion-dot-html" style="border-color: #db2777;"></div>
+                            <div class="emotion-label-html">见证协作</div>
+                        </div>
+                        <div class="emotion-item" style="--y: 20%">
+                            <div class="emotion-dot-html" style="border-color: #0ea5e9;"></div>
+                            <div class="emotion-label-html">素材到位</div>
+                        </div>
+                        <div class="emotion-item" style="--y: 15%">
+                            <div class="emotion-dot-html" style="border-color: #14b8a6;"></div>
+                            <div class="emotion-label-html">自由精修</div>
+                        </div>
+                        <div class="emotion-item" style="--y: 10%">
+                            <div class="emotion-dot-html" style="border-color: #22c55e;"></div>
+                            <div class="emotion-label-html">可玩可发</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户感受（路演版：强调爽点） -->
+            <div class="data-row">
+                <div class="row-label-cell">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    用户感受
+                </div>
+                <div class="data-cell">
+                    <div class="thought-bubble">
+                        一句话就能开局？还能选Fast或Agents模式？我来试试看'失忆少女未来冒险'这个idea……
+                    </div>
+                </div>
+                <div class="data-cell">
+                    <div class="thought-bubble">
+                        AI给的世界观和角色还挺有意思，我可以随时补充/调整，不怕失控
+                    </div>
+                </div>
+                <div class="data-cell">
+                    <div class="thought-bubble">
+                        Agents在写作？ToT是什么？虽然有点慢，但进度和产物都看得见，知道它们在干嘛
+                    </div>
+                </div>
+                <div class="data-cell">
+                    <div class="thought-bubble">
+                        一键批量生成素材，还是并行任务的？立绘透明，风格统一，太方便了
+                    </div>
+                </div>
+                <div class="data-cell">
+                    <div class="thought-bubble">
+                        故事线可视化交互编辑很直观！有创作的感觉，还能自然语言让 AI 助手帮我编辑，神奇
+                    </div>
+                </div>
+                <div class="data-cell">
+                    <div class="thought-bubble">
+                        直接导出成可玩的单文件游戏！马上给朋友试试，还能导入编辑诶
+                    </div>
+                </div>
+            </div>
+
+            <!-- 创新亮点（正向表达） -->
+            <div class="data-row">
+                <div class="row-label-cell">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                        <path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>
+                    </svg>
+                    创新亮点
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>双模式</strong>：快速原型 + 多智能体深度协作</div>
+                    <div class="highlight"><strong>国际化</strong>：界面/工具/生成内容多语言支持</div>
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>结构化设定</strong>：表单化、可控、可复用</div>
+                    <div class="highlight"><strong>AI 自动补全</strong>：每一步都能一键补齐</div>
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>过程可视化</strong>：规划/写作/审阅全程实时展示</div>
+                    <div class="highlight"><strong>可解释</strong>：每个决策可追溯、可复盘</div>
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>素材一键生成</strong>：立绘透明 + 背景批量</div>
+                    <div class="highlight"><strong>素材仓库</strong>：集中管理、复用与预览</div>
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>可视化编辑</strong>：节点图谱，分支结构一眼看懂</div>
+                    <div class="highlight"><strong>编辑器助手</strong>：自然语言多动作编辑 + 思考可视化</div>
+                </div>
+                <div class="data-cell">
+                    <div class="highlight"><strong>导出即运行</strong>：单 HTML / 完全离线 / JSON DSL</div>
+                    <div class="highlight"><strong>成本可控</strong>：Token 与图像费用统计透明可观测</div>
+                </div>
+            </div>
+
+            <!-- 核心技术（路演版） -->
+            <div class="data-row" style="background: rgba(79, 70, 229, 0.04);">
+                <div class="row-label-cell">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                        <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A1.5 1.5 0 0 0 6 14.5 1.5 1.5 0 0 0 7.5 16 1.5 1.5 0 0 0 9 14.5 1.5 1.5 0 0 0 7.5 13m9 0a1.5 1.5 0 0 0-1.5 1.5 1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 0 1.5-1.5 1.5 1.5 0 0 0-1.5-1.5"/>
+                    </svg>
+                    核心技术
+                </div>
+                <div class="data-cell">
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        结构化理解
+                    </span>
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        国际化·多语言
+                    </span>
+                </div>
+                <div class="data-cell">
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        Schema 驱动
+                    </span>
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        缓存/容错/重试
+                    </span>
+                </div>
+                <div class="data-cell">
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/></svg>
+                        真·多智能体系统
+                    </span>
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/></svg>
+                        ToT + ReAct + CoT
+                    </span>
+                </div>
+                <div class="data-cell">
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        文生图/图生图
+                    </span>
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        资产锚点
+                    </span>
+                </div>
+                <div class="data-cell">
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        AI 助手智能体
+                    </span>
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        MCP 工具调用
+                    </span>
+                </div>
+                <div class="data-cell">
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                        Token/成本可观测
+                    </span>
+                    <span class="ai-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                        DSL 项目可管理
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 时间线箭头 -->
+        <div class="timeline-arrow">
+            <div class="timeline-arrow-inner">
+                <span>开始</span>
+                <div class="timeline-arrow-line"></div>
+                <span>完成</span>
+            </div>
+        </div>
+
+        <!-- 图例 -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, var(--stage-1), var(--stage-2));"></div>
+                <span>输入阶段</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, var(--stage-3), var(--stage-4));"></div>
+                <span>AI 生成阶段</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, var(--stage-5), var(--stage-6));"></div>
+                <span>编辑导出阶段</span>
+            </div>
+            <div class="legend-item">
+                <span class="touchpoint-tag ai" style="margin: 0;">AI</span>
+                <span>智能体协作与编辑助手</span>
+            </div>
+            <div class="legend-item">
+                <span class="touchpoint-tag tool" style="margin: 0;">可视化</span>
+                <span>流程/脚本/预览可见</span>
+            </div>
+            <div class="legend-item">
+                <span class="touchpoint-tag" style="margin: 0;">可交付</span>
+                <span>单文件导出与离线可玩</span>
+            </div>
+        </div>
+
+        <!-- 1 分钟讲稿 -->
+        <section class="talk-track">
+            <div class="hint">讲解节奏：从左到右指一遍这张图；括号内是建议时长。</div>
+            <ol>
+                <li><strong>开场（10s）</strong>：我们把“做一部可玩的视觉小说”的门槛降到一句话——输入创意后，可以选<strong>快速模式</strong>或<strong>多智能体深度协作</strong>。</li>
+                <li><strong>设定成形（10s）</strong>：系统会产出结构化的世界观、角色、场景和主题风格；在专业模式里用户分步填写，并随时点<strong>AI 自动补全</strong>，既快又可控。</li>
+                <li><strong>多智能体生成（15s）</strong>：进入核心亮点——规划、写作、审阅三类智能体协作。关键是<strong>过程可视化</strong>，通过实时流把每一步“正在做什么”展示出来。</li>
+                <li><strong>素材与编辑（15s）</strong>：剧本出来后，一键批量生成头像、立绘（含透明）和背景；在编辑器里用节点图谱拖拽改分支，也能对话式让 AI 助手 一次执行多步编辑。</li>
+                <li><strong>交付与可持续（10s）</strong>：最后一键导出为<strong>可玩的单 HTML</strong>（支持完全离线）或 JSON DSL；同时提供 Token/图像费用统计，让成本透明、可控、可复盘。</li>
+            </ol>
+        </section>
+
+        <!-- 页脚 -->
+        <footer class="footer">
+            <p>
+                <strong>IntelliVNG Studio</strong> · 基于 AI 多智能体的视觉小说游戏创作工坊
+            </p>
+            <p style="margin-top: 8px;">
+                Made with ❤️ by FE Square Team · 
+                <a href="https://github.com/your-org/IntelliVNG" target="_blank">GitHub</a> · 
+                <a href="https://fe-square.feishu.cn/wiki/Ki4hwhwOeieN9ykDk71cvGFznle" target="_blank">文档</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
+
